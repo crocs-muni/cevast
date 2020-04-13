@@ -1,7 +1,7 @@
 """CertDB is a database managing X.509 certificates."""
 
-__all__ = ('CertFileDB')
+__all__ = ('CertFileDB', 'CertNotAvailableError')
 __version__ = '0.1'
 __author__ = 'Radim Podola'
 
-from .cert_file_db import CertFileDB
+from .cert_file_db import CertFileDB, CertNotAvailableError
