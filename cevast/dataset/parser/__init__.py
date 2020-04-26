@@ -9,7 +9,7 @@ from cevast.dataset import DatasetType
 from .rapid7 import RapidParser
 
 
-def getParser(dataset_type):
+def getParserClass(dataset_type):
     if(dataset_type == DatasetType.RAPID):
         return RapidParser
     else:

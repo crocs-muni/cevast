@@ -24,9 +24,7 @@ __author__ = 'Radim Podola'
 
 logger = logging.getLogger(__name__)
 
-DATASET_CERT_STORAGE_NAME = 'dataset_certs'
-DATASET_CERT_SHARED_STORAGE_NAME = 'shared'
-COMMON_POOL_STORAGE_NAME = 'common_pool'
+# TODO Refactor - remove DATE dependency, lets have all certificates together in multilevel structure certs/[1 chars]/[2 chars]/[4 chars]/ -> zip
 
 
 class CertNotAvailableError(Exception):
@@ -34,24 +32,25 @@ class CertNotAvailableError(Exception):
     pass
 
 
-class CertFileDB:
+class CertFileDBReadOnly:
+
+    DATASET_CERT_STORAGE_NAME = 'dataset_certs'
+    DATASET_CERT_SHARED_STORAGE_NAME = 'shared'
+    COMMON_POOL_STORAGE_NAME = 'common_pool'
 
     def __init__(self, storage: str, date: str):
         self.storage = os.path.abspath(storage)
         self.date = date
         self.__waiting_for_commit: list = []
-        self.__init_storage()
+
+        self.__dcert_storage = os.path.join(self.storage, CertFileDBReadOnly.DATASET_CERT_STORAGE_NAME)
+        self.__dcert_date_storage = os.path.join(self.__dcert_storage, self.date)
+        self.__dcert_shared_storage = os.path.join(self.__dcert_storage,
+                                                   CertFileDBReadOnly.DATASET_CERT_SHARED_STORAGE_NAME)
 
         logger.info(__name__ + ' initizalized...')
         logger.debug('storage: {}'.format(self.storage))
         logger.debug('date: {}'.format(self.date))
-
-    def __init_storage(self):
-        self.__dcert_storage = os.path.join(self.storage, DATASET_CERT_STORAGE_NAME)
-        self.__dcert_date_storage = os.path.join(self.__dcert_storage, self.date)
-        self.__dcert_shared_storage = os.path.join(self.__dcert_storage, DATASET_CERT_SHARED_STORAGE_NAME)
-        os.makedirs(self.__dcert_date_storage, exist_ok=True)
-        os.makedirs(self.__dcert_shared_storage, exist_ok=True)
 
     def get(self, target_folder):
         pass
@@ -62,6 +61,24 @@ class CertFileDB:
         # TODO add also exists in zip files
 
         return os.path.exists(os.path.join(trg_path, sha + '.pem'))
+
+    def exists_all(self, shas: list, server_cert: bool = True):
+        for sha in shas:
+            if not self.exists(sha, server_cert):
+                return False
+
+
+class CertFileDB(CertFileDBReadOnly):
+
+    def __init__(self, storage: str, date: str):
+        super().__init__(storage, date)
+
+        os.makedirs(self.__dcert_date_storage, exist_ok=True)
+        os.makedirs(self.__dcert_shared_storage, exist_ok=True)
+
+        logger.info(__name__ + ' initizalized...')
+        logger.debug('storage: {}'.format(self.storage))
+        logger.debug('date: {}'.format(self.date))
 
     def insert(self, sha: str, cert: str, server_cert: bool = True):
         trg_path = self.__create_cert_path(sha, server_cert)
@@ -80,15 +97,16 @@ class CertFileDB:
         self.__waiting_for_commit.clear()
 
     def commit(self, cores=1):
-        for target in self.__waiting_for_commit:
-            if cores > 1:
+        if cores > 1:
+            for target in self.__waiting_for_commit:
                 # TODO use multiprocessing
                 # import multiprocessing as mp
                 for target in self.__waiting_for_commit:
                     logger.debug('Add target to async pool: {}'.format(target))
                     # add persist_and_clean_storage_target(target in ) to pool
                     pass
-            else:
+        else:
+            for target in self.__waiting_for_commit:
                 logger.debug('Commit target: {}'.format(target))
                 CertFileDB.persist_and_clean_storage_target(target)
 
