@@ -1,5 +1,5 @@
 """
-This module contains components of CertFileDB
+This module contains implementation of CertFileDB
 
     CertFileDB is a simple local database that uses files
     and a file system properties as a storage mechanism.
@@ -19,6 +19,8 @@ import os
 import shutil
 import logging
 import zipfile
+from cevast.certdb import CertNotAvailableError, InvalidCertError
+from .cert_db import CertDB, CertDBReadOnly
 
 __author__ = 'Radim Podola'
 
@@ -27,12 +29,7 @@ logger = logging.getLogger(__name__)
 # TODO Refactor - remove DATE dependency, lets have all certificates together in multilevel structure certs/[1 chars]/[2 chars]/[4 chars]/ -> zip
 
 
-class CertNotAvailableError(Exception):
-    """Raised when the certificate is not available in database"""
-    pass
-
-
-class CertFileDBReadOnly:
+class CertFileDBReadOnly(CertDBReadOnly):
 
     DATASET_CERT_STORAGE_NAME = 'dataset_certs'
     DATASET_CERT_SHARED_STORAGE_NAME = 'shared'
@@ -41,18 +38,18 @@ class CertFileDBReadOnly:
     def __init__(self, storage: str, date: str):
         self.storage = os.path.abspath(storage)
         self.date = date
-        self.__waiting_for_commit: list = []
+        self._waiting_for_commit: list = []
 
-        self.__dcert_storage = os.path.join(self.storage, CertFileDBReadOnly.DATASET_CERT_STORAGE_NAME)
-        self.__dcert_date_storage = os.path.join(self.__dcert_storage, self.date)
-        self.__dcert_shared_storage = os.path.join(self.__dcert_storage,
-                                                   CertFileDBReadOnly.DATASET_CERT_SHARED_STORAGE_NAME)
+        self._dcert_storage = os.path.join(self.storage, CertFileDBReadOnly.DATASET_CERT_STORAGE_NAME)
+        self._dcert_date_storage = os.path.join(self._dcert_storage, self.date)
+        self._dcert_shared_storage = os.path.join(self._dcert_storage,
+                                                  CertFileDBReadOnly.DATASET_CERT_SHARED_STORAGE_NAME)
 
         logger.info(__name__ + ' initizalized...')
         logger.debug('storage: {}'.format(self.storage))
         logger.debug('date: {}'.format(self.date))
 
-    def get(self, target_folder):
+    def get(self, sha: str):
         pass
 
     def exists(self, sha: str, server_cert: bool = True):
@@ -68,13 +65,13 @@ class CertFileDBReadOnly:
                 return False
 
 
-class CertFileDB(CertFileDBReadOnly):
+class CertFileDB(CertDB, CertFileDBReadOnly):
 
     def __init__(self, storage: str, date: str):
-        super().__init__(storage, date)
+        CertFileDBReadOnly.__init__(self, storage, date)
 
-        os.makedirs(self.__dcert_date_storage, exist_ok=True)
-        os.makedirs(self.__dcert_shared_storage, exist_ok=True)
+        os.makedirs(self._dcert_date_storage, exist_ok=True)
+        os.makedirs(self._dcert_shared_storage, exist_ok=True)
 
         logger.info(__name__ + ' initizalized...')
         logger.debug('storage: {}'.format(self.storage))
@@ -88,30 +85,30 @@ class CertFileDB(CertFileDBReadOnly):
         with open(filename, 'w') as w_file:
             w_file.write(content)
 
-        self.__waiting_for_commit.append(trg_path)
+        self._waiting_for_commit.append(trg_path)
 
         logger.info('Certificate {} inserted to {}'.format(filename, trg_path))
 
     def rollback(self):
-        CertFileDB.clean_storage_target(self.__waiting_for_commit)
-        self.__waiting_for_commit.clear()
+        CertFileDB.clean_storage_target(self._waiting_for_commit)
+        self._waiting_for_commit.clear()
 
     def commit(self, cores=1):
         if cores > 1:
-            for target in self.__waiting_for_commit:
+            for target in self._waiting_for_commit:
                 # TODO use multiprocessing
                 # import multiprocessing as mp
-                for target in self.__waiting_for_commit:
+                for target in self._waiting_for_commit:
                     logger.debug('Add target to async pool: {}'.format(target))
                     # add persist_and_clean_storage_target(target in ) to pool
                     pass
         else:
-            for target in self.__waiting_for_commit:
+            for target in self._waiting_for_commit:
                 logger.debug('Commit target: {}'.format(target))
                 CertFileDB.persist_and_clean_storage_target(target)
 
-        logger.info('Committed {} targets'.format(len(self.__waiting_for_commit)))
-        self.__waiting_for_commit.clear()
+        logger.info('Committed {} targets'.format(len(self._waiting_for_commit)))
+        self._waiting_for_commit.clear()
 
     def __create_cert_path_str(self, sha: str, server_cert: bool = True) -> str:
         if server_cert:
