@@ -27,14 +27,14 @@ class CertDBReadOnly(ABC):
         pass
 
     @abstractmethod
-    def exists(self, sha: str, server_cert: bool = True):
+    def exists(self, sha: str):
         pass
 
 
 class CertDB(CertDBReadOnly):
 
     @abstractmethod
-    def insert(self, sha: str, cert: str, server_cert: bool = True):
+    def insert(self, sha: str, cert: str):
         pass
 
     @abstractmethod
