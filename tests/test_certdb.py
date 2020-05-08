@@ -123,17 +123,17 @@ class TestCertFileDB(unittest.TestCase):
         db = CertFileDB(self.TEST_STORAGE)
         # Test commit without inserts
         db.commit()
-        assert not db._journal
+        assert not db._transaction
         # Insert some certificates and check commit
         insert_test_certs(db, TEST_CERTS_1)
-        targets = tuple(db._journal)
-        # Journal should contain certificates from open transcation and folders should exists
-        assert db._journal
+        targets = tuple(db._transaction)
+        # Transaction should contain certificates from open transcation and folders should exists
+        assert db._transaction
         for t in targets:
             assert os.path.exists(t)
         db.commit()
-        # Journal should be empty and certs should be compressed in zip files
-        assert not db._journal
+        # Transaction should be empty and certs should be compressed in zip files
+        assert not db._transaction
         for t in targets:
             assert not os.path.exists(t)
             assert os.path.exists(t + '.zip')
@@ -147,21 +147,21 @@ class TestCertFileDB(unittest.TestCase):
         db = CertFileDB(self.TEST_STORAGE)
         # Test rollback without inserts
         db.rollback()
-        assert not db._journal
+        assert not db._transaction
         # Insert some certificates and check rollback
         insert_test_certs(db, TEST_CERTS_1)
-        targets = tuple(db._journal)
-        # Journal should contain certificates from open transcation and folders should exist
-        assert db._journal
+        targets = tuple(db._transaction)
+        # Transaction should contain certificates from open transcation and folders should exist
+        assert db._transaction
         for t in targets:
             assert os.path.exists(t)
         # Commit actual certs, insert other certs and rollback
         db.commit()
         insert_test_certs(db, TEST_CERTS_2)
-        rollback_targets = tuple(db._journal)
+        rollback_targets = tuple(db._transaction)
         db.rollback()
-        # Journal should be empty
-        assert not db._journal
+        # Transaction should be empty
+        assert not db._transaction
         # Commited certs should be compressed in zip files
         for t in targets:
             assert not os.path.exists(t)
