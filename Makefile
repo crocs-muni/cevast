@@ -14,5 +14,6 @@ clear:
 	rm -rf build/
 	rm -rf dist/
 	rm -rf cevast.egg-info/
+	find . -name __pycache__ -type d -exec rm -rv {} +
 
 .PHONY: install user_install test

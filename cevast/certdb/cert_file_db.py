@@ -17,7 +17,7 @@ import os
 import shutil
 import logging
 from zipfile import ZipFile, ZIP_DEFLATED
-from cevast.certdb import CertDB, CertDBReadOnly, CertNotAvailableError, InvalidCertError
+from cevast.certdb import CertDB, CertDBReadOnly, CertNotAvailableError, CertInvalidError
 
 __author__ = 'Radim Podola'
 
@@ -46,41 +46,48 @@ class CertFileDBReadOnly(CertDBReadOnly):
         # Check if certificate exists as a file (in case of open transaction)
         if self._transaction:
             cert_file = os.path.join(loc, filename)
-            if os.path.exists(cert_file):
-                # TODO read cert
+            try:
+                with open(cert_file, 'r') as source:
+                    logger.debug('<{}> found in open transaction'.format(cert_file))
+                    return source.read()
+            except IOError:
                 pass
         # Check if certificate exists in a zipfile
         try:
             zip_file = loc + '.zip'
             with ZipFile(zip_file, 'r', ZIP_DEFLATED) as zf:
                 with zf.open(filename) as cert:
-                    return cert.read()
+                    logger.debug('<{}> found in zip <{}>'.format(filename, zip_file))
+                    return cert.read().decode('utf-8')
         except (KeyError, FileNotFoundError):
             pass
 
-        return None
+        logger.debug('<{}> not found'.format(filename))
+        raise CertNotAvailableError(id)
 
-    def download(self, id: str, target_path: str) -> str:
+    def export(self, id: str, target_dir: str) -> str:
         loc = self._get_cert_location(id)
         filename = self._id_to_filename(id)
         # Check if certificate exists as a file (in case of open transaction)
         if self._transaction:
             cert_src_file = os.path.join(loc, filename)
-            cert_trg_file = os.path.join(target_path, filename)
+            cert_trg_file = os.path.join(target_dir, filename)
             if os.path.exists(cert_src_file):
-                with open(cert_src_file, 'r') as source, \
-                     open(cert_trg_file, "w") as target:
-                    shutil.copyfileobj(source, target)
+                shutil.copyfile(cert_src_file, cert_trg_file)
+                logger.debug('<{}> found in open transaction'.format(cert_src_file))
+                return cert_trg_file
         # Check if certificate exists in a zipfile
         try:
             zip_file = loc + '.zip'
             with ZipFile(zip_file, 'r', ZIP_DEFLATED) as zf:
-                zf.extract(filename, target_path)
-                return os.path.join(target_path, filename)
+                zf.extract(filename, target_dir)
+                logger.debug('<{}> found in zip <{}>'.format(filename, zip_file))
+                return os.path.join(target_dir, filename)
         except (KeyError, FileNotFoundError):
             pass
 
-        return None
+        logger.debug('<{}> not found'.format(filename))
+        raise CertNotAvailableError(id)
 
     def exists(self, id: str) -> bool:
         loc = self._get_cert_location(id)
@@ -90,7 +97,6 @@ class CertFileDBReadOnly(CertDBReadOnly):
             if os.path.exists(cert_file):
                 logger.debug('<{}> exists'.format(cert_file))
                 return True
-
         # Check if certificate exists in a zipfile
         try:
             zip_file = loc + '.zip'
@@ -130,25 +136,27 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         logger.info(__name__ + ' initizalized...')
         logger.debug('cert storage: {}'.format(self._cert_storage))
 
-    # TODO some parameter validation ??
-    def insert(self, id: str, cert: str):
+    def insert(self, id: str, cert: str) -> None:
+        if not id or not cert:
+            raise CertInvalidError('id <{}> or cert <{}> invalid'.format(id, cert))
+        # Save certificate to temporary file
         loc = self._create_cert_location(id)
         cert_file = os.path.join(loc, self._id_to_filename(id))
+        if os.path.exists(cert_file):
+            logger.info('Certificate {} already exists'.format(cert_file, loc))
+            return
 
-        # TODO move next line to the parser
-        content = '-----BEGIN CERTIFICATE-----' + '\n' + cert + '\n' + '-----END CERTIFICATE-----'
         with open(cert_file, 'w') as w_file:
-            w_file.write(content)
+            w_file.write(cert)
 
         self._transaction.add(loc)
-
         logger.info('Certificate {} inserted to {}'.format(cert_file, loc))
 
-    def rollback(self):
+    def rollback(self) -> None:
         CertFileDB.clean_storage_target(self._transaction)
         self._transaction.clear()
 
-    def commit(self, cores=1):
+    def commit(self, cores=1) -> None:
         if cores > 1:
             for target in self._transaction:
                 # TODO use multiprocessing
@@ -164,6 +172,9 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
 
         logger.info('Committed {} targets'.format(len(self._transaction)))
         self._transaction.clear()
+
+    def remove(self, id: str) -> bool:
+        raise NotImplementedError
 
     def _create_cert_location(self, id: str) -> str:
         loc = self._get_cert_location(id)
