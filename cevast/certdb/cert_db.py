@@ -6,6 +6,16 @@ This module provides interface of CertDB class
 
     Each certificate is uniquelly identified by its ID (fingerprint).
     A certificate is internally handled as string -> PEM format expected.
+
+    It is expected that certificate's ID is uniquely matching the certificate in the world
+    as a fingerprint should be used as ID. Therefore, inserting different certificate
+    under same ID does not lead to rewriting the original certificate. To replace
+    a specific certificate, it must first be deleted and then re-inserted - it can
+    be performed in a single transaction as long as the sequence is preserved.
+
+    Be aware that DELETE metod is deleting not persisted certificate immediatelly but
+    the persisted one remains untill the transaction is committed. Therefore, methods like
+    GET/EXPORT/EXISTS will not find not persisted deleted certificate.
 """
 
 from abc import ABC, abstractmethod
@@ -76,7 +86,7 @@ class CertDB(CertDBReadOnly):
     def rollback(self) -> None:
         """Revert the changes made by the current transaction.
            All inserted certificates waiting to persist are removed.
-           TODO: All removed certificates in the current transaction stay untouched.
+           All deleted certificates in the current transaction stay untouched.
         """
         pass
 
@@ -84,10 +94,15 @@ class CertDB(CertDBReadOnly):
     def commit(self, cores=1) -> None:
         """Apply the changes made by the current transaction.
            All inserted certificates waiting to persist are persisted.
-           TODO: All removed certificates in the current transaction are permanently removed.
+           All deleted certificates in the current transaction are permanently removed.
         """
         pass
 
     @abstractmethod
-    def remove(self, id: str) -> bool:
+    def delete(self, id: str):
+        """Delete the certificate from the database.
+           Persisted certificate is not immediatelly deleted but
+           remains untill commit or rollback. Certificate inserted
+           in the current transaction is deleted immediatelly.
+        """
         pass

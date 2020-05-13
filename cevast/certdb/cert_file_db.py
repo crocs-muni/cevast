@@ -32,6 +32,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
     def __init__(self, storage: str):
         self.storage = os.path.abspath(storage)
         self._transaction: set = set()
+        self._delete: set = set()
         # Init certificate storage location
         self._cert_storage = os.path.join(self.storage, self.CERT_STORAGE_NAME)
         if not os.path.exists(self._cert_storage):
@@ -120,6 +121,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
     def _get_cert_location(self, id: str) -> str:
         return os.path.join(self._cert_storage, id[:2], id[:4])
 
+    # TODO move to utils
     @staticmethod
     def _id_to_filename(id: str) -> str:
         return id + '.pem'
@@ -143,7 +145,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         loc = self._create_cert_location(id)
         cert_file = os.path.join(loc, self._id_to_filename(id))
         if os.path.exists(cert_file):
-            logger.info('Certificate {} already exists'.format(cert_file, loc))
+            logger.info('Certificate {} already exists'.format(cert_file))
             return
 
         with open(cert_file, 'w') as w_file:
@@ -153,28 +155,45 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         logger.info('Certificate {} inserted to {}'.format(cert_file, loc))
 
     def rollback(self) -> None:
-        CertFileDB.clean_storage_target(self._transaction)
+        CertFileDB.clean_storage_dir(self._transaction)
         self._transaction.clear()
+        self._delete.clear()
 
     def commit(self, cores=1) -> None:
+        # Handle delete first because sequence matter
+        self._delete_certs(self._delete)
+        logger.info('Deleted {} targets'.format(len(self._delete)))
+        self._delete.clear()
+        # Now insertion can be safely performed
         if cores > 1:
             for target in self._transaction:
                 # TODO use multiprocessing
                 # import multiprocessing as mp
                 for target in self._transaction:
                     logger.debug('Add target to async pool: {}'.format(target))
-                    # add persist_and_clean_storage_target(target in ) to pool
+                    # add persist_and_clean_storage_dir(target in ) to pool
                     pass
         else:
             for target in self._transaction:
-                logger.debug('Commit target: {}'.format(target))
-                CertFileDB.persist_and_clean_storage_target(target)
+                logger.debug('Insert target: {}'.format(target))
+                CertFileDB.persist_and_clean_storage_dir(target)
 
-        logger.info('Committed {} targets'.format(len(self._transaction)))
+        logger.info('Inserted {} targets'.format(len(self._transaction)))
         self._transaction.clear()
 
-    def remove(self, id: str) -> bool:
-        raise NotImplementedError
+    def delete(self, id: str):
+        if not id:
+            raise CertInvalidError('id <{}> invalid'.format(id))
+        # Immediatelly delete certificate in open transaction if exists
+        loc = self._create_cert_location(id)
+        cert_file = os.path.join(loc, self._id_to_filename(id))
+        if os.path.exists(cert_file):
+            os.remove(cert_file)
+            if not os.listdir(loc):
+                self._transaction.remove(loc)
+                CertFileDB.clean_storage_dir(loc)
+        else:
+            self._delete.add(id)
 
     def _create_cert_location(self, id: str) -> str:
         loc = self._get_cert_location(id)
@@ -185,8 +204,8 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         return loc
 
     @staticmethod
-    def persist_and_clean_storage_target(target):
-        zipfilename = target + '.zip'
+    def persist_and_clean_storage_dir(dir):
+        zipfilename = dir + '.zip'
         if os.path.exists(zipfilename):
             append = True
             logger.debug('Opening zipfile: {}'.format(zipfilename))
@@ -194,24 +213,44 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             append = False
             logger.debug('Creating zipfile: {}'.format(zipfilename))
 
+        # TODO compare performance for higher compresslevel
+        # TODO replace ZipFile(zipfilename, "a" if append else "w", ZIP_DEFLATED) with method ?
         with ZipFile(zipfilename, "a" if append else "w", ZIP_DEFLATED) as zf:
-            certs = os.listdir(target)
+            certs = os.listdir(dir)
             if append:
                 certs = [c for c in certs if c not in zf.namelist()]
 
             for cert_name in certs:
                 logger.debug('Zipping: {}'.format(cert_name))
-                cert_file = os.path.join(target, cert_name)
+                cert_file = os.path.join(dir, cert_name)
                 zf.write(cert_file, cert_name)
 
-        CertFileDB.clean_storage_target(target)
+        CertFileDB.clean_storage_dir(dir)
 
     @staticmethod
-    def clean_storage_target(target):
-        if type(target) is set:
-            for t in target:
-                CertFileDB.clean_storage_target(t)
+    def clean_storage_dir(dir):
+        if type(dir) is set:
+            for t in dir:
+                CertFileDB.clean_storage_dir(t)
         else:
-            shutil.rmtree(target)
+            shutil.rmtree(dir)
+            logger.debug('Directory cleaned: {}'.format(dir))
 
-        logger.debug('Target cleaned: {}'.format(target))
+    def _delete_certs(self, id):
+        # TODO group by the same zipfile and handle the group once to improve performance
+        if type(id) is set:
+            for c in id:
+                CertFileDB._delete_certs(self, c)
+        else:
+            # DELETE persisted certificate from zipfile
+            zipfilename = self._create_cert_location(id) + '.zip'
+            if not os.path.exists(zipfilename):
+                return
+
+            with ZipFile(zipfilename, 'r', ZIP_DEFLATED) as zin, \
+                 ZipFile(zipfilename, 'w', ZIP_DEFLATED) as zout:
+                for item in zin.infolist():
+                    buffer = zin.read(item.filename)
+                    if(item.filename != self._id_to_filename(id)):
+                        zout.writestr(item, buffer)
+            logger.debug('Certificate deleted: {}'.format(id))
