@@ -18,6 +18,7 @@ import shutil
 import logging
 from zipfile import ZipFile, ZIP_DEFLATED
 from cevast.certdb import CertDB, CertDBReadOnly, CertNotAvailableError, CertInvalidError
+from cevast.utils import make_PEM_filename
 
 __author__ = 'Radim Podola'
 
@@ -43,7 +44,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
 
     def get(self, id: str) -> str:
         loc = self._get_cert_location(id)
-        filename = self._id_to_filename(id)
+        filename = make_PEM_filename(id)
         # Check if certificate exists as a file (in case of open transaction)
         if self._transaction:
             cert_file = os.path.join(loc, filename)
@@ -68,7 +69,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
 
     def export(self, id: str, target_dir: str) -> str:
         loc = self._get_cert_location(id)
-        filename = self._id_to_filename(id)
+        filename = make_PEM_filename(id)
         # Check if certificate exists as a file (in case of open transaction)
         if self._transaction:
             cert_src_file = os.path.join(loc, filename)
@@ -92,9 +93,10 @@ class CertFileDBReadOnly(CertDBReadOnly):
 
     def exists(self, id: str) -> bool:
         loc = self._get_cert_location(id)
+        cert_filename = make_PEM_filename(id)
         # Check if certificate exists as a file (in case of open transaction)
         if self._transaction:
-            cert_file = os.path.join(loc, self._id_to_filename(id))
+            cert_file = os.path.join(loc, cert_filename)
             if os.path.exists(cert_file):
                 logger.debug('<{}> exists'.format(cert_file))
                 return True
@@ -102,7 +104,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
         try:
             zip_file = loc + '.zip'
             with ZipFile(zip_file, 'r', ZIP_DEFLATED) as zf:
-                zf.getinfo(self._id_to_filename(id))
+                zf.getinfo(cert_filename)
                 logger.debug('<{}> exists in <{}>'.format(id, zip_file))
                 return True
         except (KeyError, FileNotFoundError):
@@ -121,11 +123,6 @@ class CertFileDBReadOnly(CertDBReadOnly):
     def _get_cert_location(self, id: str) -> str:
         return os.path.join(self._cert_storage, id[:2], id[:4])
 
-    # TODO move to utils
-    @staticmethod
-    def _id_to_filename(id: str) -> str:
-        return id + '.pem'
-
 
 class CertFileDB(CertDB, CertFileDBReadOnly):
 
@@ -143,7 +140,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             raise CertInvalidError('id <{}> or cert <{}> invalid'.format(id, cert))
         # Save certificate to temporary file
         loc = self._create_cert_location(id)
-        cert_file = os.path.join(loc, self._id_to_filename(id))
+        cert_file = os.path.join(loc, make_PEM_filename(id))
         if os.path.exists(cert_file):
             logger.info('Certificate {} already exists'.format(cert_file))
             return
@@ -186,7 +183,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             raise CertInvalidError('id <{}> invalid'.format(id))
         # Immediatelly delete certificate in open transaction if exists
         loc = self._create_cert_location(id)
-        cert_file = os.path.join(loc, self._id_to_filename(id))
+        cert_file = os.path.join(loc, make_PEM_filename(id))
         if os.path.exists(cert_file):
             os.remove(cert_file)
             if not os.listdir(loc):
@@ -240,7 +237,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         # TODO group by the same zipfile and handle the group once to improve performance
         if type(id) is set:
             for c in id:
-                CertFileDB._delete_certs(self, c)
+                self._delete_certs(c)
         else:
             # DELETE persisted certificate from zipfile
             zipfilename = self._create_cert_location(id) + '.zip'
@@ -251,6 +248,6 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
                  ZipFile(zipfilename, 'w', ZIP_DEFLATED) as zout:
                 for item in zin.infolist():
                     buffer = zin.read(item.filename)
-                    if(item.filename != self._id_to_filename(id)):
+                    if(item.filename != make_PEM_filename(id)):
                         zout.writestr(item, buffer)
             logger.debug('Certificate deleted: {}'.format(id))

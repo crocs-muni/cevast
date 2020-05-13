@@ -12,3 +12,7 @@ def validate_PEM(cert: str) -> bool:
 
 def BASE64_to_PEM(cert: str) -> str:
     return '-----BEGIN CERTIFICATE-----' + '\n' + cert + '\n' + '-----END CERTIFICATE-----'
+
+
+def make_PEM_filename(id: str) -> str:
+    return id + '.pem'
