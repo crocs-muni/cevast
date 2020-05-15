@@ -3,87 +3,113 @@
 import logging
 import gzip
 import io
-from sortedcontainers import SortedList
+import json
+from contextlib import ExitStack
 from cevast.dataset.dataset_manager import DatasetType
-from cevast.certdb import CertFileDB
+from cevast.certdb import CertDB
+from cevast.utils import BASE64_to_PEM
 
 __author__ = 'Radim Podola'
 
 logger = logging.getLogger(__name__)
 
 
+# TODO here   - common_pool/       - additional pool of common certificates downloaded separately from datasets
+
 class RapidParser:
 
     dataset_type = DatasetType.RAPID
 
-    def __init__(self, dataset_certs, dataset_hosts, target_folder):
+    # TODO design init and config properly
+    def __init__(self, dataset_certs, dataset_hosts, dataset_id):
         self.dataset_certs = dataset_certs
         self.dataset_hosts = dataset_hosts
-        self.target_folder = target_folder
-        logger.info('I am RapidParser: {}:{}'.format(dataset_certs, dataset_hosts))
+        self.dataset_id = dataset_id
+        logger.info('I am RapidParser: {}:{}:{}'.format(dataset_id, dataset_certs, dataset_hosts))
 
     # a class method to create a RapidParser object from config file.
     @classmethod
     def fromConfig(cls, config):
         return cls(config['dataset_certs'],
                    config['dataset_hosts'],
-                   config['target_folder'])
+                   config['dataset_id'])
 
-    def parse(self, cert_db: CertFileDB, separate_broken_chains=True):
-        logger.info('Start parsing hosts dataset: {}'.format(self.dataset_hosts))
+    def parse(self, certdb: CertDB, separate_broken_chains=True):
+        def write_chain(ip: str, chain: list):
+            dataset_meta['total_hosts'] += 1
+            if separate_broken_chains:
+                # Compute difference
+                diff = set(chain) - available_certs
+                # Try to find the remaining certs in DB
+                if not diff or certdb.exists_all(list(diff)):
+                    f_full_chains.write(ip + ',' + ','.join(shas))
+                else:
+                    dataset_meta['broken_chains'] += 1
+                    f_broken_chains.write(ip + ',' + ','.join(shas))
+            else:
+                f_full_chains.write(ip + ',' + ','.join(shas))
 
-        # dict to keep tracking unique servers found in hosts file
-        hosts = {}
-        # SortedList to keep tracking of probably non-server certificates found in hosts file
-        probably_non_server_certs_sl = SortedList()
+        # During parsing some dataset metadata are collected
+        dataset_meta = {'total_certs': 0,
+                        'total_hosts': 0,
+                        'total_host_certs': 0,
+                        'broken_chains': 0 if separate_broken_chains else -1}
+        available_certs = set()
 
-        available_certs_sl = SortedList()
+        # TODO try catch -> rollback ?
 
-        with gzip.open(self.dataset_hosts, 'rt') as r_file:
-            f = io.BufferedReader(r_file)
-            for line in f:
+        # Parse certificates from dataset
+        logger.info('Start parsing certificates from dataset: {}'.format(self.dataset_certs))
+        with gzip.open(self.dataset_certs, 'rt') as r_file:
+            for line in r_file:
+                dataset_meta['total_certs'] += 1
+                sha, cert = self.parse_certs_line(line)
+
+                certdb.insert(sha, BASE64_to_PEM(cert))
+                # Track managed certs for broken chain separation
+                if separate_broken_chains:
+                    available_certs.add(sha)
+
+        # Parse host scans from dataset
+        logger.info('Start parsing host scans from dataset: {}'.format(self.dataset_hosts))
+        chain = []
+        last = None
+        with ExitStack() as stack:
+            r_file = stack.enter_context(gzip.open(self.dataset_hosts, 'rt', ))
+            f_full_chains = stack.enter_context(gzip.open(self.dataset_id + ".gz", 'wt'))
+            if separate_broken_chains:
+                f_broken_chains = stack.enter_context(gzip.open(self.dataset_id + '_broken.gz', 'wt'))
+
+            for line in r_file:
+                dataset_meta['total_host_certs'] += 1
                 ip, sha = self.parse_hosts_line(line)
 
-                if ip in hosts:
-                    # building chain
-                    hosts[ip].append(sha)
+                if last and ip != last:
+                    # Writing the chain
+                    write_chain(ip, chain)
+                    chain.clear()
+                # Building the chain
+                chain.append(sha)
+                last = ip
+            # Writing last chain
+            write_chain(ip, chain)
 
-                    if sha not in probably_non_server_certs_sl:
-                        probably_non_server_certs_sl.add(sha)
-                else:
-                    hosts[ip] = [sha]
+        # Commit inserted certificates now
+        # certdb.exists_all is faster before commit
+        certdb.commit()
 
-        logger.info('Start parsing certs dataset: {}'.format(self.dataset_certs))
-
-        with gzip.open(self.dataset_certs, 'rt') as r_file:
-            f = io.BufferedReader(r_file)
-            for line in f:
-                sha, cert = self.parse_certs_line(line)
-                available_certs_sl.add(sha)
-
-                cert_db.insert(sha, cert, sha in probably_non_server_certs_sl)
-
-        logger.info('Writing metadata files about dataset')
-        logger.debug('{} hosts entries parsed'.format(len(hosts)))
-
-        chains_file = gzip.GzipFile(self.target_folder + ".gz", 'wb')
-        broken_chains_file = gzip.GzipFile(self.target_folder + "_broken.gz", 'wb')
-
-        for ip, shas in hosts.items():
-            if cert_db.exists_all(shas, False):
-                chains_file.write(bytes(ip + ',' + ','.join(shas) + '\n', encoding='utf8'))
-            else:
-                broken_chains_file.write(bytes(ip + ',' + ','.join(shas) + '\n', encoding='utf8'))
-
-        chains_file.close()
-        broken_chains_file.close()
-
-        cert_db.commit()
+        # Store dataset metadata
+        meta_filename = self.dataset_id + '.json'
+        meta_str = json.dumps(dataset_meta, sort_keys=True, indent=4))
+        logger.info('Storing metadata file about dataset: {}'.format(meta_filename))
+        logger.debug(meta_str)
+        with open(meta_filename, 'w') as outfile:
+            outfile.write(meta_str)
 
     @staticmethod
     def parse_hosts_line(line):
-        return [x.strip() for x in line.decode('utf-8').split(',')]
+        return [x.strip() for x in line.split(',')]
 
     @staticmethod
     def parse_certs_line(line):
-        return [x.strip() for x in line.decode('utf-8').split(',')]
+        return [x.strip() for x in line.split(',')]

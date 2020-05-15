@@ -5,7 +5,6 @@ __version__ = '0.1'
 __author__ = 'Radim Podola'
 
 from cevast.dataset import DatasetType
-
 from .rapid7 import RapidParser
 
 
