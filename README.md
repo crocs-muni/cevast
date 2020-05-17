@@ -1,6 +1,9 @@
 Cevast: Certificate Validation Statistics Tool
 ==============================================
 
+![Python application](https://github.com/crocs-muni/cert-validation-stats/workflows/Python%20application/badge.svg?branch=master)
+
+
 Installation
 ------------
 
