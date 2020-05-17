@@ -25,7 +25,7 @@ def __rotator(source, dest):
     os.remove(source)
 
 
-def setup_cevast_logger(debug: bool = False) -> logging.Logger:
+def setup_cevast_logger(debug: bool = False, process_id: bool = False) -> logging.Logger:
     """
     Setup the project logger 'CEVAST'.
 
@@ -41,7 +41,16 @@ def setup_cevast_logger(debug: bool = False) -> logging.Logger:
         os.mkdir(LOG_DIR)
 
     # Setup formatter
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
+    if process_id:
+        formatter = logging.Formatter(
+            '[%(process)d] %(asctime)s - %(levelname)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s',
+            datefmt='%m/%d/%Y %H:%M:%S',
+        )
+    else:
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s',
+            datefmt='%m/%d/%Y %H:%M:%S',
+        )
 
     # Setup handler writing error-like logs to console
     console_handler = logging.StreamHandler(sys.stdout)

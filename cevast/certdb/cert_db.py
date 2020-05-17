@@ -25,62 +25,56 @@ __author__ = 'Radim Podola'
 
 class CertNotAvailableError(Exception):
     """Raised when the certificate is not available in database"""
-    pass
 
 
-class CertInvalidError(Exception):
+class CertInvalidError(ValueError):
     """Raised when the certificate has an invalid identifier or a structure"""
-    pass
 
 
 class CertDBReadOnly(ABC):
     """Abstract class representing read-only CertDB interface."""
 
     @abstractmethod
-    def get(self, id: str) -> str:
+    def get(self, cert_id: str) -> str:
         """Retrieve the certificate from the database.
-           'id' is the certificate identifier.
+           'cert_id' is the certificate identifier.
            Certificate is returned in a PEM format.
            Raise CertNotAvailableError if the certificate is not found.
         """
-        pass
 
     @abstractmethod
-    def export(self, id: str, target_dir: str) -> str:
+    def export(self, cert_id: str, target_dir: str) -> str:
         """Export the certificate from the database and
            saves it as a PEM file in the 'target_dir' directory.
-           'id' is the certificate identifier.
+           'cert_id' is the certificate identifier.
            Full path of the certificate file is returned.
            Raise CertNotAvailableError if the certificate is not found.
         """
-        pass
 
     @abstractmethod
-    def exists(self, id: str) -> bool:
+    def exists(self, cert_id: str) -> bool:
         """Test whether a certificate exists in the database.
-           'id' is the certificate identifier.
+           'cert_id' is the certificate cert_identifier.
         """
-        pass
 
     @abstractmethod
-    def exists_all(self, ids: list) -> bool:
+    def exists_all(self, cert_ids: list) -> bool:
         """Test that all certificates exist in the database.
-           'ids' is a list of certificate identifiers.
+           'cert_ids' is a list of certificate identifiers.
         """
-        pass
 
 
+# TODO add PURGE method for completely deleteting the storage
 class CertDB(CertDBReadOnly):
     """Abstract class representing CertDB interface."""
 
     @abstractmethod
-    def insert(self, id: str, cert: str) -> None:
-        """Insert the certificate to the database under 'id' identifier.
+    def insert(self, cert_id: str, cert: str) -> None:
+        """Insert the certificate to the database under 'cert_id' identifier.
            Inserted certificate is not persisted immediatelly but
            remains in current open transaction untill commit or rollback.
            A expected format of certificate is PEM.
         """
-        pass
 
     @abstractmethod
     def rollback(self) -> None:
@@ -88,7 +82,6 @@ class CertDB(CertDBReadOnly):
            All inserted certificates waiting to persist are removed.
            All deleted certificates in the current transaction stay untouched.
         """
-        pass
 
     @abstractmethod
     def commit(self, cores=1) -> None:
@@ -96,13 +89,11 @@ class CertDB(CertDBReadOnly):
            All inserted certificates waiting to persist are persisted.
            All deleted certificates in the current transaction are permanently removed.
         """
-        pass
 
     @abstractmethod
-    def delete(self, id: str):
+    def delete(self, cert_id: str):
         """Delete the certificate from the database.
            Persisted certificate is not immediatelly deleted but
            remains untill commit or rollback. Certificate inserted
            in the current transaction is deleted immediatelly.
         """
-        pass

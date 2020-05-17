@@ -11,7 +11,7 @@ from cevast.utils import BASE64_to_PEM
 
 __author__ = 'Radim Podola'
 
-log = logging.getLogger('cevast.RapidParser')
+log = logging.getLogger(__name__)
 
 # TODO - common_pool/  - additional pool of common certificates downloaded separately from datasets
 # -- use CertFileDB with 0 level hierarchy??

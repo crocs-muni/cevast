@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     env:
-      targets: cevast tests
+      targets: cevast/utils cevast/dataset/parser cevast/certdb
 
     runs-on: ubuntu-latest
 
