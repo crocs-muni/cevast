@@ -6,13 +6,15 @@ __author__ = 'Radim Podola'
 
 
 def validate_PEM(cert: str) -> bool:
-    return cert.startswith('-----BEGIN CERTIFICATE-----\n') and \
-           cert.endswith('\n-----END CERTIFICATE-----')
+    """Simply verify the PEM certificate format"""
+    return cert.startswith('-----BEGIN CERTIFICATE-----\n') and cert.endswith('\n-----END CERTIFICATE-----')
 
 
 def BASE64_to_PEM(cert: str) -> str:
+    """Convert a raw BASE64 encoded certificate to PEM format"""
     return '-----BEGIN CERTIFICATE-----' + '\n' + cert + '\n' + '-----END CERTIFICATE-----'
 
 
-def make_PEM_filename(id: str) -> str:
-    return id + '.pem'
+def make_PEM_filename(cert_id: str) -> str:
+    """Create a filename for PEM certificate"""
+    return cert_id + '.pem'
