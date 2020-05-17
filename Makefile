@@ -19,7 +19,7 @@ check:
 	$(interpret) -m pylint -f colorized --max-line-length=$(max_line_len) --fail-under=7 $(trg)
 
 format:
-	$(interpret) -m black --target-version py36 -S --diff $(trg) | vim -R -
+	$(interpret) -m black -l $(max_line_len) --target-version py36 -S --diff $(trg) | vim -R -
 
 clear:
 	rm -rf build/

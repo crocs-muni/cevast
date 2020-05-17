@@ -2,6 +2,6 @@
 
 __version__ = '0.1'
 __author__ = 'Radim Podola'
-__all__ = ('DatasetType', 'DatasetManager')
+__all__ = ('DatasetType')
 
-from .dataset_manager import DatasetType, DatasetManager
+from .dataset_manager import DatasetType
