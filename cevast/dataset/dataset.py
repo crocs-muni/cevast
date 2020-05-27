@@ -3,6 +3,7 @@ This module contains structures and classes logically related to a dataset.
 """
 
 from enum import Enum
+from typing import List
 
 
 class DatasetType(Enum):
@@ -31,5 +32,7 @@ class DatasetRepository():
     """
 
     def __init__(self, repository: str):
+        pass
 
-    def lists() -> list(Dataset):
+    def lists(self) -> List[Dataset]:
+        pass
