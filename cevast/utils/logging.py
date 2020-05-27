@@ -58,7 +58,9 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -> loggin
     console_handler.setFormatter(formatter)
 
     # Setup handler writing logs to a file with compressing of the rotated files
-    file_handler = logging.handlers.RotatingFileHandler(os.path.join(LOG_DIR, LOG_FILENAME), maxBytes=10000000, backupCount=30)
+    file_handler = logging.handlers.RotatingFileHandler(
+        os.path.join(LOG_DIR, LOG_FILENAME), maxBytes=200000000, backupCount=10
+    )
     file_handler.setFormatter(formatter)
     file_handler.rotator = __rotator
     file_handler.namer = __namer
