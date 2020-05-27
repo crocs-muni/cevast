@@ -33,14 +33,11 @@ log = logging.getLogger(__name__)
 # TODO add storage certFileDB metafile with:
 # - structure_level
 # - compression method/level
-# - number of cer managed
+# - number of cert managed
 # - open transaction Flag - will be set by INSERT/REMOVE/ROLLBACK/COMMIT -> OpenTransaction/CloseTransaction decorator ??
-# - maybe inetrnal strucure PEM vs DES,...
-# TODO add structure level ? higher level for more records, 0 level for common pool ?
-# TODO add cache of managed certs to improve lookup performance -> exists, etc...
-#  - insert and True Exists will add to cache
-#  - remove and rollback will remove from cache
-# TODO remove certs/ block
+# - maybe internal structure PEM vs DES,...
+# TODO make persist_and_clear_storage/clear_storage utility method that will identify blocks itself
+# TODO change export to optionally not copy file only return path is exists not persisted
 
 
 class CertFileDBReadOnly(CertDBReadOnly):
@@ -49,26 +46,28 @@ class CertFileDBReadOnly(CertDBReadOnly):
     and a file system properties as a storage mechanism.
     """
 
-    CERT_STORAGE_NAME = 'certs'
-
-    def __init__(self, storage: str):
-        # Init attributes
+    def __init__(self, storage: str, structure_level: int = 2):
+        # Init DB variables
         log.info('Initializing... %s at storage %s', self.__class__.__name__, storage)
-        self.storage = os.path.abspath(storage)
-        self._transaction: set = set()
-        self._delete: set = set()
-        # Init certificate storage location
-        self._cert_storage = os.path.join(self.storage, self.CERT_STORAGE_NAME)
-        log.debug('cert storage: %s', self._cert_storage)
+        # Set containing all target blocks that will be persisted with commit
+        self._to_insert: set = set()
+        # Set containing all certificates that will be deleted with commit
+        self._to_delete: set = set()
+        # Set maintaining all known certificate IDs for better EXISTS performance
+        self._cache: set = set()
+        # Init storage attributes
+        self._storage = os.path.abspath(storage)
+        self._structure_level = structure_level
+        log.debug('cert storage: %s', self._storage)
 
-        if not os.path.exists(self._cert_storage):
+        if not os.path.exists(self._storage):
             raise ValueError('Storage location does not exists')
 
     def get(self, cert_id: str) -> str:
         loc = self._get_cert_location(cert_id)
         filename = make_PEM_filename(cert_id)
         # Check if certificate exists as a file (in case of open transaction)
-        if self._transaction:
+        if self._to_insert:
             cert_file = os.path.join(loc, filename)
             try:
                 with open(cert_file, 'r') as source:
@@ -93,7 +92,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
         loc = self._get_cert_location(cert_id)
         filename = make_PEM_filename(cert_id)
         # Check if certificate exists as a file (in case of open transaction)
-        if self._transaction:
+        if self._to_insert:
             cert_src_file = os.path.join(loc, filename)
             cert_trg_file = os.path.join(target_dir, filename)
             if os.path.exists(cert_src_file):
@@ -114,13 +113,19 @@ class CertFileDBReadOnly(CertDBReadOnly):
         raise CertNotAvailableError(cert_id)
 
     def exists(self, cert_id: str) -> bool:
+        # Check the cache first
+        if cert_id in self._cache:
+            log.debug('<%s> found in cache', cert_id)
+            return True
+
         loc = self._get_cert_location(cert_id)
         cert_filename = make_PEM_filename(cert_id)
         # Check if certificate exists as a file (in case of open transaction)
-        if self._transaction:
+        if self._to_insert:
             cert_file = os.path.join(loc, cert_filename)
             if os.path.exists(cert_file):
                 log.debug('<%s> exists in open transaction', cert_file)
+                self._cache.add(cert_id)
                 return True
         # Check if certificate exists in a zipfile
         try:
@@ -128,6 +133,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
             with ZipFile(zip_file, 'r', ZIP_DEFLATED) as z_obj:
                 z_obj.getinfo(cert_filename)
                 log.debug('<%s> exists persisted <%s>', cert_id, zip_file)
+                self._cache.add(cert_id)
                 return True
         except (KeyError, FileNotFoundError):
             pass
@@ -143,7 +149,8 @@ class CertFileDBReadOnly(CertDBReadOnly):
         return True
 
     def _get_cert_location(self, cert_id: str) -> str:
-        return os.path.join(self._cert_storage, cert_id[:2], cert_id[:4])
+        paths = [cert_id[: 2 + i] for i in range(self._structure_level)]
+        return os.path.join(self._storage, *paths)
 
 
 class CertFileDB(CertDB, CertFileDBReadOnly):
@@ -152,11 +159,11 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
     and a file system properties as a storage mechanism.
     """
 
-    def __init__(self, storage: str):
+    def __init__(self, storage: str, structure_level: int = 2):
         try:
-            CertFileDBReadOnly.__init__(self, storage)
+            CertFileDBReadOnly.__init__(self, storage, structure_level)
         except ValueError:
-            os.makedirs(self._cert_storage, exist_ok=True)
+            os.makedirs(self._storage, exist_ok=True)
 
     def insert(self, cert_id: str, cert: str) -> None:
         if not cert_id or not cert:
@@ -171,35 +178,37 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         with open(cert_file, 'w') as w_file:
             w_file.write(cert)
 
-        self._transaction.add(loc)
+        self._to_insert.add(loc)
+        self._cache.add(cert_id)
         log.debug('Certificate %s inserted to %s', cert_id, loc)
 
     def rollback(self) -> None:
         log.info('Rollback started')
-        CertFileDB.clear_storage_block(self._transaction)
-        self._transaction.clear()
-        self._delete.clear()
+        CertFileDB.clear_storage_block(self._to_insert)
+        self._to_insert.clear()
+        self._to_delete.clear()
+        self._cache.clear()
         log.info('Rollback finished')
 
     def commit(self, cores=1) -> None:
         log.info('Commit started')
         # Handle delete first because sequence matter
-        self._delete_certs(self._delete)
-        log.info('Deleted %d certificates', len(self._delete))
-        self._delete.clear()
+        self._delete_certs(self._to_delete)
+        log.info('Deleted %d certificates', len(self._to_delete))
+        self._to_delete.clear()
         # Now insertion can be safely performed
         if cores > 1:
             # TODO use multiprocessing
             # import multiprocessing as mp
-            for target in self._transaction:
+            for target in self._to_insert:
                 log.debug('Async: Persisting %s group', target)
                 # add persist_and_clean_storage_dir(target in ) to pool
         else:
-            for target in self._transaction:
+            for target in self._to_insert:
                 log.debug('Persisting %s group', target)
                 CertFileDB.persist_and_clear_storage_block(target)
 
-        self._transaction.clear()
+        self._to_insert.clear()
         log.info('Commit finished')
 
     def delete(self, cert_id: str):
@@ -212,15 +221,17 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             log.debug('Certificate %s deleted from open transaction', cert_id)
             os.remove(cert_file)
             if not os.listdir(loc):
-                self._transaction.remove(loc)
+                self._to_insert.remove(loc)
                 CertFileDB.clear_storage_block(loc)
         else:
-            self._delete.add(cert_id)
+            self._to_delete.add(cert_id)
+
+        self._cache.discard(cert_id)
 
     def _create_cert_location(self, cert_id: str) -> str:
         loc = self._get_cert_location(cert_id)
         # Check if location wasn't already created
-        if loc not in self._transaction:
+        if loc not in self._to_insert:
             os.makedirs(loc, exist_ok=True)
 
         return loc
