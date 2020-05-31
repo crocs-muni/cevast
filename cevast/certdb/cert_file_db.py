@@ -5,19 +5,41 @@ This module contains implementation of CertFileDB
     and a file system properties as a storage mechanism.
 
 Storage structure on the file system:
-storage                  - path to the storage given as an initial parameter to CertFileDB
-    - certs/             - hierarchy of certificate blocks (group of certificates with equal prefix)
-        - id[2]/         - first 2 characters of certificate ID (fingerprint) make block (e.g. 1a/)
-            - id[4].zip  - first 4 characters of certificate ID (fingerprint) (e.g. 1a9f.zip)
-            - ...
+storage/             - path to the storage given as an initial parameter to CertFileDB containing
+                       hierarchy of certificate blocks (group of certificates with equal prefix)
+    - id[2]/         - first 2 characters of certificate ID (fingerprint) make block (e.g. 1a/)
+        - id[3].zip  - first 2 characters of certificate ID (fingerprint) (e.g. 1af.zip)
         - ...
-        - .CertFileDB    - CertFileDB storage metafile
+    - ...
+    - .CertFileDB.toml    - CertFileDB configuration file
+
+.CertFileDB.toml example:
+[PARAMETERS]
+storage = "/var/tmp/cevast_storage"
+structure_level = 2
+cert_format = "PEM"
+compression_method = "ZIP_DEFLATED"
+
+[INFO]
+owner = "cevast"
+description = "Certificate storage for Cevast tool"
+created = "2020-02-30 14:23:18"
+number_of_certificates = 2013562
+last_commit = "2020-05-30 22:44:48"
+
+[HISTORY]
+a = 1
+b = 2
+"2020-05-30 22:44:48" = "added=5; removed=1;"
 """
 
 import os
 import shutil
 import logging
+from datetime import datetime
+from collections import OrderedDict
 from zipfile import ZipFile, ZIP_DEFLATED
+import toml
 from cevast.utils import make_PEM_filename
 from cevast.certdb.cert_db import (
     CertDB,
@@ -30,14 +52,13 @@ __author__ = 'Radim Podola'
 
 log = logging.getLogger(__name__)
 
-# TODO add storage certFileDB metafile with:
-# - structure_level
-# - compression method/level
-# - number of cert managed
+# TODO parallel transaction checking - mmap
 # - open transaction Flag - will be set by INSERT/REMOVE/ROLLBACK/COMMIT -> OpenTransaction/CloseTransaction decorator ??
-# - maybe internal structure PEM vs DES,...
+# - allow_more_transaction Flag that will not raise DBInUse error??
+# TODO maintain history upon commits
 # TODO make persist_and_clear_storage/clear_storage utility method that will identify blocks itself
 # TODO change export to optionally not copy file only return path is exists not persisted
+# TODO change insert/detele to block sets - dict with block Sets()
 
 
 class CertFileDBReadOnly(CertDBReadOnly):
@@ -46,22 +67,25 @@ class CertFileDBReadOnly(CertDBReadOnly):
     and a file system properties as a storage mechanism.
     """
 
-    def __init__(self, storage: str, structure_level: int = 2):
-        # Init DB variables
-        log.info('Initializing... %s at storage %s', self.__class__.__name__, storage)
+    _CONF_FILE = '.CertFileDB.toml'
+
+    def __init__(self, storage: str):
+        # Get config
+        try:
+            config_path = os.path.join(os.path.abspath(storage), self._CONF_FILE)
+            self._config = toml.load(config_path)
+            self._params = self._config['PARAMETERS']
+            log.info('Found CertFileDB <%s>:\n%s', config_path, self._config)
+        except FileNotFoundError:
+            raise ValueError('CertFileDB <{}> does not exists -> call CertFileDB.setup() first'.format(config_path))
+        # Init DB instance
+        log.info('Initializing %s...', self.__class__.__name__)
         # Set containing all target blocks that will be persisted with commit
         self._to_insert: set = set()
         # Set containing all certificates that will be deleted with commit
         self._to_delete: set = set()
         # Set maintaining all known certificate IDs for better EXISTS performance
         self._cache: set = set()
-        # Init storage attributes
-        self._storage = os.path.abspath(storage)
-        self._structure_level = structure_level
-        log.debug('cert storage: %s', self._storage)
-
-        if not os.path.exists(self._storage):
-            raise ValueError('Storage location does not exists')
 
     def get(self, cert_id: str) -> str:
         loc = self._get_cert_location(cert_id)
@@ -149,8 +173,8 @@ class CertFileDBReadOnly(CertDBReadOnly):
         return True
 
     def _get_cert_location(self, cert_id: str) -> str:
-        paths = [cert_id[: 2 + i] for i in range(self._structure_level)]
-        return os.path.join(self._storage, *paths)
+        paths = [cert_id[: 2 + i] for i in range(self._params['structure_level'])]
+        return os.path.join(self._params['storage'], *paths)
 
 
 class CertFileDB(CertDB, CertFileDBReadOnly):
@@ -159,11 +183,37 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
     and a file system properties as a storage mechanism.
     """
 
-    def __init__(self, storage: str, structure_level: int = 2):
-        try:
-            CertFileDBReadOnly.__init__(self, storage, structure_level)
-        except ValueError:
-            os.makedirs(self._storage, exist_ok=True)
+    @staticmethod
+    def setup(storage_path: str, structure_level: int = 2, cert_format: str = 'PEM',
+              desc: str = 'CertFileDB', owner: str = '') -> None:
+        """
+        Setup CertFileDB storage directory with the given parameters.
+        Directory and configuration file CertFileDB.toml is created.
+        Raise ValueError for wrong parameters or if DB already exists.
+        """
+        storage_path = os.path.abspath(storage_path)
+        config_path = os.path.join(storage_path, CertFileDB._CONF_FILE)
+        if os.path.exists(config_path):
+            raise ValueError('CertFileDB already exists')
+        if not isinstance(structure_level, int):
+            raise ValueError('structure_level must be an integer')
+        os.makedirs(storage_path, exist_ok=True)
+        # Create configuration file
+        config = OrderedDict()
+        config['PARAMETERS'] = OrderedDict()
+        config['PARAMETERS']['storage'] = storage_path
+        config['PARAMETERS']['structure_level'] = structure_level
+        config['PARAMETERS']['cert_format'] = cert_format
+        config['PARAMETERS']['compression_method'] = 'ZIP_DEFLATED'
+        config['INFO'] = OrderedDict()
+        config['INFO']['owner'] = owner
+        config['INFO']['description'] = desc
+        config['INFO']['created'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S%Z')
+        config['INFO']['number_of_certificates'] = 0
+        config['INFO']['last_commit'] = ''
+        config['HISTORY'] = OrderedDict()
+        with open(config_path, 'w') as cfg_file:
+            toml.dump(config, cfg_file)
 
     def insert(self, cert_id: str, cert: str) -> None:
         if not cert_id or not cert:
@@ -187,6 +237,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         CertFileDB.clear_storage_block(self._to_insert)
         self._to_insert.clear()
         self._to_delete.clear()
+        # Simply clear the whole cache, there is no good way how to remove single certs
         self._cache.clear()
         log.info('Rollback finished')
 

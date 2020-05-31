@@ -5,6 +5,7 @@ import unittest
 import os
 import shutil
 import subprocess
+import toml
 from cevast.certdb import CertDB, CertFileDB, CertFileDBReadOnly, CertNotAvailableError, CertInvalidError
 
 
@@ -34,7 +35,6 @@ def commit_test_certs(database: CertDB, certs_file: str) -> list:
 # pylint: disable=W0212
 class TestCertFileDBReadOnly(unittest.TestCase):
     TEST_STORAGE = 'tests/test_storage'
-    TEST_STORAGE_CERTS = TEST_STORAGE + '/certs'
 
     def tearDown(self):
         # Clear test storage
@@ -45,7 +45,7 @@ class TestCertFileDBReadOnly(unittest.TestCase):
         Test of CertFileDBReadOnly initialization
         """
         self.assertRaises(ValueError, CertFileDBReadOnly, self.TEST_STORAGE)
-        os.mkdir(self.TEST_STORAGE)
+        CertFileDB.setup(self.TEST_STORAGE)
         # Storage should be now properly initialized
         CertFileDBReadOnly(self.TEST_STORAGE)
 
@@ -53,6 +53,7 @@ class TestCertFileDBReadOnly(unittest.TestCase):
         """
         Test implementation of CertDB method insert
         """
+        CertFileDB.setup(self.TEST_STORAGE)
         db = CertFileDB(self.TEST_STORAGE)
         certs = []
         fake_cert = 'fakecertid'
@@ -75,6 +76,7 @@ class TestCertFileDBReadOnly(unittest.TestCase):
         """
         Test implementation of CertDB method get
         """
+        CertFileDB.setup(self.TEST_STORAGE)
         db = CertFileDB(self.TEST_STORAGE)
         fake_cert_id = 'fakecertid'
         # Insert and commit some certificates and retrieve them back
@@ -110,6 +112,7 @@ class TestCertFileDBReadOnly(unittest.TestCase):
             subprocess.call(['chmod', '+w', fake_target_dir])
             os.rmdir(fake_target_dir)
 
+        CertFileDB.setup(self.TEST_STORAGE)
         db = CertFileDB(self.TEST_STORAGE)
         target_dir = self.TEST_STORAGE + '/export'
         os.mkdir(target_dir)
@@ -158,13 +161,17 @@ class TestCertFileDB(unittest.TestCase):
         Test of CertFileDB initialization
         """
         assert not os.path.exists(self.TEST_STORAGE)
-        CertFileDB(self.TEST_STORAGE)
+        self.assertRaises(ValueError, CertFileDBReadOnly, self.TEST_STORAGE)
+        CertFileDB.setup(self.TEST_STORAGE)
+        # Storage should be now properly initialized
         assert os.path.exists(self.TEST_STORAGE)
+        CertFileDB(self.TEST_STORAGE)
 
     def test_insert(self):
         """
         Test implementation of CertDB method INSERT
         """
+        CertFileDB.setup(self.TEST_STORAGE)
         db = CertFileDB(self.TEST_STORAGE)
         # Insert some invalid certificates
         self.assertRaises(CertInvalidError, db.insert, None, None)
@@ -209,6 +216,7 @@ class TestCertFileDB(unittest.TestCase):
         """
         Test implementation of CertDB method COMMIT
         """
+        CertFileDB.setup(self.TEST_STORAGE)
         db = CertFileDB(self.TEST_STORAGE)
         # Test commit without inserts
         db.commit()
@@ -231,6 +239,7 @@ class TestCertFileDB(unittest.TestCase):
         """
         Test implementation of CertDB method ROLLBACK
         """
+        CertFileDB.setup(self.TEST_STORAGE)
         db = CertFileDB(self.TEST_STORAGE)
         # Test rollback without inserts
         db.rollback()
@@ -268,10 +277,33 @@ class TestCertFileDB(unittest.TestCase):
         """
         Test implementation of CertDB certificate existance cache
         """
+        CertFileDB.setup(self.TEST_STORAGE)
         db = CertFileDB(self.TEST_STORAGE)
         inserted = insert_test_certs(db, TEST_CERTS_1)
         self.assertEqual(db._cache, set(inserted))
         # TODO
+
+    def test_setup(self):
+        """
+        Test implementation of CertFileDB setup method
+        """
+        # Check wrong paramaters
+        self.assertRaises(ValueError, CertFileDB.setup, self.TEST_STORAGE, 'ass')
+        # Setup and check DB
+        CertFileDB.setup(self.TEST_STORAGE, 5, 'DES', 'Testing DB', 'unittest')
+        assert os.path.exists(self.TEST_STORAGE)
+        cfg = toml.load(os.path.join(self.TEST_STORAGE, CertFileDB._CONF_FILE))
+        self.assertEqual(cfg['PARAMETERS']['storage'], os.path.abspath(self.TEST_STORAGE))
+        self.assertEqual(cfg['PARAMETERS']['structure_level'], 5)
+        self.assertEqual(cfg['PARAMETERS']['cert_format'], 'DES')
+        self.assertEqual(cfg['INFO']['description'], 'Testing DB')
+        self.assertEqual(cfg['INFO']['owner'], 'unittest')
+        self.assertEqual(cfg['INFO']['number_of_certificates'], 0)
+        assert 'compression_method' in cfg['PARAMETERS']
+        assert 'last_commit' in cfg['INFO']
+        assert 'HISTORY' in cfg
+        # Try to setup different DB on the same storage
+        self.assertRaises(ValueError, CertFileDB.setup, self.TEST_STORAGE, 1, 'PEM', 'Testing DB 2', 'unittest')
 
 
 if __name__ == '__main__':
