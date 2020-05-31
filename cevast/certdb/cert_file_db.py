@@ -57,7 +57,6 @@ log = logging.getLogger(__name__)
 # - allow_more_transaction Flag that will not raise DBInUse error??
 # TODO maintain history upon commits
 # TODO make persist_and_clear_storage/clear_storage utility method that will identify blocks itself
-# TODO change export to optionally not copy file only return path is exists not persisted
 # TODO change insert/detele to block sets - dict with block Sets()
 
 
@@ -112,16 +111,19 @@ class CertFileDBReadOnly(CertDBReadOnly):
         log.info('<%s> not found', filename)
         raise CertNotAvailableError(cert_id)
 
-    def export(self, cert_id: str, target_dir: str) -> str:
+    def export(self, cert_id: str, target_dir: str, copy_if_exists: bool = True) -> str:
         loc = self._get_cert_location(cert_id)
         filename = make_PEM_filename(cert_id)
         # Check if certificate exists as a file (in case of open transaction)
         if self._to_insert:
             cert_src_file = os.path.join(loc, filename)
-            cert_trg_file = os.path.join(target_dir, filename)
             if os.path.exists(cert_src_file):
-                shutil.copyfile(cert_src_file, cert_trg_file)
                 log.debug('<%s> found in open transaction', cert_src_file)
+                if not copy_if_exists:
+                    return cert_src_file
+                # Copy file to the target directory
+                cert_trg_file = os.path.join(target_dir, filename)
+                shutil.copyfile(cert_src_file, cert_trg_file)
                 return cert_trg_file
         # Check if certificate exists in a zipfile
         try:

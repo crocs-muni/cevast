@@ -126,6 +126,8 @@ class TestCertFileDBReadOnly(unittest.TestCase):
                 self.assertEqual(db.export(cert_id, target_dir), expected)
                 with open(expected) as target:
                     self.assertEqual(target.read(), cert.strip())
+                # Check export without unnecessary copying - should copy anyway because persisted 
+                self.assertEqual(db.export(cert_id, target_dir, copy_if_exists=False), expected)
         # Tests writing permissions for exporting from zipfile
         test_permission(db, cert_id)
         # Only insert other certificates and retrieve them back
@@ -136,6 +138,11 @@ class TestCertFileDBReadOnly(unittest.TestCase):
                 expected = '{}/{}.pem'.format(target_dir, cert_id)
                 self.assertEqual(db.export(cert_id, target_dir), expected)
                 with open(expected) as target:
+                    self.assertEqual(target.read(), cert.strip())
+                # Check export without unnecessary copying
+                file = db.export(cert_id, target_dir, copy_if_exists=False)
+                self.assertNotEqual(file, expected)
+                with open(file) as target:
                     self.assertEqual(target.read(), cert.strip())
             # Tests writing permissions for exporting from transaction
             test_permission(db, cert_id)

@@ -36,31 +36,42 @@ class CertDBReadOnly(ABC):
 
     @abstractmethod
     def get(self, cert_id: str) -> str:
-        """Retrieve the certificate from the database.
-           'cert_id' is the certificate identifier.
-           Certificate is returned in a PEM format.
-           Raise CertNotAvailableError if the certificate is not found.
+        """
+        Retrieve a certificate from the database.
+
+        'cert_id' is the certificate identifier.
+        Certificate is returned in a PEM format.
+        Raise CertNotAvailableError if the certificate is not found.
         """
 
     @abstractmethod
-    def export(self, cert_id: str, target_dir: str) -> str:
-        """Export the certificate from the database and
-           saves it as a PEM file in the 'target_dir' directory.
-           'cert_id' is the certificate identifier.
-           Full path of the certificate file is returned.
-           Raise CertNotAvailableError if the certificate is not found.
+    def export(self, cert_id: str, target_dir: str, copy_if_exists: bool = True) -> str:
+        """
+        Export a certificate from the database and saves it as a PEM file.
+
+        'cert_id' is the certificate identifier,
+        'target_dir' is the target directory.
+        If 'copy_if_exists' is false and file already exists (e.g. temporary in open transaction),
+        the file is not copied to the target directory, instead the existing file path is returned.
+
+        Full path of the certificate file is returned.
+        Raise CertNotAvailableError if the certificate is not found.
         """
 
     @abstractmethod
     def exists(self, cert_id: str) -> bool:
-        """Test whether a certificate exists in the database.
-           'cert_id' is the certificate cert_identifier.
+        """
+        Test whether a certificate exists in the database.
+
+        'cert_id' is the certificate cert_identifier.
         """
 
     @abstractmethod
     def exists_all(self, cert_ids: list) -> bool:
-        """Test that all certificates exist in the database.
-           'cert_ids' is a list of certificate identifiers.
+        """
+        Test that all certificates exist in the database.
+
+        'cert_ids' is a list of certificate identifiers.
         """
 
 
@@ -70,30 +81,38 @@ class CertDB(CertDBReadOnly):
 
     @abstractmethod
     def insert(self, cert_id: str, cert: str) -> None:
-        """Insert the certificate to the database under 'cert_id' identifier.
-           Inserted certificate is not persisted immediatelly but
-           remains in current open transaction untill commit or rollback.
-           A expected format of certificate is PEM.
+        """
+        Insert the certificate to the database under 'cert_id' identifier.
+
+        Inserted certificate is not persisted immediatelly but
+        remains in current open transaction untill commit or rollback.
+        A expected format of certificate is PEM.
         """
 
     @abstractmethod
     def rollback(self) -> None:
-        """Revert the changes made by the current transaction.
-           All inserted certificates waiting to persist are removed.
-           All deleted certificates in the current transaction stay untouched.
+        """
+        Revert the changes made by the current transaction.
+
+        All inserted certificates waiting to persist are removed.
+        All deleted certificates in the current transaction stay untouched.
         """
 
     @abstractmethod
     def commit(self, cores=1) -> None:
-        """Apply the changes made by the current transaction.
-           All inserted certificates waiting to persist are persisted.
-           All deleted certificates in the current transaction are permanently removed.
+        """
+        Apply the changes made by the current transaction.
+
+        All inserted certificates waiting to persist are persisted.
+        All deleted certificates in the current transaction are permanently removed.
         """
 
     @abstractmethod
     def delete(self, cert_id: str):
-        """Delete the certificate from the database.
-           Persisted certificate is not immediatelly deleted but
-           remains untill commit or rollback. Certificate inserted
-           in the current transaction is deleted immediatelly.
+        """
+        Delete the certificate from the database.
+
+        Persisted certificate is not immediatelly deleted but
+        remains untill commit or rollback. Certificate inserted
+        in the current transaction is deleted immediatelly.
         """
