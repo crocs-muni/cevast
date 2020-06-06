@@ -19,6 +19,7 @@ This module provides interface of CertDB class
 """
 
 from abc import ABC, abstractmethod
+from typing import Tuple
 
 __author__ = 'Radim Podola'
 
@@ -90,6 +91,16 @@ class CertDB(CertDBReadOnly):
         """
 
     @abstractmethod
+    def delete(self, cert_id: str):
+        """
+        Delete the certificate from the database.
+
+        Persisted certificate is not immediatelly deleted but
+        remains untill commit or rollback. Certificate inserted
+        in the current transaction is deleted immediatelly.
+        """
+
+    @abstractmethod
     def rollback(self) -> None:
         """
         Revert the changes made by the current transaction.
@@ -99,20 +110,11 @@ class CertDB(CertDBReadOnly):
         """
 
     @abstractmethod
-    def commit(self, cores=1) -> None:
+    def commit(self, cores=1) -> Tuple[int, int]:
         """
         Apply the changes made by the current transaction.
 
         All inserted certificates waiting to persist are persisted.
         All deleted certificates in the current transaction are permanently removed.
-        """
-
-    @abstractmethod
-    def delete(self, cert_id: str):
-        """
-        Delete the certificate from the database.
-
-        Persisted certificate is not immediatelly deleted but
-        remains untill commit or rollback. Certificate inserted
-        in the current transaction is deleted immediatelly.
+        Return tuple of numbers (number of inserted; number of deleted)
         """
