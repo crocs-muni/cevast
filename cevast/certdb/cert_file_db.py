@@ -114,6 +114,10 @@ class CertFileDBReadOnly(CertDBReadOnly):
         log.info('Initializing %s transaction...', self.__class__.__name__)
         # Set maintaining all known certificate IDs for better EXISTS performance
         self._cache: set = set()
+        # Redefine _get_block_path method for special case with structure_level = 0
+        if self._params['structure_level'] == 0:
+            fixed_block_path = os.path.join(self._params['storage'], os.path.basename(storage))
+            self._get_block_path = lambda _: fixed_block_path
 
     def get(self, cert_id: str) -> str:
         block = self._get_block_path(cert_id)
@@ -176,7 +180,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
 
         return True
 
-    def _get_block_path(self, cert_or_block_id: str) -> str:
+    def _get_block_path(self, cert_or_block_id: str) -> str:  # pylint: disable=E0202
         """Return full block path of certificate or block id"""
         paths = [cert_or_block_id[: 2 + i] for i in range(self._params['structure_level'])]
         return os.path.join(self._params['storage'], *paths)
@@ -196,6 +200,10 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         self._to_delete: dict = {}
         # Max number of CPU cores that can be used (-1 is max limit by hardware)
         self.__cores = cpu_cores
+        # Redefine _get_block_id method for special case with structure_level = 0
+        if self._params['structure_level'] == 0:
+            fixed_block_id = os.path.basename(storage)
+            self._get_block_id = lambda _: fixed_block_id
 
     def get(self, cert_id: str) -> str:
         block = self._get_block_path(cert_id)
@@ -398,9 +406,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         if not trans_dict[block_id]:
             del trans_dict[block_id]
 
-    def _get_block_id(self, cert_id: str) -> str:
-        if self._params['structure_level'] == 0:
-            return 'storage'
+    def _get_block_id(self, cert_id: str) -> str:  # pylint: disable=E0202
         return cert_id[: self._params['structure_level'] + 1]
 
     def __write_commit_info(self, inserted: int, deleted: int) -> None:

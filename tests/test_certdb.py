@@ -665,26 +665,27 @@ class TestCertFileDB(unittest.TestCase):
         """
         CertFileDB.setup(self.TEST_STORAGE, structure_level=0)
         db = CertFileDB(self.TEST_STORAGE)
+        storage_dir = os.path.join(self.TEST_STORAGE, os.path.basename(self.TEST_STORAGE))
         # Commit some certificates and check zipfile
         committed = commit_test_certs(db, TEST_CERTS_1)
         assert db.exists_all(committed)
-        assert os.path.exists(self.TEST_STORAGE + '.zip')
+        assert os.path.exists(storage_dir + '.zip')
         # Insert some certificates and check files existance in root folder
         inserted = insert_test_certs(db, TEST_CERTS_2)
         for cert in inserted:
-            assert os.path.exists(os.path.join(self.TEST_STORAGE, make_PEM_filename(cert)))
+            assert os.path.exists(os.path.join(storage_dir, make_PEM_filename(cert)))
             assert db.exists(cert)
         assert db.exists_all(inserted)
         # Rollback check file cleanup
         db.rollback()
         for cert in inserted:
-            assert not os.path.exists(os.path.join(self.TEST_STORAGE, make_PEM_filename(cert)))
+            assert not os.path.exists(os.path.join(storage_dir, make_PEM_filename(cert)))
             assert not db.exists(cert)
         # Delete inserted certificates and check file cleanup
         inserted = insert_test_certs(db, TEST_CERTS_2)
         delete_test_certs(db, TEST_CERTS_2)
         for cert in inserted:
-            assert not os.path.exists(os.path.join(self.TEST_STORAGE, make_PEM_filename(cert)))
+            assert not os.path.exists(os.path.join(storage_dir, make_PEM_filename(cert)))
             assert not db.exists(cert)
         self.assertFalse(db._to_insert)
         self.assertFalse(db._to_delete)
@@ -697,9 +698,9 @@ class TestCertFileDB(unittest.TestCase):
         deleted = delete_test_certs(db, TEST_CERTS_1)
         db.commit()
         for cert in deleted:
-            assert not os.path.exists(os.path.join(self.TEST_STORAGE, make_PEM_filename(cert)))
+            assert not os.path.exists(os.path.join(storage_dir, make_PEM_filename(cert)))
             assert not db.exists(cert)
-        assert not os.path.exists(self.TEST_STORAGE + '.zip')
+        assert not os.path.exists(storage_dir + '.zip')
 
 
 if __name__ == '__main__':
