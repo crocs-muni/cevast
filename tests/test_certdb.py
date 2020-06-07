@@ -703,5 +703,43 @@ class TestCertFileDB(unittest.TestCase):
         assert not os.path.exists(storage_dir + '.zip')
 
 
+class TestCompositeCertDB(unittest.TestCase):
+    """Unit test class of CompositeCertDB class"""
+
+    TEST_STORAGE_1 = 'tests/test_storage1'
+    TEST_STORAGE_2 = 'tests/test_storage2'
+    TEST_STORAGE_3 = 'tests/test_storage3'
+
+    def tearDown(self):
+        # Clear test storage
+        shutil.rmtree(self.TEST_STORAGE_1, ignore_errors=True)
+        shutil.rmtree(self.TEST_STORAGE_2, ignore_errors=True)
+        shutil.rmtree(self.TEST_STORAGE_3, ignore_errors=True)
+
+    def test_component_management(self):
+        pass
+
+    def test_get(self):
+        pass
+
+    def test_export(self):
+        pass
+
+    def test_exists(self):
+        pass
+
+    def test_insert(self):
+        pass
+
+    def test_delete(self):
+        pass
+
+    def test_commit(self):
+        pass
+
+    def test_rollback(self):
+        pass
+
+
 if __name__ == '__main__':
     unittest.main()
