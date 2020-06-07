@@ -102,10 +102,7 @@ class TestCertFileDBReadOnly(unittest.TestCase):
         self.assertEqual(cfg['PARAMETERS']['maintain_info'], True)
         self.assertEqual(cfg['INFO']['description'], 'Testing DB')
         self.assertEqual(cfg['INFO']['owner'], 'unittest')
-        self.assertEqual(cfg['INFO']['number_of_certificates'], 0)
         assert 'compression_method' in cfg['PARAMETERS']
-        assert 'last_commit' in cfg['INFO']
-        assert 'HISTORY' in cfg
         # Try to setup different DB on the same storage
         self.assertRaises(ValueError, CertFileDB.setup, self.TEST_STORAGE, 1, 'PEM', 'Testing DB 2', 'unittest')
 

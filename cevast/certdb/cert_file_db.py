@@ -98,6 +98,8 @@ class CertFileDBReadOnly(CertDBReadOnly):
 
         with open(config_path, 'w') as cfg_file:
             toml.dump(config, cfg_file)
+        log.info('CertFileDB was setup:\n%s', config)
+
 
     def __init__(self, storage: str):
         # Get config
@@ -110,7 +112,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
         except FileNotFoundError:
             raise ValueError('CertFileDB <{}> does not exists -> call CertFileDB.setup() first'.format(config_path))
         # Init DB instance
-        log.info('Initializing %s...', self.__class__.__name__)
+        log.info('Initializing %s transaction...', self.__class__.__name__)
         # Set maintaining all known certificate IDs for better EXISTS performance
         self._cache: set = set()
 
