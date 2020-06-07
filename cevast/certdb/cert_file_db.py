@@ -59,7 +59,6 @@ log = logging.getLogger(__name__)
 # - or reserve block?? mmap vector of flags (up to 256 els) - each element is root block
 # TODO maintain history upon commits
 # TODO make persist_and_clear_storage/clear_storage utility method that will not use transaction data
-# TODO make cores property of CertFileDB, not CertDB 
 
 
 class CertFileDBReadOnly(CertDBReadOnly):
@@ -190,12 +189,14 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
     and a file system properties as a storage mechanism.
     """
 
-    def __init__(self, storage: str):
+    def __init__(self, storage: str, cpu_cores: int = 1):
         CertFileDBReadOnly.__init__(self, storage)
         # Dict containing all inserted certificates grouped in blocks that will be persisted with commit
         self._to_insert: dict = {}
         # Dict containing all deleted certificates grouped in blocks that will be deleted with commit
         self._to_delete: dict = {}
+        # Max number of CPU cores that can be used (-1 is max limit by hardware)
+        self.__cores = cpu_cores
 
     def get(self, cert_id: str) -> str:
         block = self._get_block_path(cert_id)
@@ -280,7 +281,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         remove_empty_folders(self.storage)
         log.info('Rollback finished')
 
-    def commit(self, cores=1) -> Tuple[int, int]:
+    def commit(self) -> Tuple[int, int]:
         log.info('Commit started')
         cnt_deleted = 0
         cnt_inserted = 0

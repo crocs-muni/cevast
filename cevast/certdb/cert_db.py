@@ -110,7 +110,7 @@ class CertDB(CertDBReadOnly):
         """
 
     @abstractmethod
-    def commit(self, cores=1) -> Tuple[int, int]:
+    def commit(self) -> Tuple[int, int]:
         """
         Apply the changes made by the current transaction.
 
