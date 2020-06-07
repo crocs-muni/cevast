@@ -5,8 +5,10 @@ import unittest
 import os
 import shutil
 import subprocess
-import toml
 import time
+import string
+import random
+import toml
 from cevast.certdb import CertDB, CertFileDB, CertFileDBReadOnly, CertNotAvailableError, CertInvalidError
 from cevast.utils import make_PEM_filename
 
@@ -19,7 +21,7 @@ TEST_CERTS_2 = TEST_DATA_PATH + 'test_certs_2.csv'
 def insert_test_certs(database: CertDB, certs_file: str) -> list:
     """
     Insert certificates from certs_file to database
-    Return list of committed certificates.
+    Return list of inserted certificates.
     """
     certs = []
     with open(certs_file) as r_file:
@@ -27,6 +29,23 @@ def insert_test_certs(database: CertDB, certs_file: str) -> list:
             els = [e.strip() for e in line.split(',')]
             database.insert(els[0], els[1])
             certs.append(els[0])
+
+    return certs
+
+
+def insert_random_certs(database: CertDB, certs_cnt: int) -> list:
+    """
+    Insert number(certs_cnt) randomly generated certificates to database
+    Return list of inserted certificates.
+    """
+    def random_string(length: int) -> str:
+        return ''.join(random.choice(string.ascii_letters) for i in range(length))
+
+    certs = []
+    for _ in range(certs_cnt):
+        cert_id = random_string(16)
+        database.insert(cert_id, random_string(8))
+        certs.append(cert_id)
 
     return certs
 
@@ -201,21 +220,32 @@ class TestCertFileDBReadOnly(unittest.TestCase):
             db_ronly.exists(cert)
             assert cert in db_ronly._cache
         self.assertEqual(db_ronly._cache, set(committed))
+
         # Insert and commit some certificates and check cache after exists_all call
         committed = commit_test_certs(db, TEST_CERTS_2)
         assert not set(committed).issubset(db_ronly._cache)
         db_ronly.exists_all(committed)
         assert set(committed).issubset(db_ronly._cache)
-        # TODO Check speed improvement using cache - on large number of certs
-        #t0 = time.clock()
-        #for cert in certs:
-            #db_ronly.exists(cert)
-        #t1 = time.clock()
-        #for cert in certs:
-            #db_ronly.exists(cert)
-        #t2 = time.clock()
-        #self.assertGreater(t1 - t0, t2 - t1)
-        # TODO delete - cache
+
+        # Check DELETE effect on cache
+        db.exists_all(committed)
+        self.assertEqual(set(committed), db._cache)
+        db.delete(committed[0])
+        assert committed[0] not in db._cache
+        self.assertNotEqual(set(committed), db._cache)
+        db.rollback()
+
+        # Check speed improvement using cache - on large number of certs
+        inserted = insert_random_certs(db, 1000)
+        db.commit()
+        t0 = time.clock()
+        for cert in inserted:
+            db_ronly.exists(cert)
+        t1 = time.clock()
+        for cert in inserted:
+            db_ronly.exists(cert)
+        t2 = time.clock()
+        self.assertGreater(t1 - t0, t2 - t1)
 
 
 class TestCertFileDB(unittest.TestCase):
@@ -246,11 +276,12 @@ class TestCertFileDB(unittest.TestCase):
         db = CertFileDB(self.TEST_STORAGE)
         fake_cert_id = 'fakecertid'
         # Insert and commit some certificates and retrieve them back
-        commit_test_certs(db, TEST_CERTS_1)
+        committed = commit_test_certs(db, TEST_CERTS_1)
         with open(TEST_CERTS_1) as r_file:
             for line in r_file:
                 cert_id, cert = line.split(',')
                 self.assertEqual(db.get(cert_id), cert.strip())
+
         # Only insert other certificates and retrieve them back
         inserted = insert_test_certs(db, TEST_CERTS_2)
         with open(TEST_CERTS_2) as r_file:
@@ -261,6 +292,11 @@ class TestCertFileDB(unittest.TestCase):
             db.rollback()
             for cert_id in inserted:
                 self.assertRaises(CertNotAvailableError, db.get, cert_id)
+
+        # Test DELETE method effect
+        db.delete(committed[0])
+        self.assertRaises(CertNotAvailableError, db.get, committed[0])
+
         # Test fake certificate that doesn't exist
         self.assertRaises(CertNotAvailableError, db.get, fake_cert_id)
 
@@ -285,7 +321,7 @@ class TestCertFileDB(unittest.TestCase):
         fake_cert_id = 'fakecertid'
 
         # Insert and commit some certificates and export them
-        commit_test_certs(db, TEST_CERTS_1)
+        committed = commit_test_certs(db, TEST_CERTS_1)
         with open(TEST_CERTS_1) as r_file:
             for line in r_file:
                 cert_id, cert = line.split(',')
@@ -321,6 +357,10 @@ class TestCertFileDB(unittest.TestCase):
                 cert_id = line.split(',')[0]
                 self.assertRaises(CertNotAvailableError, db.export, cert_id, target_dir)
 
+        # Test DELETE method effect
+        db.delete(committed[0])
+        self.assertRaises(CertNotAvailableError, db.get, committed[0])
+
         # Test fake certificate that doesn't exist
         self.assertRaises(CertNotAvailableError, db.export, fake_cert_id, target_dir)
 
@@ -342,6 +382,10 @@ class TestCertFileDB(unittest.TestCase):
         for cert in inserted:
             assert db.exists(cert)
         assert db.exists_all(inserted)
+
+        # Test DELETE method effect
+        db.delete(committed[0])
+        assert not db.exists(committed[0])
 
         # Test fake certificate that doesn't exist
         committed.append(fake_cert)
@@ -442,7 +486,7 @@ class TestCertFileDB(unittest.TestCase):
         assert db.exists_all(inserted)
         del_cert = inserted.pop()
         db.delete(del_cert)
-        assert db.exists(del_cert)
+        assert not db.exists(del_cert)
         db.commit()
         assert not db.exists(del_cert)
         for cert in inserted:
@@ -500,7 +544,8 @@ class TestCertFileDB(unittest.TestCase):
         # Check rollback of delete method
         deleted = delete_test_certs(db, TEST_CERTS_1)
         self.assertTrue(db._to_delete)
-        assert db.exists_all(deleted)
+        for cert in deleted:
+            assert not db.exists(cert)
         db.rollback()
         self.assertFalse(db._to_delete)
         # All deleted certs should still exist

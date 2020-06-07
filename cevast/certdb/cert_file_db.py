@@ -71,7 +71,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
 
     @staticmethod
     def setup(storage_path: str, structure_level: int = 2, cert_format: str = 'PEM',
-                desc: str = 'CertFileDB', owner: str = '') -> None:
+              desc: str = 'CertFileDB', owner: str = '') -> None:
         """
         Setup CertFileDB storage directory with the given parameters.
         Directory and configuration file CertFileDB.toml is created.
@@ -207,6 +207,10 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             with open(cert_file, 'r') as source:
                 log.debug('<%s> found in open transaction', cert_file)
                 return source.read()
+        # Check if certificate is scheduled for delete
+        if self._is_in_transaction(cert_id, self._to_delete):
+            log.info('<%s> was deleted in current transaction', cert_id)
+            raise CertNotAvailableError(cert_id)
         # Check if certificate exists persisted
         return CertFileDBReadOnly.get(self, cert_id)
 
@@ -223,6 +227,10 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             cert_trg_file = os.path.join(target_dir, filename)
             shutil.copyfile(cert_src_file, cert_trg_file)
             return cert_trg_file
+        # Check if certificate is scheduled for delete
+        if self._is_in_transaction(cert_id, self._to_delete):
+            log.info('<%s> was deleted in current transaction', cert_id)
+            raise CertNotAvailableError(cert_id)
         # Check if certificate exists persisted
         return CertFileDBReadOnly.export(self, cert_id, target_dir, copy_if_exists)
 
@@ -231,6 +239,10 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         if self._is_in_transaction(cert_id, self._to_insert):
             log.debug('<%s> exists in open transaction', cert_id)
             return True
+        # Check if certificate is scheduled for delete
+        if self._is_in_transaction(cert_id, self._to_delete):
+            log.info('<%s> was deleted in current transaction', cert_id)
+            return False
         # Check if certificate exists persisted
         return CertFileDBReadOnly.exists(self, cert_id)
 
@@ -268,6 +280,9 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             self._add_to_transaction(cert_id, self._to_delete)
             log.debug('Certificate %s will be deleted upon commit', cert_id)
 
+        # Delete certificates from cache
+        self._cache.discard(cert_id)
+
     def rollback(self) -> None:
         log.info('Rollback started')
         # Remove uncommitted certificates
@@ -289,8 +304,6 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         # TODO use multiprocessing
         for block, certs in self._to_delete.items():
             cnt_deleted += CertFileDB.delete_certs(self._get_block_path(block), certs)
-            # Delete certificates also from cache
-            self._cache -= certs
 
         self._to_delete.clear()
         log.info('Deleted %d certificates', cnt_deleted)
