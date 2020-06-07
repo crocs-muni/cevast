@@ -215,6 +215,7 @@ class TestCertFileDBReadOnly(unittest.TestCase):
             #db_ronly.exists(cert)
         #t2 = time.clock()
         #self.assertGreater(t1 - t0, t2 - t1)
+        # TODO delete - cache
 
 
 class TestCertFileDB(unittest.TestCase):
@@ -282,6 +283,7 @@ class TestCertFileDB(unittest.TestCase):
         target_dir = self.TEST_STORAGE + '/export'
         os.mkdir(target_dir)
         fake_cert_id = 'fakecertid'
+
         # Insert and commit some certificates and export them
         commit_test_certs(db, TEST_CERTS_1)
         with open(TEST_CERTS_1) as r_file:
@@ -295,6 +297,7 @@ class TestCertFileDB(unittest.TestCase):
                 self.assertEqual(db.export(cert_id, target_dir, copy_if_exists=False), expected)
         # Tests writing permissions for exporting from zipfile
         test_permission(db, cert_id)
+
         # Only insert other certificates and retrieve them back
         insert_test_certs(db, TEST_CERTS_2)
         with open(TEST_CERTS_2) as r_file:
@@ -317,6 +320,7 @@ class TestCertFileDB(unittest.TestCase):
             for line in r_file:
                 cert_id = line.split(',')[0]
                 self.assertRaises(CertNotAvailableError, db.export, cert_id, target_dir)
+
         # Test fake certificate that doesn't exist
         self.assertRaises(CertNotAvailableError, db.export, fake_cert_id, target_dir)
 
@@ -332,11 +336,13 @@ class TestCertFileDB(unittest.TestCase):
         for cert in committed:
             assert db.exists(cert)
         assert db.exists_all(committed)
+
         # Only insert other certificates and check if exists
         inserted = insert_test_certs(db, TEST_CERTS_2)
         for cert in inserted:
             assert db.exists(cert)
         assert db.exists_all(inserted)
+
         # Test fake certificate that doesn't exist
         committed.append(fake_cert)
         assert not db.exists(fake_cert)
@@ -353,13 +359,15 @@ class TestCertFileDB(unittest.TestCase):
         self.assertRaises(CertInvalidError, db.insert, '', '')
         self.assertRaises(CertInvalidError, db.insert, '', 'valid')
         self.assertRaises(CertInvalidError, db.insert, 'valid', None)
+
         # Insert some valid certificates
         insert_test_certs(db, TEST_CERTS_1)
         blocks = {**db._to_insert}
-        # Transaction should contain certificates from open transcation and folders should exists
+        # transaction should contain certificates from open transcation and folders should exists
         self.assertTrue(db._to_insert)
         for block in db._to_insert:
             assert os.path.exists(db._get_block_path(block))
+
         # Insert different certificates under the same IDs
         certs = {}
         with open(TEST_CERTS_1) as r_file:
@@ -371,6 +379,7 @@ class TestCertFileDB(unittest.TestCase):
         self.assertTrue(blocks == db._to_insert)
         for k, v in certs.items():
             self.assertTrue(db.get(k) == v)
+
         # Commit transaction and commit different certificates under the same IDs
         db.commit()
         self.assertFalse(db._to_insert)
@@ -391,7 +400,67 @@ class TestCertFileDB(unittest.TestCase):
         """
         Test implementation of CertDB method DELETE
         """
-        # TODO
+        CertFileDB.setup(self.TEST_STORAGE)
+        db = CertFileDB(self.TEST_STORAGE)
+        # Delete some invalid certificates
+        self.assertRaises(CertInvalidError, db.delete, None)
+        self.assertRaises(CertInvalidError, db.delete, '')
+
+        # Insert and delete the same certs before commit
+        inserted = insert_test_certs(db, TEST_CERTS_1)
+        deleted = delete_test_certs(db, TEST_CERTS_1)
+        # transaction should be clear and files should not exist
+        self.assertFalse(db._to_delete)
+        self.assertFalse(db._to_insert)
+        for cert in inserted:
+            block_path = db._get_block_path(cert)
+            assert not os.path.exists(os.path.join(block_path, make_PEM_filename(cert)))
+
+        # Delete and insert the same certs before commit
+        deleted = delete_test_certs(db, TEST_CERTS_1)
+        inserted = insert_test_certs(db, TEST_CERTS_1)
+        # transaction should contain deleted and inserted certificates
+        self.assertTrue(db._to_delete)
+        self.assertTrue(db._to_insert)
+        for certs in db._to_delete.values():
+            assert certs.issubset(set(deleted))
+        for certs in db._to_insert.values():
+            assert certs.issubset(set(inserted))
+        # and files should exist
+        for cert in inserted:
+            block_path = db._get_block_path(cert)
+            assert os.path.exists(os.path.join(block_path, make_PEM_filename(cert)))
+        # now commit and check that files were persisted
+        ins, dlt = db.commit()
+        # the certs should be only inserted
+        self.assertEqual(ins, len(inserted))
+        self.assertEqual(dlt, 0)
+        self.assertFalse(db._to_delete)
+        self.assertFalse(db._to_insert)
+
+        # Delete inserted certs, commit and check that they were deleted
+        assert db.exists_all(inserted)
+        del_cert = inserted.pop()
+        db.delete(del_cert)
+        assert db.exists(del_cert)
+        db.commit()
+        assert not db.exists(del_cert)
+        for cert in inserted:
+            db.delete(cert)
+        ins, dlt = db.commit()
+        self.assertEqual(ins, 0)
+        self.assertEqual(dlt, len(inserted))
+        # storage should be empty
+        self.assertFalse(os.listdir(db.storage).remove(db.CONF_FILENAME))
+
+        # Delete the same cert multiple times should not have effect
+        self.assertFalse(db._to_delete)
+        db.delete('validcert')
+        blocks_to_delete = {**db._to_delete}
+        self.assertTrue(db._to_delete)
+        db.delete('validcert')
+        self.assertTrue(db._to_delete)
+        self.assertEqual(blocks_to_delete, db._to_delete)
 
     def test_rollback(self):
         """
@@ -403,6 +472,7 @@ class TestCertFileDB(unittest.TestCase):
         db.rollback()
         self.assertFalse(db._to_insert)
         self.assertFalse(db._to_delete)
+
         # Insert some certificates, rollback and check that blocks are deleted
         inserted = insert_test_certs(db, TEST_CERTS_1)
         db.rollback()
@@ -411,6 +481,7 @@ class TestCertFileDB(unittest.TestCase):
             assert not os.path.exists(os.path.join(block_path, make_PEM_filename(cert)))
         # Transaction should be empty
         self.assertFalse(db._to_insert)
+
         # Commit some certs, insert other certs and rollback
         committed = commit_test_certs(db, TEST_CERTS_1)
         inserted = insert_test_certs(db, TEST_CERTS_2)
@@ -425,6 +496,7 @@ class TestCertFileDB(unittest.TestCase):
         for cert in inserted:
             block_path = db._get_block_path(cert)
             assert not os.path.exists(os.path.join(block_path, make_PEM_filename(cert)))
+
         # Check rollback of delete method
         deleted = delete_test_certs(db, TEST_CERTS_1)
         self.assertTrue(db._to_delete)
@@ -445,6 +517,7 @@ class TestCertFileDB(unittest.TestCase):
         self.assertEqual(ins, 0)
         self.assertEqual(dlt, 0)
         self.assertFalse(db._to_insert)
+
         # Insert some certificates and check commit
         inserted = insert_test_certs(db, TEST_CERTS_1)
         # Certificates and blocks from open transaction should exist
@@ -454,28 +527,47 @@ class TestCertFileDB(unittest.TestCase):
         for cert in inserted:
             block_path = db._get_block_path(cert)
             assert os.path.exists(os.path.join(block_path, make_PEM_filename(cert)))
-        # Check correct number of committed certs
+        # check correct number of committed certs
         ins, dlt = db.commit()
         self.assertEqual(ins, len(inserted))
         self.assertEqual(dlt, 0)
-        # Transaction should be empty and certs should be compressed in zip files
+        # transaction should be empty and certs should be compressed in zip files
         self.assertFalse(db._to_insert)
         for cert in inserted:
             assert not os.path.exists(db._get_block_path(cert))
             assert os.path.exists(db._get_block_path(cert) + '.zip')
-        # Insert already persisted certs and some others
+
+        # Insert already persisted certs and some others and commit
         inserted_again = insert_test_certs(db, TEST_CERTS_1)
         inserted_new = insert_test_certs(db, TEST_CERTS_2)
         ins, dlt = db.commit()
-        # Only the other certs should be committed
+        # only the other certs should be committed
         self.assertEqual(ins, len(inserted_new))
         self.assertEqual(dlt, 0)
         # and the same ones should be deleted from transaction
         for cert in inserted_again:
             block_path = db._get_block_path(cert)
             assert not os.path.exists(os.path.join(block_path, make_PEM_filename(cert)))
-        # TODO delete
- 
+
+        # Delete and insert the same not yet persisted cert and commit
+        valid_cert = ['valid_cert', 'validvalidvalidvalidvalid']
+        db.delete(valid_cert[0])
+        db.insert(*valid_cert)
+        db.commit()
+        # check that cert is persisted
+        assert db.exists(valid_cert[0])
+        assert os.path.exists(db._get_block_path(valid_cert[0]) + '.zip')
+        assert not os.path.exists(db._get_block_path(valid_cert[0]))
+
+        # Delete and insert the same already persisted cert and commit
+        valid_cert = ['valid_cert', 'validvalidvalidvalidvalid_new']
+        db.delete(valid_cert[0])
+        db.insert(*valid_cert)
+        db.commit()
+        # check that the cert was replaced
+        assert db.exists(valid_cert[0])
+        self.assertEqual(db.get(valid_cert[0]), valid_cert[1])
+
     def test_parallel_transactions(self):
         pass
 

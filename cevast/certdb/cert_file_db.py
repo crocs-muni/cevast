@@ -56,8 +56,10 @@ log = logging.getLogger(__name__)
 # TODO parallel transaction checking - mmap
 # - open transaction Flag - will be set by INSERT/REMOVE/ROLLBACK/COMMIT -> OpenTransaction/CloseTransaction decorator ??
 # - allow_more_transaction Flag that will not raise DBInUse error??
+# - or reserve block?? mmap vector of flags (up to 256 els) - each element is root block
 # TODO maintain history upon commits
 # TODO make persist_and_clear_storage/clear_storage utility method that will not use transaction data
+# TODO make cores property of CertFileDB, not CertDB 
 
 
 class CertFileDBReadOnly(CertDBReadOnly):
@@ -284,7 +286,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         cnt_inserted = 0
         # Handle delete first because sequence matter
         # TODO use multiprocessing
-        for block, certs in self._to_delete:
+        for block, certs in self._to_delete.items():
             cnt_deleted += CertFileDB.delete_certs(self._get_block_path(block), certs)
             # Delete certificates also from cache
             self._cache -= certs
@@ -375,7 +377,10 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         trans_dict[block_id].add(cert_id)
 
     def _remove_from_transaction(self, cert_id: str, trans_dict: dict) -> None:
-        trans_dict[self._get_block_id(cert_id)].discard(cert_id)
+        block_id = self._get_block_id(cert_id)
+        trans_dict[block_id].discard(cert_id)
+        if not trans_dict[block_id]:
+            del trans_dict[block_id]
 
     def _get_block_id(self, cert_id: str) -> str:
         return cert_id[: self._params['structure_level'] + 1]
