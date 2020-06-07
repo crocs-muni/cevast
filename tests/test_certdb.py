@@ -9,6 +9,7 @@ import time
 import string
 import random
 import toml
+from collections import OrderedDict
 from cevast.certdb import CertDB, CertFileDB, CertFileDBReadOnly, CertNotAvailableError, CertInvalidError
 from cevast.utils import make_PEM_filename
 
@@ -98,6 +99,7 @@ class TestCertFileDBReadOnly(unittest.TestCase):
         self.assertEqual(cfg['PARAMETERS']['storage'], os.path.abspath(self.TEST_STORAGE))
         self.assertEqual(cfg['PARAMETERS']['structure_level'], 5)
         self.assertEqual(cfg['PARAMETERS']['cert_format'], 'DES')
+        self.assertEqual(cfg['PARAMETERS']['maintain_info'], True)
         self.assertEqual(cfg['INFO']['description'], 'Testing DB')
         self.assertEqual(cfg['INFO']['owner'], 'unittest')
         self.assertEqual(cfg['INFO']['number_of_certificates'], 0)
@@ -122,7 +124,7 @@ class TestCertFileDBReadOnly(unittest.TestCase):
         """
         Test implementation of CertDB method GET
         """
-        CertFileDBReadOnly.setup(self.TEST_STORAGE)
+        CertFileDBReadOnly.setup(self.TEST_STORAGE, maintain_info=False)
         db = CertFileDB(self.TEST_STORAGE)
         db_ronly = CertFileDBReadOnly(self.TEST_STORAGE)
         fake_cert_id = 'fakecertid'
@@ -155,7 +157,7 @@ class TestCertFileDBReadOnly(unittest.TestCase):
             subprocess.call(['chmod', '+w', fake_target_dir])
             os.rmdir(fake_target_dir)
 
-        CertFileDBReadOnly.setup(self.TEST_STORAGE)
+        CertFileDBReadOnly.setup(self.TEST_STORAGE, maintain_info=False)
         db = CertFileDB(self.TEST_STORAGE)
         db_ronly = CertFileDBReadOnly(self.TEST_STORAGE)
         target_dir = self.TEST_STORAGE + '/export'
@@ -187,7 +189,7 @@ class TestCertFileDBReadOnly(unittest.TestCase):
         """
         Test implementation of CertDB method EXISTS
         """
-        CertFileDBReadOnly.setup(self.TEST_STORAGE)
+        CertFileDBReadOnly.setup(self.TEST_STORAGE, maintain_info=False)
         db = CertFileDB(self.TEST_STORAGE)
         db_ronly = CertFileDBReadOnly(self.TEST_STORAGE)
         fake_cert = 'fakecertid'
@@ -210,7 +212,7 @@ class TestCertFileDBReadOnly(unittest.TestCase):
         """
         Test implementation of CertFileDB certificate existance cache
         """
-        CertFileDB.setup(self.TEST_STORAGE)
+        CertFileDB.setup(self.TEST_STORAGE, maintain_info=False)
         db = CertFileDB(self.TEST_STORAGE)
         db_ronly = CertFileDBReadOnly(self.TEST_STORAGE)
         # Insert and commit some certificates and check cache
@@ -272,7 +274,7 @@ class TestCertFileDB(unittest.TestCase):
         """
         Test implementation of CertDB method GET
         """
-        CertFileDB.setup(self.TEST_STORAGE)
+        CertFileDB.setup(self.TEST_STORAGE, maintain_info=False)
         db = CertFileDB(self.TEST_STORAGE)
         fake_cert_id = 'fakecertid'
         # Insert and commit some certificates and retrieve them back
@@ -314,7 +316,7 @@ class TestCertFileDB(unittest.TestCase):
             subprocess.call(['chmod', '+w', fake_target_dir])
             os.rmdir(fake_target_dir)
 
-        CertFileDB.setup(self.TEST_STORAGE)
+        CertFileDB.setup(self.TEST_STORAGE, maintain_info=False)
         db = CertFileDB(self.TEST_STORAGE)
         target_dir = self.TEST_STORAGE + '/export'
         os.mkdir(target_dir)
@@ -368,7 +370,7 @@ class TestCertFileDB(unittest.TestCase):
         """
         Test implementation of CertDB method EXISTS
         """
-        CertFileDB.setup(self.TEST_STORAGE)
+        CertFileDB.setup(self.TEST_STORAGE, maintain_info=False)
         db = CertFileDB(self.TEST_STORAGE)
         fake_cert = 'fakecertid'
         # Insert and commit some certificates and check if exists
@@ -396,7 +398,7 @@ class TestCertFileDB(unittest.TestCase):
         """
         Test implementation of CertDB method INSERT
         """
-        CertFileDB.setup(self.TEST_STORAGE)
+        CertFileDB.setup(self.TEST_STORAGE, maintain_info=False)
         db = CertFileDB(self.TEST_STORAGE)
         # Insert some invalid certificates
         self.assertRaises(CertInvalidError, db.insert, None, None)
@@ -444,7 +446,7 @@ class TestCertFileDB(unittest.TestCase):
         """
         Test implementation of CertDB method DELETE
         """
-        CertFileDB.setup(self.TEST_STORAGE)
+        CertFileDB.setup(self.TEST_STORAGE, maintain_info=False)
         db = CertFileDB(self.TEST_STORAGE)
         # Delete some invalid certificates
         self.assertRaises(CertInvalidError, db.delete, None)
@@ -510,7 +512,7 @@ class TestCertFileDB(unittest.TestCase):
         """
         Test implementation of CertDB method ROLLBACK
         """
-        CertFileDB.setup(self.TEST_STORAGE)
+        CertFileDB.setup(self.TEST_STORAGE, maintain_info=False)
         db = CertFileDB(self.TEST_STORAGE)
         # Test rollback without inserts
         db.rollback()
@@ -555,7 +557,7 @@ class TestCertFileDB(unittest.TestCase):
         """
         Test implementation of CertDB method COMMIT
         """
-        CertFileDB.setup(self.TEST_STORAGE)
+        CertFileDB.setup(self.TEST_STORAGE, maintain_info=False)
         db = CertFileDB(self.TEST_STORAGE)
         # Test commit without inserts
         ins, dlt = db.commit()
@@ -617,7 +619,45 @@ class TestCertFileDB(unittest.TestCase):
         pass
 
     def test_config_info_maintain(self):
-        pass
+        """
+        Test maintaining commit HISTORY and INFO upon commit
+        """
+        CertFileDB.setup(self.TEST_STORAGE, maintain_info=True)
+        db = CertFileDB(self.TEST_STORAGE)
+        config_path = os.path.join(db.storage, db.CONF_FILENAME)
+        # Insert some certificates and check INFO after commit
+        committed = commit_test_certs(db, TEST_CERTS_1)
+        config = toml.load(config_path, OrderedDict)
+        last_commit_nr = str(len(config['HISTORY']))
+        self.assertEqual(last_commit_nr, '1')
+        self.assertEqual(config['INFO']['number_of_certificates'], len(committed))
+        self.assertEqual(config['INFO']['last_commit'], config['HISTORY'][last_commit_nr]['date'])
+        self.assertEqual(config['HISTORY'][last_commit_nr]['inserted'], len(committed))
+        self.assertEqual(config['HISTORY'][last_commit_nr]['deleted'], 0)
+
+        # Delete all the inserted certs and check INFO after commit
+        deleted = delete_test_certs(db, TEST_CERTS_1)
+        db.commit()
+        config = toml.load(config_path, OrderedDict)
+        last_commit_nr = str(len(config['HISTORY']))
+        self.assertEqual(last_commit_nr, '2')
+        self.assertEqual(config['INFO']['number_of_certificates'], 0)
+        self.assertEqual(config['INFO']['last_commit'], config['HISTORY'][last_commit_nr]['date'])
+        self.assertEqual(config['HISTORY'][last_commit_nr]['inserted'], 0)
+        self.assertEqual(config['HISTORY'][last_commit_nr]['deleted'], len(deleted))
+
+        # Insert and delete some certs and check INFO after commit
+        committed = commit_test_certs(db, TEST_CERTS_1)
+        inserted = insert_test_certs(db, TEST_CERTS_2)
+        deleted = delete_test_certs(db, TEST_CERTS_1)
+        db.commit()
+        config = toml.load(config_path, OrderedDict)
+        last_commit_nr = str(len(config['HISTORY']))
+        self.assertEqual(last_commit_nr, '4')
+        self.assertEqual(config['INFO']['number_of_certificates'], len(inserted))
+        self.assertEqual(config['INFO']['last_commit'], config['HISTORY'][last_commit_nr]['date'])
+        self.assertEqual(config['HISTORY'][last_commit_nr]['inserted'], len(inserted))
+        self.assertEqual(config['HISTORY'][last_commit_nr]['deleted'], len(deleted))
 
 
 if __name__ == '__main__':

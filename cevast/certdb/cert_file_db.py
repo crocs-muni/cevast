@@ -57,7 +57,6 @@ log = logging.getLogger(__name__)
 # - open transaction Flag - will be set by INSERT/REMOVE/ROLLBACK/COMMIT -> OpenTransaction/CloseTransaction decorator ??
 # - allow_more_transaction Flag that will not raise DBInUse error??
 # - or reserve block?? mmap vector of flags (up to 256 els) - each element is root block
-# TODO maintain history upon commits
 # TODO make persist_and_clear_storage/clear_storage utility method that will not use transaction data
 
 
@@ -71,7 +70,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
 
     @staticmethod
     def setup(storage_path: str, structure_level: int = 2, cert_format: str = 'PEM',
-              desc: str = 'CertFileDB', owner: str = '') -> None:
+              desc: str = 'CertFileDB', owner: str = '', maintain_info: bool = True) -> None:
         """
         Setup CertFileDB storage directory with the given parameters.
         Directory and configuration file CertFileDB.toml is created.
@@ -91,13 +90,12 @@ class CertFileDBReadOnly(CertDBReadOnly):
         config['PARAMETERS']['structure_level'] = structure_level
         config['PARAMETERS']['cert_format'] = cert_format
         config['PARAMETERS']['compression_method'] = 'ZIP_DEFLATED'
+        config['PARAMETERS']['maintain_info'] = maintain_info
         config['INFO'] = OrderedDict()
         config['INFO']['owner'] = owner
         config['INFO']['description'] = desc
         config['INFO']['created'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S%Z')
-        config['INFO']['number_of_certificates'] = 0
-        config['INFO']['last_commit'] = ''
-        config['HISTORY'] = OrderedDict()
+
         with open(config_path, 'w') as cfg_file:
             toml.dump(config, cfg_file)
 
@@ -316,6 +314,9 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         log.info('Inserted %d certificates', cnt_inserted)
         # Clean up empty folders
         remove_empty_folders(self.storage)
+        # Write commit info
+        if self._params['maintain_info']:
+            self.__write_commit_info(cnt_inserted, cnt_deleted)
         log.info('Commit finished')
         return cnt_inserted, cnt_deleted
 
@@ -398,3 +399,23 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
 
     def _get_block_id(self, cert_id: str) -> str:
         return cert_id[: self._params['structure_level'] + 1]
+
+    def __write_commit_info(self, inserted: int, deleted: int) -> None:
+        config_path = os.path.join(self.storage, self.CONF_FILENAME)
+        config = toml.load(config_path, OrderedDict)
+        # Update DB INFO
+        total_cnt = config['INFO'].get('number_of_certificates', 0)
+        config['INFO']['number_of_certificates'] = total_cnt + inserted - deleted
+        config['INFO']['last_commit'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S%Z')
+        # Append commit HISTORY
+        if 'HISTORY' not in config:
+            config['HISTORY'] = OrderedDict()
+        commit_nr = str(len(config['HISTORY']) + 1)
+        config['HISTORY'][commit_nr] = OrderedDict()
+        config['HISTORY'][commit_nr]['date'] = config['INFO']['last_commit']
+        config['HISTORY'][commit_nr]['inserted'] = inserted
+        config['HISTORY'][commit_nr]['deleted'] = deleted
+
+        log.debug(config)
+        with open(config_path, 'w') as cfg_file:
+            toml.dump(config, cfg_file)
