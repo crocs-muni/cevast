@@ -1,5 +1,5 @@
 interpret = python3.6
-trg = cevast/utils cevast/dataset/parsers cevast/certdb
+trg = cevast/utils cevast/dataset/parsers cevast/certdb tests/test_*
 max_line_len = 127
 
 install:

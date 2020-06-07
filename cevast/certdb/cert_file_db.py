@@ -100,7 +100,6 @@ class CertFileDBReadOnly(CertDBReadOnly):
             toml.dump(config, cfg_file)
         log.info('CertFileDB was setup:\n%s', config)
 
-
     def __init__(self, storage: str):
         # Get config
         try:
@@ -264,7 +263,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         self._add_to_transaction(cert_id, self._to_insert)
         log.debug('Certificate %s inserted to block %s', cert_id, block)
 
-    def delete(self, cert_id: str):
+    def delete(self, cert_id: str) -> None:
         if not cert_id:
             raise CertInvalidError('cert_id <{}> invalid'.format(cert_id))
 
@@ -400,6 +399,8 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             del trans_dict[block_id]
 
     def _get_block_id(self, cert_id: str) -> str:
+        if self._params['structure_level'] == 0:
+            return 'storage'
         return cert_id[: self._params['structure_level'] + 1]
 
     def __write_commit_info(self, inserted: int, deleted: int) -> None:

@@ -8,8 +8,8 @@ import subprocess
 import time
 import string
 import random
-import toml
 from collections import OrderedDict
+import toml
 from cevast.certdb import CertDB, CertFileDB, CertFileDBReadOnly, CertNotAvailableError, CertInvalidError
 from cevast.utils import make_PEM_filename
 
@@ -39,6 +39,7 @@ def insert_random_certs(database: CertDB, certs_cnt: int) -> list:
     Insert number(certs_cnt) randomly generated certificates to database
     Return list of inserted certificates.
     """
+
     def random_string(length: int) -> str:
         return ''.join(random.choice(string.ascii_letters) for i in range(length))
 
@@ -76,7 +77,7 @@ def commit_test_certs(database: CertDB, certs_file: str) -> list:
     return certs
 
 
-# pylint: disable=W0212
+# pylint: disable=W0212, C0103
 class TestCertFileDBReadOnly(unittest.TestCase):
     """Unit test class of CertFileDBReadOnly class"""
 
@@ -255,6 +256,8 @@ class TestCertFileDB(unittest.TestCase):
     def tearDown(self):
         # Clear test storage
         shutil.rmtree(self.TEST_STORAGE, ignore_errors=True)
+        if os.path.exists(self.TEST_STORAGE + '.zip'):
+            os.remove(self.TEST_STORAGE + '.zip')
 
     def test_init(self):
         """
@@ -655,6 +658,48 @@ class TestCertFileDB(unittest.TestCase):
         self.assertEqual(config['INFO']['last_commit'], config['HISTORY'][last_commit_nr]['date'])
         self.assertEqual(config['HISTORY'][last_commit_nr]['inserted'], len(inserted))
         self.assertEqual(config['HISTORY'][last_commit_nr]['deleted'], len(deleted))
+
+    def test_zero_structure_level(self):
+        """
+        Test CertFileDB with 0 structure_level
+        """
+        CertFileDB.setup(self.TEST_STORAGE, structure_level=0)
+        db = CertFileDB(self.TEST_STORAGE)
+        # Commit some certificates and check zipfile
+        committed = commit_test_certs(db, TEST_CERTS_1)
+        assert db.exists_all(committed)
+        assert os.path.exists(self.TEST_STORAGE + '.zip')
+        # Insert some certificates and check files existance in root folder
+        inserted = insert_test_certs(db, TEST_CERTS_2)
+        for cert in inserted:
+            assert os.path.exists(os.path.join(self.TEST_STORAGE, make_PEM_filename(cert)))
+            assert db.exists(cert)
+        assert db.exists_all(inserted)
+        # Rollback check file cleanup
+        db.rollback()
+        for cert in inserted:
+            assert not os.path.exists(os.path.join(self.TEST_STORAGE, make_PEM_filename(cert)))
+            assert not db.exists(cert)
+        # Delete inserted certificates and check file cleanup
+        inserted = insert_test_certs(db, TEST_CERTS_2)
+        delete_test_certs(db, TEST_CERTS_2)
+        for cert in inserted:
+            assert not os.path.exists(os.path.join(self.TEST_STORAGE, make_PEM_filename(cert)))
+            assert not db.exists(cert)
+        self.assertFalse(db._to_insert)
+        self.assertFalse(db._to_delete)
+        # Retrieve and check persisted certs
+        with open(TEST_CERTS_1) as r_file:
+            for line in r_file:
+                cert_id, cert = line.split(',')
+                self.assertEqual(db.get(cert_id), cert.strip())
+        # Delete all remaining certificates and check zip cleanup
+        deleted = delete_test_certs(db, TEST_CERTS_1)
+        db.commit()
+        for cert in deleted:
+            assert not os.path.exists(os.path.join(self.TEST_STORAGE, make_PEM_filename(cert)))
+            assert not db.exists(cert)
+        assert not os.path.exists(self.TEST_STORAGE + '.zip')
 
 
 if __name__ == '__main__':
