@@ -11,7 +11,6 @@ import random
 from collections import OrderedDict
 import toml
 from cevast.certdb import CertDB, CertFileDB, CertFileDBReadOnly, CertNotAvailableError, CertInvalidError
-from cevast.utils import make_PEM_filename
 
 # Helper functions
 TEST_DATA_PATH = 'tests/data/'
@@ -407,12 +406,13 @@ class TestCertFileDB(unittest.TestCase):
         self.assertRaises(CertInvalidError, db.insert, 'valid', None)
 
         # Insert some valid certificates
-        insert_test_certs(db, TEST_CERTS_1)
+        inserted = insert_test_certs(db, TEST_CERTS_1)
         blocks = {**db._to_insert}
-        # transaction should contain certificates from open transcation and folders should exists
+        # transaction should contain certificates from open transcation and certs should exist
         self.assertTrue(db._to_insert)
-        for block in db._to_insert:
-            assert os.path.exists(db._get_block_path(block))
+        for cert in inserted:
+            block_path = db._get_block_path(cert)
+            assert os.path.exists(os.path.join(block_path, cert))
 
         # Insert different certificates under the same IDs
         certs = {}
@@ -460,7 +460,7 @@ class TestCertFileDB(unittest.TestCase):
         self.assertFalse(db._to_insert)
         for cert in inserted:
             block_path = db._get_block_path(cert)
-            assert not os.path.exists(os.path.join(block_path, make_PEM_filename(cert)))
+            assert not os.path.exists(os.path.join(block_path, cert))
 
         # Delete and insert the same certs before commit
         deleted = delete_test_certs(db, TEST_CERTS_1)
@@ -475,7 +475,7 @@ class TestCertFileDB(unittest.TestCase):
         # and files should exist
         for cert in inserted:
             block_path = db._get_block_path(cert)
-            assert os.path.exists(os.path.join(block_path, make_PEM_filename(cert)))
+            assert os.path.exists(os.path.join(block_path, cert))
         # now commit and check that files were persisted
         ins, dlt = db.commit()
         # the certs should be only inserted
@@ -524,7 +524,7 @@ class TestCertFileDB(unittest.TestCase):
         db.rollback()
         for cert in inserted:
             block_path = db._get_block_path(cert)
-            assert not os.path.exists(os.path.join(block_path, make_PEM_filename(cert)))
+            assert not os.path.exists(os.path.join(block_path, cert))
         # Transaction should be empty
         self.assertFalse(db._to_insert)
 
@@ -536,12 +536,12 @@ class TestCertFileDB(unittest.TestCase):
         self.assertFalse(db._to_insert)
         # Commited certs should be compressed in zip files
         for cert in committed:
-            assert not os.path.exists(db._get_block_path(cert) + make_PEM_filename(cert))
+            assert not os.path.exists(db._get_block_path(cert) + cert)
             assert os.path.exists(db._get_block_archive(cert))
         # Rollbacked certs files should not exists
         for cert in inserted:
             block_path = db._get_block_path(cert)
-            assert not os.path.exists(os.path.join(block_path, make_PEM_filename(cert)))
+            assert not os.path.exists(os.path.join(block_path, cert))
 
         # Check rollback of delete method
         deleted = delete_test_certs(db, TEST_CERTS_1)
@@ -573,7 +573,7 @@ class TestCertFileDB(unittest.TestCase):
             assert certs.issubset(set(inserted))
         for cert in inserted:
             block_path = db._get_block_path(cert)
-            assert os.path.exists(os.path.join(block_path, make_PEM_filename(cert)))
+            assert os.path.exists(os.path.join(block_path, cert))
         # check correct number of committed certs
         ins, dlt = db.commit()
         self.assertEqual(ins, len(inserted))
@@ -581,7 +581,7 @@ class TestCertFileDB(unittest.TestCase):
         # transaction should be empty and certs should be compressed in zip files
         self.assertFalse(db._to_insert)
         for cert in inserted:
-            assert not os.path.exists(db._get_block_path(cert) + make_PEM_filename(cert))
+            assert not os.path.exists(db._get_block_path(cert) + cert)
             assert os.path.exists(db._get_block_archive(cert))
 
         # Insert already persisted certs and some others and commit
@@ -594,7 +594,7 @@ class TestCertFileDB(unittest.TestCase):
         # and the same ones should be deleted from transaction
         for cert in inserted_again:
             block_path = db._get_block_path(cert)
-            assert not os.path.exists(os.path.join(block_path, make_PEM_filename(cert)))
+            assert not os.path.exists(os.path.join(block_path, cert))
 
         # Delete and insert the same not yet persisted cert and commit
         valid_cert = ['valid_cert', 'validvalidvalidvalidvalid']
@@ -604,7 +604,7 @@ class TestCertFileDB(unittest.TestCase):
         # check that cert is persisted
         assert db.exists(valid_cert[0])
         assert os.path.exists(db._get_block_archive(valid_cert[0]))
-        assert not os.path.exists(db._get_block_path(valid_cert[0]) + make_PEM_filename(valid_cert[0]))
+        assert not os.path.exists(db._get_block_path(valid_cert[0]) + valid_cert[0])
 
         # Delete and insert the same already persisted cert and commit
         valid_cert = ['valid_cert', 'validvalidvalidvalidvalid_new']
@@ -673,19 +673,19 @@ class TestCertFileDB(unittest.TestCase):
         # Insert some certificates and check files existance in root folder
         inserted = insert_test_certs(db, TEST_CERTS_2)
         for cert in inserted:
-            assert os.path.exists(os.path.join(self.TEST_STORAGE, make_PEM_filename(cert)))
+            assert os.path.exists(os.path.join(self.TEST_STORAGE, cert))
             assert db.exists(cert)
         assert db.exists_all(inserted)
         # Rollback check file cleanup
         db.rollback()
         for cert in inserted:
-            assert not os.path.exists(os.path.join(storage_dir, make_PEM_filename(cert)))
+            assert not os.path.exists(os.path.join(storage_dir, cert))
             assert not db.exists(cert)
         # Delete inserted certificates and check file cleanup
         inserted = insert_test_certs(db, TEST_CERTS_2)
         delete_test_certs(db, TEST_CERTS_2)
         for cert in inserted:
-            assert not os.path.exists(os.path.join(storage_dir, make_PEM_filename(cert)))
+            assert not os.path.exists(os.path.join(storage_dir, cert))
             assert not db.exists(cert)
         self.assertFalse(db._to_insert)
         self.assertFalse(db._to_delete)
@@ -698,7 +698,7 @@ class TestCertFileDB(unittest.TestCase):
         deleted = delete_test_certs(db, TEST_CERTS_1)
         db.commit()
         for cert in deleted:
-            assert not os.path.exists(os.path.join(storage_dir, make_PEM_filename(cert)))
+            assert not os.path.exists(os.path.join(storage_dir, cert))
             assert not db.exists(cert)
         assert not os.path.exists(storage_dir + '.zip')
 

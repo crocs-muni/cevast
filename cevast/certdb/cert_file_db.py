@@ -118,33 +118,33 @@ class CertFileDBReadOnly(CertDBReadOnly):
         self._block_id_index = self._params['structure_level'] + 1
 
     def get(self, cert_id: str) -> str:
-        filename = make_PEM_filename(cert_id)
         # Check if certificate exists
         try:
             zip_file = self._get_block_archive(cert_id)
             with ZipFile(zip_file, 'r', ZIP_DEFLATED) as z_obj:
-                with z_obj.open(filename) as cert:
-                    log.debug('<%s> found persisted in zip <%s>', filename, zip_file)
+                with z_obj.open(cert_id) as cert:
+                    log.debug('<%s> found persisted in zip <%s>', cert_id, zip_file)
                     return cert.read().decode('utf-8')
         except (KeyError, FileNotFoundError):
             pass
 
-        log.info('<%s> not found', filename)
+        log.info('<%s> not found', cert_id)
         raise CertNotAvailableError(cert_id)
 
     def export(self, cert_id: str, target_dir: str, copy_if_exists: bool = True) -> str:
-        filename = make_PEM_filename(cert_id)
         # Check if certificate exists persisted
         try:
             zip_file = self._get_block_archive(cert_id)
             with ZipFile(zip_file, 'r', ZIP_DEFLATED) as z_obj:
-                z_obj.extract(filename, target_dir)
-                log.debug('<%s> found persisted in zip <%s>', filename, zip_file)
-                return os.path.join(target_dir, filename)
+                zipinfo = z_obj.getinfo(cert_id)
+                zipinfo.filename = make_PEM_filename(cert_id)
+                z_obj.extract(zipinfo, target_dir)
+                log.debug('<%s> found persisted in zip <%s>', cert_id, zip_file)
+                return os.path.join(target_dir, make_PEM_filename(cert_id))
         except (KeyError, FileNotFoundError):
             pass
 
-        log.info('<%s> not found', filename)
+        log.info('<%s> not found', cert_id)
         raise CertNotAvailableError(cert_id)
 
     def exists(self, cert_id: str) -> bool:
@@ -153,12 +153,11 @@ class CertFileDBReadOnly(CertDBReadOnly):
             log.debug('<%s> found in cache', cert_id)
             return True
 
-        cert_filename = make_PEM_filename(cert_id)
         # Check if certificate exists persisted
         try:
             zip_file = self._get_block_archive(cert_id)
             with ZipFile(zip_file, 'r', ZIP_DEFLATED) as z_obj:
-                z_obj.getinfo(cert_filename)
+                z_obj.getinfo(cert_id)
                 log.debug('<%s> exists persisted <%s>', cert_id, zip_file)
                 self._cache.add(cert_id)
                 return True
@@ -208,10 +207,9 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             self._get_block_id = lambda _: fixed_block_id
 
     def get(self, cert_id: str) -> str:
-        filename = make_PEM_filename(cert_id)
         # Check if certificate exists as a file (transaction still open)
         if self._is_in_transaction(cert_id, self._to_insert):
-            cert_file = self._get_block_path(cert_id) + filename
+            cert_file = self._get_block_path(cert_id) + cert_id
             with open(cert_file, 'r') as source:
                 log.debug('<%s> found in open transaction', cert_file)
                 return source.read()
@@ -223,15 +221,14 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         return CertFileDBReadOnly.get(self, cert_id)
 
     def export(self, cert_id: str, target_dir: str, copy_if_exists: bool = True) -> str:
-        filename = make_PEM_filename(cert_id)
         # Check if certificate exists as a file (transaction still open)
         if self._is_in_transaction(cert_id, self._to_insert):
-            cert_src_file = self._get_block_path(cert_id) + filename
+            cert_src_file = self._get_block_path(cert_id) + cert_id
             log.debug('<%s> found in open transaction', cert_src_file)
             if not copy_if_exists:
                 return cert_src_file
             # Copy file to the target directory
-            cert_trg_file = os.path.join(target_dir, filename)
+            cert_trg_file = os.path.join(target_dir, make_PEM_filename(cert_id))
             shutil.copyfile(cert_src_file, cert_trg_file)
             return cert_trg_file
         # Check if certificate is scheduled for delete
@@ -258,7 +255,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             raise CertInvalidError('cert_id <{}> or cert <{}> invalid'.format(cert_id, cert))
         # Save certificate to temporary file
         block = self._get_block_path(cert_id)
-        cert_file = block + make_PEM_filename(cert_id)
+        cert_file = block + cert_id
         if os.path.exists(cert_file):
             log.info('Certificate %s already exists', cert_file)
             return
@@ -281,7 +278,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
 
         if self._is_in_transaction(cert_id, self._to_insert):
             # Immediatelly delete certificate in open transaction if exists
-            cert_file = self._get_block_path(cert_id) + make_PEM_filename(cert_id)
+            cert_file = self._get_block_path(cert_id) + cert_id
             self._remove_from_transaction(cert_id, self._to_insert)
             os.remove(cert_file)
             log.debug('Certificate %s deleted from open transaction', cert_id)
@@ -298,8 +295,8 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         # Remove uncommitted certificates
         for block, certs in self._to_insert.items():
             block_path = self._get_block_path(block)
-            for cert in certs:
-                os.remove(block_path + make_PEM_filename(cert))
+            for cert_id in certs:
+                os.remove(block_path + cert_id)
         self._to_insert.clear()
         self._to_delete.clear()
         # Clean up empty folders
@@ -380,12 +377,11 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
                 persisted_certs = zout.namelist()
 
             for cert in certs:
-                cert_name = make_PEM_filename(cert)
-                cert_file = block_path + cert_name
-                if append and cert_name in persisted_certs:
+                cert_file = block_path + cert
+                if append and cert in persisted_certs:
                     pass  # do not insert duplicates
                 else:
-                    zout.write(cert_file, cert_name)
+                    zout.write(cert_file, cert)
                     cnt_inserted += 1
                 os.remove(cert_file)
 
