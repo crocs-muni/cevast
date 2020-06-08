@@ -326,7 +326,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         self._to_insert.clear()
         log.info('Inserted %d certificates', cnt_inserted)
         # Clean up empty folders
-        remove_empty_folders(self.storage)
+        remove_empty_folders(self.storage)  # TODO seems not working properly in benchmark
         # Write commit info
         if self._params['maintain_info']:
             self.__write_commit_info(cnt_inserted, cnt_deleted)
