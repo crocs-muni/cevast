@@ -114,7 +114,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
         log.info('Initializing %s transaction...', self.__class__.__name__)
         # Set maintaining all known certificate IDs for better EXISTS performance
         self._cache: set = set()
-        # Pre-compute index used for block_id 
+        # Pre-compute index used for block_id
         self._block_id_index = self._params['structure_level'] + 1
 
     def get(self, cert_id: str) -> str:
@@ -320,7 +320,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         # Now handle insert
         # TODO use multiprocessing
         for block, certs in self._to_insert.items():
-            cnt_inserted += CertFileDB.persist_certs(self._get_block_archive(block), certs)
+            cnt_inserted += CertFileDB.persist_certs(self._get_block_path(block), self._get_block_archive(block), certs)
 
         self._to_insert.clear()
         log.info('Inserted %d certificates', cnt_inserted)
@@ -361,18 +361,18 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
 
     # static so I can use it in async pool
     @staticmethod
-    def persist_certs(block_archive: str, certs: set) -> int:
+    def persist_certs(block_path: str, block_archive: str, certs: set) -> int:
         """Persist certificates to block archive"""
         if not certs:
-            log.debug('Nothing to insert in block %s', block_archive)
+            log.debug('Nothing to insert from block %s', block_path)
             return 0
         cnt_inserted = 0
         if os.path.exists(block_archive):
             append = True
-            log.debug('Appending to zipfile: %s', block_archive)
+            log.debug('Appending to archive: %s', block_archive)
         else:
             append = False
-            log.debug('Creating zipfile: %s', block_archive)
+            log.debug('Creating archive: %s', block_archive)
 
         # TODO compare performance for higher compresslevel
         with ZipFile(block_archive, "a" if append else "w", ZIP_DEFLATED) as zout:
@@ -381,15 +381,15 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
 
             for cert in certs:
                 cert_name = make_PEM_filename(cert)
-                cert_file = block_archive + cert_name
+                cert_file = block_path + cert_name
                 if append and cert_name in persisted_certs:
-                    pass
+                    pass  # do not insert duplicates
                 else:
                     zout.write(cert_file, cert_name)
                     cnt_inserted += 1
                 os.remove(cert_file)
 
-        log.debug('Persisted %d certificates from block %s', cnt_inserted, block_archive)
+        log.debug('Persisted %d certificates from block %s', cnt_inserted, block_path)
         return cnt_inserted
 
     def _is_in_transaction(self, cert_id: str, trans_dict: dict) -> bool:
