@@ -2,6 +2,7 @@
 This module provide functions supporting work with OS.
 """
 import os
+import sys
 
 __author__ = 'Radim Podola'
 
@@ -17,3 +18,10 @@ def remove_empty_folders(path: str):
                 remove_empty_folders(fullpath)
     else:
         os.rmdir(path)
+
+
+if __name__ == "__main__":
+    try:
+        remove_empty_folders(sys.argv[1])
+    except IndexError:
+        remove_empty_folders('.')
