@@ -716,6 +716,65 @@ class TestCertFileDB(unittest.TestCase):
             assert not db.exists(cert)
         assert not os.path.exists(storage_dir + '.zip')
 
+    def test_async_commit(self):
+        """
+        Test implementation multiprocessing version of CertDB method COMMIT
+        """
+        CertFileDB.setup(self.TEST_STORAGE, maintain_info=False)
+        db = CertFileDB(self.TEST_STORAGE, 100)
+        # Test commit without inserts
+        ins, dlt = db.commit()
+        self.assertEqual(ins, 0)
+        self.assertEqual(dlt, 0)
+        self.assertFalse(db._to_insert)
+
+        # Insert some certificates and check commit
+        inserted = insert_test_certs(db, TEST_CERTS_1)
+        # Certificates and blocks from open transaction should exist
+        for cert in inserted:
+            block_path = db._get_block_path(cert)
+            assert os.path.exists(os.path.join(block_path, cert))
+        # check correct number of committed certs
+        ins, dlt = db.commit()
+        self.assertEqual(ins, len(inserted))
+        self.assertEqual(dlt, 0)
+        # transaction should be empty and certs should be compressed in zip files
+        self.assertFalse(db._to_insert)
+        for cert in inserted:
+            assert not os.path.exists(db._get_block_path(cert) + cert)
+            assert os.path.exists(db._get_block_archive(cert))
+
+        # Insert already persisted certs and some others and commit
+        inserted_again = insert_test_certs(db, TEST_CERTS_1)
+        inserted_new = insert_test_certs(db, TEST_CERTS_2)
+        ins, dlt = db.commit()
+        # only the other certs should be committed
+        self.assertEqual(ins, len(inserted_new))
+        self.assertEqual(dlt, 0)
+        # and the same ones should be deleted from transaction
+        for cert in inserted_again:
+            block_path = db._get_block_path(cert)
+            assert not os.path.exists(os.path.join(block_path, cert))
+
+        # Delete and insert the same not yet persisted cert and commit
+        valid_cert = ['valid_cert', 'validvalidvalidvalidvalid']
+        db.delete(valid_cert[0])
+        db.insert(*valid_cert)
+        db.commit()
+        # check that cert is persisted
+        assert db.exists(valid_cert[0])
+        assert os.path.exists(db._get_block_archive(valid_cert[0]))
+        assert not os.path.exists(db._get_block_path(valid_cert[0]) + valid_cert[0])
+
+        # Delete and insert the same already persisted cert and commit
+        valid_cert = ['valid_cert', 'validvalidvalidvalidvalid_new']
+        db.delete(valid_cert[0])
+        db.insert(*valid_cert)
+        db.commit()
+        # check that the cert was replaced
+        assert db.exists(valid_cert[0])
+        self.assertEqual(db.get(valid_cert[0]), valid_cert[1])
+
 
 class TestCompositeCertDB(unittest.TestCase):
     """Unit test class of CompositeCertDB class"""

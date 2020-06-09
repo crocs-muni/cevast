@@ -10,21 +10,29 @@ import shutil
 import cevast.dataset.parsers as parser
 from cevast.certdb import CertFileDB, CertFileDBReadOnly
 from cevast.utils.cert_utils import BASE64_to_PEM
+from cevast.utils.logging import setup_cevast_logger
+
+setup_cevast_logger(debug=True, process_id=True)
 
 storage = sys.argv[1]
 dataset = sys.argv[2]
+try:
+    cpus = sys.argv[3]
+except IndexError:
+    cpus = 1
 certs = []
 
 try:
-    certdb = CertFileDB(storage)
+    certdb = CertFileDB(storage, cpus)
 except ValueError:
     CertFileDB.setup(storage, owner='cevast', desc='Cevast CertFileDB for performance tests')
-    certdb = CertFileDB(storage)
+    certdb = CertFileDB(storage, cpus)
 
 certdb_rdonly = CertFileDBReadOnly(storage)
 
 print("Benchmark: %s" % __file__)
 print("Dataset: %s" % dataset)
+print("CPUs used: %s" % cpus)
 print()
 print("Started insert:")
 t0 = time.time()

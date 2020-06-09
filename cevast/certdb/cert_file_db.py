@@ -36,6 +36,7 @@ b = 2
 import os
 import shutil
 import logging
+import multiprocessing as mp
 from typing import Tuple
 from datetime import datetime
 from collections import OrderedDict
@@ -204,7 +205,8 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         # Dict containing all deleted certificates grouped in blocks that will be deleted with commit
         self._to_delete: dict = {}
         # Max number of CPU cores that can be used (-1 is max limit by hardware)
-        self.__cores = cpu_cores
+        self.__cpu_cores = int(cpu_cores)
+        log.info('Will use %d CPUs', self.__cpu_cores)
         # Redefine _get_block_id method for special case with structure_level = 0
         if self._params['structure_level'] == 0:
             fixed_block_id = os.path.basename(storage)
@@ -311,19 +313,20 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         log.info('Commit started')
         cnt_deleted = 0
         cnt_inserted = 0
-        # Handle delete first because sequence matter
-        # TODO use multiprocessing
-        for block, certs in self._to_delete.items():
-            cnt_deleted += CertFileDB.delete_certs(self._get_block_archive(block), certs)
+
+        if self.__cpu_cores != 1:
+            cnt_inserted, cnt_deleted = self.__commit_async()
+        else:
+            # Handle delete first because sequence matter
+            for block, certs in self._to_delete.items():
+                cnt_deleted += CertFileDB.delete_certs(self._get_block_archive(block), certs)
+            # Now handle insert
+            for block, certs in self._to_insert.items():
+                cnt_inserted += CertFileDB.persist_certs(self._get_block_path(block), self._get_block_archive(block), certs)
 
         self._to_delete.clear()
-        log.info('Deleted %d certificates', cnt_deleted)
-        # Now handle insert
-        # TODO use multiprocessing
-        for block, certs in self._to_insert.items():
-            cnt_inserted += CertFileDB.persist_certs(self._get_block_path(block), self._get_block_archive(block), certs)
-
         self._to_insert.clear()
+        log.info('Deleted %d certificates', cnt_deleted)
         log.info('Inserted %d certificates', cnt_inserted)
         # Clean up empty folders
         remove_empty_folders(self.storage)  # TODO seems not working properly in benchmark
@@ -331,6 +334,35 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         if self._params['maintain_info']:
             self.__write_commit_info(cnt_inserted, cnt_deleted)
         log.info('Commit finished')
+        return cnt_inserted, cnt_deleted
+
+    def __commit_async(self) -> Tuple[int, int]:
+        """
+        Function acomplishing the same as commit() but with use of multiprocessing.Pool
+        of asynchronous workers to persist/delete multiple certificate blocks in parallel.
+        """
+        cnt_deleted = 0
+        cnt_inserted = 0
+        cpus = self.__cpu_cores if self.__cpu_cores > 0 else None
+
+        pool = mp.Pool(cpus)
+        # Handle delete first because sequence matter
+        results = []
+        for block, certs in self._to_delete.items():
+            results.append(pool.apply_async(CertFileDB.delete_certs, args=(self._get_block_archive(block), certs)))
+        cnt_deleted = sum([result.get() for result in results])
+        # Now handle insert
+        results = []
+        for block, certs in self._to_insert.items():
+            results.append(
+                pool.apply_async(
+                    CertFileDB.persist_certs, args=(self._get_block_path(block), self._get_block_archive(block), certs)
+                )
+            )
+        cnt_inserted = sum([result.get() for result in results])
+        pool.close()
+        pool.join()
+
         return cnt_inserted, cnt_deleted
 
     # static so I can use it in async pool or find a way hot to use private
