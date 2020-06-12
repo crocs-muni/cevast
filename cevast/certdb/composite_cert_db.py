@@ -29,18 +29,22 @@ class CompositeCertDBReadOnly(CertDBReadOnly):
     def __init__(self):
         log.info('Initializing CompositeCertDBReadOnly composite manager...')
         # Set managing all registered CertDBReadOnly components
-        self.__children: Set(CertDBReadOnly) = set()
+        self._children: Set(CertDBReadOnly) = set()
 
     def register(self, certdb: CertDBReadOnly) -> None:
         """Add component object to the composite manager."""
-        self.__children.add(certdb)
+        self._children.add(certdb)
 
     def unregister(self, certdb: CertDBReadOnly) -> None:
         """Remove component object from the composite manager."""
-        self.__children.discard(certdb)
+        self._children.discard(certdb)
+
+    def is_registered(self, certdb: CertDBReadOnly) -> bool:
+        """Test if component object is registered in the composite manager."""
+        return certdb in self._children
 
     def get(self, cert_id: str) -> str:
-        for child in self.__children:
+        for child in self._children:
             try:
                 return child.get(cert_id)
             except CertNotAvailableError:
@@ -48,7 +52,7 @@ class CompositeCertDBReadOnly(CertDBReadOnly):
         raise CertNotAvailableError
 
     def export(self, cert_id: str, target_dir: str, copy_if_exists: bool = True) -> str:
-        for child in self.__children:
+        for child in self._children:
             try:
                 return child.export(cert_id, target_dir, copy_if_exists)
             except CertNotAvailableError:
@@ -56,14 +60,14 @@ class CompositeCertDBReadOnly(CertDBReadOnly):
         raise CertNotAvailableError
 
     def exists(self, cert_id: str) -> bool:
-        for child in self.__children:
+        for child in self._children:
             if child.exists(cert_id):
                 return True
         return False
 
     def exists_all(self, cert_ids: list) -> bool:
         for cert_id in cert_ids:
-            for child in self.__children:
+            for child in self._children:
                 if child.exists(cert_id):
                     break
             else:
@@ -81,17 +85,17 @@ class CompositeCertDB(CertDB, CompositeCertDBReadOnly):
     def __init__(self):  # pylint: disable=W0231
         log.info('Initializing CompositeCertDB composite manager...')
         # Set managing all registered CertDB components
-        self.__children: Set(Union[CertDB, CertDBReadOnly]) = set()
+        self._children: Set(Union[CertDB, CertDBReadOnly]) = set()
         # Set managing all registered CertDBReadOnly components
         self.__io_allowed: Set(CertDB) = set()
 
     def register(self, certdb: Union[CertDB, CertDBReadOnly]) -> None:
-        self.__children.add(certdb)
+        self._children.add(certdb)
         if isinstance(certdb, CertDB):
             self.__io_allowed.add(certdb)
 
     def unregister(self, certdb: Union[CertDB, CertDBReadOnly]) -> None:
-        self.__children.discard(certdb)
+        self._children.discard(certdb)
         self.__io_allowed.discard(certdb)
 
     def insert(self, cert_id: str, cert: str) -> None:
@@ -107,6 +111,7 @@ class CompositeCertDB(CertDB, CompositeCertDBReadOnly):
             child.rollback()
 
     def commit(self) -> Tuple[int, int]:
+        cnt_inserted, cnt_deleted = 0, 0
         for child in self.__io_allowed:
             cnt_inserted, cnt_deleted = child.commit()
         return cnt_inserted, cnt_deleted

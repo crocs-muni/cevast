@@ -10,7 +10,6 @@ user_install:
 
 test:
 	$(interpret) -m unittest discover -s tests -v
-	rm -rf tests/test_storage
 
 check:
 	@echo -e "\e[0;32m[1/4]\e[0;35mflake8 --count --select=E9,F63,F7,F82 --show-source --statistics $(trg)$<\e[0m"

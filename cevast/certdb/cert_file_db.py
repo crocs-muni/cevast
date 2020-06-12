@@ -129,6 +129,8 @@ class CertFileDBReadOnly(CertDBReadOnly):
             pass
 
         log.info('<%s> not found', cert_id)
+        if cert_id in self._cache:
+            self._cache.clear()  # Cache seems to be invalidated, so clear it
         raise CertNotAvailableError(cert_id)
 
     def export(self, cert_id: str, target_dir: str, copy_if_exists: bool = True) -> str:
@@ -145,6 +147,8 @@ class CertFileDBReadOnly(CertDBReadOnly):
             pass
 
         log.info('<%s> not found', cert_id)
+        if cert_id in self._cache:
+            self._cache.clear()  # Cache seems to be invalidated, so clear it
         raise CertNotAvailableError(cert_id)
 
     def exists(self, cert_id: str) -> bool:
