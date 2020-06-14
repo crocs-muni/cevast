@@ -20,7 +20,7 @@ def remove_empty_folders(path: str):
         os.rmdir(path)
 
 
-def directory_with_prefix(directory: str, prefix: str, filename_only: bool=False) -> str:
+def directory_with_prefix(directory: str, prefix: str, filename_only: bool = False) -> str:
     """Generator listing directory and returning paths with the specified prefix."""
     # Check if the directory exists
     if os.path.exists(directory):

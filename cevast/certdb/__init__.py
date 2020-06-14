@@ -1,6 +1,15 @@
 """CertDB is a database managing X.509 certificates."""
 
-__all__ = ('CertDB', 'CertDBReadOnly', 'CertFileDB', 'CertFileDBReadOnly', 'CertNotAvailableError', 'CertInvalidError', 'CompositeCertDB', 'CompositeCertDBReadOnly')
+__all__ = (
+    'CertDB',
+    'CertDBReadOnly',
+    'CertFileDB',
+    'CertFileDBReadOnly',
+    'CertNotAvailableError',
+    'CertInvalidError',
+    'CompositeCertDB',
+    'CompositeCertDBReadOnly',
+)
 __version__ = '0.1'
 __author__ = 'Radim Podola'
 

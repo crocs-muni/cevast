@@ -1,5 +1,5 @@
 """
-This module contains implementation of CompositeCertDB
+This module contains implementation of CompositeCertDB.
 
     CompositeCertDB is an implementation of CertDB component following Composite design pattern.
 

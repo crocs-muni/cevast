@@ -58,7 +58,7 @@ class DatasetPath:
         elif isinstance(dataset_type, str) and dataset_type in DatasetType:
             self.__dataset_type = dataset_type
         else:
-            raise DatasetInvalidError("Dataset type %s not supported." % str(dataset_type))
+            raise DatasetInvalidError("Dataset type %s not supported." % dataset_type)
         # Dataset ID
         self.__dataset_id = dataset_id
 
@@ -73,7 +73,7 @@ class DatasetPath:
         elif isinstance(state, str) and state in DatasetState:
             self.__dataset_type = state
         else:
-            raise DatasetInvalidError("State %s not valid" % str(state))
+            raise DatasetInvalidError("State %s not valid" % state)
 
         path = os.path.join(self.__repository, self.__dataset_type, state.name)
         if check_if_exists and not os.path.exists(path):
@@ -188,3 +188,6 @@ class DatasetRepository:
                 ret_repo[d_type] = get_type()
 
         return ret_repo
+
+    def __str__(self):
+        return self.dumps()
