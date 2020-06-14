@@ -1,5 +1,5 @@
 interpret = python3.6
-trg = cevast/utils cevast/dataset/parsers cevast/certdb tests/test_*
+trg = cevast/utils cevast/dataset/parsers cevast/certdb tests/test_* cevast/dataset/dataset.py cevast/dataset/*manager*
 max_line_len = 127
 
 install:
@@ -29,5 +29,6 @@ clear:
 	rm -rf dist/
 	rm -rf cevast.egg-info/
 	find . -name __pycache__ -type d -exec rm -rv {} +
+	find . -name *.pyc -delete
 
 .PHONY: install user_install test check clear

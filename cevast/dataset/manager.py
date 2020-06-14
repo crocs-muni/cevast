@@ -1,68 +1,29 @@
-"""
-This module contains manager class interface and manager factory returning specific manager based on dataset type
+"""This module contains DatasetManager interface."""
 
-Manager for managed certificate datasets
-    - collected
-    - parsed
-
-    - will call correct parse()
-"""
-
-#import cevast.dataset.parser as dp
-from enum import Enum
+from abc import ABC, abstractmethod
 
 
-class DatasetType(Enum):
-    RAPID = 1
-    CENSYS = 2
+class DatasetManager(ABC):
+    """
+    Abstract class representing DatasetManager interface.
 
-"""
-# TODO make ABC parser - NO! instead dataset_manager will have generic interface
+    DatasetManager is a class providing operations with dataset...
+    """
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%d-%m-%y %H:%M:%S')
+    @abstractmethod
+    def run(self, work_queue: list) -> bool:
+        """
+        Run work queue.
+        """
 
-class DatasetManager():
+    @abstractmethod
+    def collect(self) -> str:
+        """
+        Collect a dataset.
+        """
 
-    def __init__(self, dataset_type: DatasetType):
-        if dataset_type in DatasetType:
-            self._type = dataset_type
-        else:
-            raise NotImplementedError
-
-    @classmethod
-    def fromConfig(cls, config):
-        if config['type'] not in DatasetType:
-            raise NotImplementedError
-
-        ins = cls(config['type'])
-        ins._config = config
-        return ins
-
-    def __getParser(self):
-        if self._parser is None:
-            if self._config:
-                return dp.getCollectorFromConfig(self._config)
-            else:
-                return dp.getParser
-
-    def getDataset(self):
-        pass
-
-    @staticmethod
-    def collect_dataset(date) -> Dataset:
-        return None
-
-    "Parsing output of every type will be generic file format: host, cert_chain""
-    def parse_dataset(self, date) -> bool:
-        self.getParser().parse(dataset)
-
-
-class RapidDatasetManager(DatasetManager):
-    C_CERT_NAME_SUFFIX = '-certs.gz'
-    C_HOSTS_NAME_SUFFIX = '-hosts.gz'
-
-    def __init__(self, workspace):
-        self.__workspace = workspace
-        pass
-
-"""
+    @abstractmethod
+    def parse(self) -> str:
+        """
+        Parse a dataset.
+        """
