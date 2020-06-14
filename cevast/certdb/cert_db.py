@@ -40,7 +40,7 @@ class CertDBReadOnly(ABC):
         """
         Retrieve a certificate from the database.
 
-        'cert_id' is the certificate identifier.
+        `cert_id` is the certificate identifier.
         Certificate is returned in a PEM format.
         Raise CertNotAvailableError if the certificate is not found.
         """
@@ -50,9 +50,9 @@ class CertDBReadOnly(ABC):
         """
         Export a certificate from the database and saves it as a PEM file.
 
-        'cert_id' is the certificate identifier,
-        'target_dir' is the target directory.
-        If 'copy_if_exists' is false and file already exists (e.g. temporary in open transaction),
+        `cert_id` is the certificate identifier,
+        `target_dir` is the target directory.
+        If `copy_if_exists` is false and file already exists (e.g. temporary in open transaction),
         the file is not copied to the target directory, instead the existing file path is returned.
 
         Full path of the certificate file is returned.
@@ -64,7 +64,7 @@ class CertDBReadOnly(ABC):
         """
         Test whether a certificate exists in the database.
 
-        'cert_id' is the certificate cert_identifier.
+        `cert_id` is the certificate cert_identifier.
         """
 
     @abstractmethod
@@ -72,7 +72,7 @@ class CertDBReadOnly(ABC):
         """
         Test that all certificates exist in the database.
 
-        'cert_ids' is a list of certificate identifiers.
+        `cert_ids` is a list of certificate identifiers.
         """
 
 
@@ -83,7 +83,7 @@ class CertDB(CertDBReadOnly):
     @abstractmethod
     def insert(self, cert_id: str, cert: str) -> None:
         """
-        Insert the certificate to the database under 'cert_id' identifier.
+        Insert the certificate to the database under `cert_id` identifier.
 
         Inserted certificate is not persisted immediatelly but
         remains in current open transaction untill commit or rollback.
