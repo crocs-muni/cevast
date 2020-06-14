@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     env:
-      targets: cevast/utils cevast/dataset/parsers cevast/certdb tests/test_*
+      targets: cevast/utils cevast/dataset/parsers cevast/certdb tests/test_* cevast/dataset/dataset.py cevast/dataset/*manager*
 
     runs-on: ubuntu-latest
 
