@@ -5,14 +5,14 @@ This module contains unit tests of Dataset module
 import os
 import shutil
 import unittest
-from cevast.dataset.dataset import (DatasetPath, DatasetState, DatasetType, DatasetInvalidError, DatasetRepository)
+from cevast.dataset.dataset import DatasetPath, DatasetState, DatasetType, DatasetInvalidError, DatasetRepository
 
 
 def create_file(name: str):
     """Create file with given name."""
     os.makedirs(os.path.dirname(name), exist_ok=True)
-    with open(name, 'w') as f:
-        f.write("adadadadadasdadadadasda")
+    with open(name, 'w') as w_file:
+        w_file.write("adadadadadasdadadadasda")
 
 
 class TestDatasetPath(unittest.TestCase):
@@ -68,7 +68,10 @@ class TestDatasetPath(unittest.TestCase):
         self.assertEqual(dp_rapid.get(DatasetState.PARSED, True), None)
         os.makedirs(path)
         assert os.path.exists(path)
-        self.assertEqual(dp_rapid.get(DatasetState.PARSED, True), os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.PARSED.name))
+        self.assertEqual(
+            dp_rapid.get(DatasetState.PARSED, True),
+            os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.PARSED.name),
+        )
 
     def test_get_full(self):
         """Test implementation of DatasetPath method GET_FULL."""
@@ -85,22 +88,54 @@ class TestDatasetPath(unittest.TestCase):
         self.assertNotEqual(path, path2)
         self.assertNotEqual(path2, path3)
         # GET_FULL should return /../repository/RAPID/PARSED/2020-06-12.gz
-        self.assertEqual(path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.PARSED.name, '2020-06-12.' + dp_rapid.EXTENSION))
+        self.assertEqual(
+            path,
+            os.path.join(
+                os.path.abspath(self.TEST_REPO),
+                DatasetType.RAPID.name,
+                DatasetState.PARSED.name,
+                '2020-06-12.' + dp_rapid.EXTENSION,
+            ),
+        )
         path = dp_rapid.get_full(DatasetState.PARSED, 'suffix', False)
         # GET_FULL should return /../repository/RAPID/PARSED/2020-06-12_suffix.gz
-        self.assertEqual(path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.PARSED.name, '2020-06-12_suffix.' + dp_rapid.EXTENSION))
+        self.assertEqual(
+            path,
+            os.path.join(
+                os.path.abspath(self.TEST_REPO),
+                DatasetType.RAPID.name,
+                DatasetState.PARSED.name,
+                '2020-06-12_suffix.' + dp_rapid.EXTENSION,
+            ),
+        )
 
         # Test GET_FULL with STRING state paramater
         path = dp_rapid.get_full("PARSED", '', False)
         assert not os.path.exists(path)
-        self.assertEqual(path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.PARSED.name, '2020-06-12.' + dp_rapid.EXTENSION))
+        self.assertEqual(
+            path,
+            os.path.join(
+                os.path.abspath(self.TEST_REPO),
+                DatasetType.RAPID.name,
+                DatasetState.PARSED.name,
+                '2020-06-12.' + dp_rapid.EXTENSION,
+            ),
+        )
 
         # Test check_if_exists paramater
         assert not os.path.exists(path)
         self.assertEqual(dp_rapid.get_full(DatasetState.PARSED, '', True), None)
         os.makedirs(path)
         assert os.path.exists(path)
-        self.assertEqual(dp_rapid.get_full(DatasetState.PARSED, '', True), os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.PARSED.name, '2020-06-12.' + dp_rapid.EXTENSION))
+        self.assertEqual(
+            dp_rapid.get_full(DatasetState.PARSED, '', True),
+            os.path.join(
+                os.path.abspath(self.TEST_REPO),
+                DatasetType.RAPID.name,
+                DatasetState.PARSED.name,
+                '2020-06-12.' + dp_rapid.EXTENSION,
+            ),
+        )
 
     def test_delete(self):
         """Test implementation of DatasetPath method DELETE."""
@@ -198,7 +233,7 @@ class TestDatasetPath(unittest.TestCase):
         path = os.path.join(self.TEST_REPO, DatasetType.RAPID.name, DatasetState.PARSED.name)
         ds = os.path.join(self.TEST_REPO, '2020-06-30_suffix.gz')
         ds_suffix_only = os.path.join(self.TEST_REPO, 'suffix.gz')
-        # Test with source that doesn't exist   
+        # Test with source that doesn't exist
         dp.move(DatasetState.PARSED, "totally_made_up")
         assert not os.path.exists(path)
 
@@ -224,7 +259,9 @@ class TestDatasetPath(unittest.TestCase):
         self.assertRaises(DatasetInvalidError, dp.move, "UNKNOWN", ds_suffix_only, False)
         dp.move("VALIDATED", ds_suffix_only)
         assert not os.path.exists(ds_suffix_only)
-        assert os.path.exists(os.path.join(self.TEST_REPO, DatasetType.CENSYS.name, DatasetState.VALIDATED.name, '2020-06-30_suffix.gz'))
+        assert os.path.exists(
+            os.path.join(self.TEST_REPO, DatasetType.CENSYS.name, DatasetState.VALIDATED.name, '2020-06-30_suffix.gz')
+        )
 
 
 class TestDatasetRepository(unittest.TestCase):
@@ -244,9 +281,10 @@ class TestDatasetRepository(unittest.TestCase):
         """Test of DatasetRepository class instantiation."""
         # Test init with wrong repository
         self.assertRaises(FileNotFoundError, DatasetRepository, self.TEST_REPO + 'invalid')
+        self.assertRaises(FileNotFoundError, DatasetRepository, None)
         # Create DatasetRepository instance
         DatasetRepository(self.TEST_REPO)
-        DatasetRepository(None)
+        DatasetRepository('.')
 
     def test_get(self):
         """Test implementation of DatasetRepository method GET."""
@@ -273,16 +311,22 @@ class TestDatasetRepository(unittest.TestCase):
 
         # Test GET all
         get_repo = repo.get()
-        self.assertEqual(get_repo, {"RAPID": {"PARSED": ('2020-06-12_ds1.gz',)},
-                                    "CENSYS": {"PARSED": ('2020-06-12_ds2.gz','2020-06-12_ds2_2.gz',),
-                                                "VALIDATED": ('2020-06-30_ds3.gz',)}})
+        self.assertEqual(
+            get_repo,
+            {
+                "RAPID": {"PARSED": ('2020-06-12_ds1.gz',)},
+                "CENSYS": {"PARSED": ('2020-06-12_ds2.gz', '2020-06-12_ds2_2.gz',), "VALIDATED": ('2020-06-30_ds3.gz',)},
+            },
+        )
         # Test GET with specific dataset ID
         self.assertEqual(get_repo, repo.get(dataset_id=""))
         self.assertEqual(get_repo, repo.get(dataset_id="2020-06-"))
         assert not repo.get(dataset_id='INVALID')
         get_repo = repo.get(dataset_id='2020-06-12')
-        self.assertEqual(get_repo, {"RAPID": {"PARSED": ('2020-06-12_ds1.gz',)},
-                                    "CENSYS": {"PARSED": ('2020-06-12_ds2.gz','2020-06-12_ds2_2.gz',)}})
+        self.assertEqual(
+            get_repo,
+            {"RAPID": {"PARSED": ('2020-06-12_ds1.gz',)}, "CENSYS": {"PARSED": ('2020-06-12_ds2.gz', '2020-06-12_ds2_2.gz',)}},
+        )
 
         # Test GET with specific dataset type
         get_repo = repo.get(dataset_type=DatasetType.RAPID)
@@ -293,14 +337,16 @@ class TestDatasetRepository(unittest.TestCase):
         assert not repo.get(state=DatasetState.ANALYZED)
         get_repo = repo.get(state=DatasetState.PARSED)
         self.assertEqual(get_repo, repo.get(state="PARSED"))
-        self.assertEqual(get_repo, {"RAPID": {"PARSED": ('2020-06-12_ds1.gz',)},
-                                    "CENSYS": {"PARSED": ('2020-06-12_ds2.gz','2020-06-12_ds2_2.gz',)}})
+        self.assertEqual(
+            get_repo,
+            {"RAPID": {"PARSED": ('2020-06-12_ds1.gz',)}, "CENSYS": {"PARSED": ('2020-06-12_ds2.gz', '2020-06-12_ds2_2.gz',)}},
+        )
 
         # Test with STRING paramater
         self.assertRaises(DatasetInvalidError, repo.get, "UNKNOWN", None)
         assert repo.get("RAPID", None)
         self.assertRaises(DatasetInvalidError, repo.get, None, "UNKNOWN")
-        assert repo.get( None, "PARSED")
+        assert repo.get(None, "PARSED")
 
     def test_dumps(self):
         """Test implementation of DatasetRepository method DUMPS and __str__."""
@@ -350,4 +396,4 @@ class TestDatasetRepository(unittest.TestCase):
         self.assertRaises(DatasetInvalidError, repo.dumps, "UNKNOWN", None)
         assert repo.dumps("RAPID", None)
         self.assertRaises(DatasetInvalidError, repo.dumps, None, "UNKNOWN")
-        assert repo.dumps( None, "PARSED")
+        assert repo.dumps(None, "PARSED")

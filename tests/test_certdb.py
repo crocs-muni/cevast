@@ -1,6 +1,7 @@
 """
 This module contains white-box unit tests of CertDB package
 """
+# pylint: disable=W0212, C0103, C0302
 import sys
 import os
 import subprocess
@@ -20,7 +21,7 @@ from cevast.certdb import (
     CertNotAvailableError,
     CertInvalidError,
     CompositeCertDB,
-    CompositeCertDBReadOnly
+    CompositeCertDBReadOnly,
 )
 
 # Helper functions
@@ -87,7 +88,6 @@ def commit_test_certs(database: CertDB, certs_file: str) -> list:
     return certs
 
 
-# pylint: disable=W0212, C0103
 class TestCertFileDBReadOnly(unittest.TestCase):
     """Unit test class of CertFileDBReadOnly class"""
 
@@ -630,6 +630,9 @@ class TestCertFileDB(unittest.TestCase):
         self.assertEqual(db.get(valid_cert[0]), valid_cert[1])
 
     def test_parallel_transactions(self):
+        """
+        Test of using multiple instances of CertDB with the same storage.
+        """
         pass
 
     def test_config_info_maintain(self):

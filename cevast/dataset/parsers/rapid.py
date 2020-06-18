@@ -19,7 +19,6 @@ class RapidParser:
     dataset_type = DatasetType.RAPID
 
     # TODO design init and config properly
-    # will receive Dataset instance
     def __init__(self, certs_dataset: str, hosts_dataset: str, dataset_id: str):
         # Check dataset files
         if not os.path.isfile(certs_dataset):
@@ -38,11 +37,6 @@ class RapidParser:
             'total_host_certs': 0,
             'broken_chains': 0,
         }
-
-    # a class method to create a RapidParser object from config file.
-    @classmethod
-    def from_config(cls, config):
-        return cls(config['certs_dataset'], config['hosts_dataset'], config['dataset_id'])
 
     @staticmethod
     def read_certs(dataset: str) -> tuple:
@@ -77,12 +71,18 @@ class RapidParser:
             yield last, chain
 
     def store_certs(self, certdb: CertDB) -> None:
-        """Parses certificates from dataset and stores them into DB"""
+        """Parses certificates from dataset and stores them into DB."""
         for sha, cert in self.read_certs(self.certs_dataset):
             certdb.insert(sha, BASE64_to_PEM(cert))
             self.__parsing_log['total_certs'] += 1
 
     def store_chains(self, certdb: CertDB, separate_broken_chains: bool = True) -> None:
+        """
+        Parses certificate chains from dataset and stores them into the `dataset_id` file.
+
+        If `separate_broken_chains`, the chains that are not available (in the dataset nor the CertDB)
+        are stored into the separate file with suffix "_broken".
+        """
         def write_chain(host: str, chain: list):
             self.__parsing_log['total_hosts'] += 1
             line = host + ',' + ','.join(chain) + '\n'
@@ -110,5 +110,6 @@ class RapidParser:
                 write_chain(host, chain)
 
     @property
-    def parsing_log(self):
+    def parsing_log(self) -> dict:
+        """Getter property of parsing log."""
         return self.__parsing_log

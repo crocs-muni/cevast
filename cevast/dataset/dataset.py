@@ -24,8 +24,8 @@ class DatasetState(IntEnum):
     """Enumaration class of all supported Dataset states."""
 
     COLLECTED = 1  # Dataset was collected and is available in a raw format
-    ANALYZED = 2   # Dataset was analyzed
-    PARSED = 3     # Dataset was parsed to internal format, certificates were stored to CertDB
+    ANALYZED = 2  # Dataset was analyzed
+    PARSED = 3  # Dataset was parsed to internal format, certificates were stored to CertDB
     VALIDATED = 4  # Dataset was already run through validation, result might be available
 
 
@@ -140,11 +140,13 @@ class DatasetRepository:
     """
 
     def __init__(self, repository: str):
-        self.repository = os.path.abspath(repository)
-        if not os.path.exists(self.repository):
+        if repository and os.path.exists(repository):
+            self.repository = os.path.abspath(repository)
+        else:
             raise FileNotFoundError("Dataset Repository %s not found." % repository)
 
-    def dumps(self, dataset_type: Union[DatasetType, str] = None, state: Union[DatasetState, str] = None, dataset_id: str = '') -> str:
+    def dumps(self, dataset_type: Union[DatasetType, str] = None,
+              state: Union[DatasetState, str] = None, dataset_id: str = '') -> str:
         """
         Return string representation of the specified dataset repository.
         The parameters represent the output filter options.
@@ -157,14 +159,16 @@ class DatasetRepository:
                     repo_str += "{}: {}: [{}]\n".format(d_type, d_state, ', '.join(d_datasets))
         return repo_str
 
-    def dump(self, dataset_type: Union[DatasetType, str] = None, state: Union[DatasetState, str] = None, dataset_id: str = '') -> None:
+    def dump(self, dataset_type: Union[DatasetType, str] = None,
+             state: Union[DatasetState, str] = None, dataset_id: str = '') -> None:
         """
         Print string representation of the specified dataset repository to the STDOUT.
         The parameters represent the output filter options.
         """
         print(self.dumps(dataset_type, state, dataset_id))
 
-    def get(self, dataset_type: Union[DatasetType, str] = None, state: Union[DatasetState, str] = None, dataset_id: str = '') -> dict:
+    def get(self, dataset_type: Union[DatasetType, str] = None,
+            state: Union[DatasetState, str] = None, dataset_id: str = '') -> dict:
         """
         Return dictionary representation of the specified dataset repository.
         The parameters represent the output filter options.
@@ -178,15 +182,12 @@ class DatasetRepository:
 
         def get_type() -> dict:
             ret_type = {}
-            if state:
-                ret_state = get_state(state)
+            states = [state] if state else DatasetState
+            # Iterate through filtered states and get its datasets
+            for d_state in states:
+                ret_state = get_state(d_state)
                 if ret_state:
-                    ret_type[state.name] = ret_state
-            else:
-                for d_state in DatasetState:
-                    ret_state = get_state(d_state)
-                    if ret_state:
-                        ret_type[d_state.name] = ret_state
+                    ret_type[d_state.name] = ret_state
             return ret_type
 
         # Validate dataset type
@@ -207,18 +208,13 @@ class DatasetRepository:
                 raise DatasetInvalidError("State %s not valid" % state)
 
         ret_repo = {}
-
-        if dataset_type:
-            dataset_path = DatasetPath(self.repository, dataset_type, dataset_id)
+        types = [dataset_type] if dataset_type else DatasetType
+        # Iterate through filtered types and get its states
+        for d_type in types:
+            dataset_path = DatasetPath(self.repository, d_type, dataset_id)
             ret_type = get_type()
             if ret_type:
-                ret_repo[dataset_type.name] = ret_type
-        else:
-            for d_type in DatasetType:
-                dataset_path = DatasetPath(self.repository, d_type, dataset_id)
-                ret_type = get_type()
-                if ret_type:
-                    ret_repo[d_type.name] = ret_type
+                ret_repo[d_type.name] = ret_type
 
         return ret_repo
 
