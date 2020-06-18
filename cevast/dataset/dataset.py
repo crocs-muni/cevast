@@ -55,7 +55,7 @@ class DatasetPath:
         # Validate and init dataset type
         if isinstance(dataset_type, DatasetType) and dataset_type in DatasetType:
             self.__dataset_type = dataset_type.name
-        elif isinstance(dataset_type, str) and dataset_type in DatasetType:
+        elif isinstance(dataset_type, str) and dataset_type in DatasetType.__members__:
             self.__dataset_type = dataset_type
         else:
             raise DatasetInvalidError("Dataset type %s not supported." % dataset_type)
@@ -69,13 +69,12 @@ class DatasetPath:
         """
         # Validate dataset state
         if isinstance(state, DatasetState) and state in DatasetState:
-            self.__dataset_type = state.name
-        elif isinstance(state, str) and state in DatasetState:
-            self.__dataset_type = state
+            path = os.path.join(self.__repository, self.__dataset_type, state.name)
+        elif isinstance(state, str) and state in DatasetState.__members__:
+            path = os.path.join(self.__repository, self.__dataset_type, state)
         else:
             raise DatasetInvalidError("State %s not valid" % state)
 
-        path = os.path.join(self.__repository, self.__dataset_type, state.name)
         if check_if_exists and not os.path.exists(path):
             return None
         return path
@@ -85,7 +84,8 @@ class DatasetPath:
         Return full path to the dataset file in given state including custome suffix.
         Return None if `check_if_exists` and file does not exist.
         """
-        filename = "{}_{}.{}".format(self.__dataset_id, suffix, self.EXTENSION)
+        name_fmt = "{}_{}.{}" if suffix else "{}{}.{}"
+        filename = name_fmt.format(self.__dataset_id, suffix, self.EXTENSION)
         path = self.get(state, check_if_exists)
         if check_if_exists and not (path and os.path.exists(path)):
             return None
@@ -93,8 +93,12 @@ class DatasetPath:
 
     def delete(self, state: Union[DatasetState, str]) -> None:
         """Delete the dataset of given state from the repository."""
-        for file in directory_with_prefix(self.get(state, False), self.__dataset_id):
-            os.remove(file)
+        path = self.get(state)
+        if path:
+            for file in directory_with_prefix(path, self.__dataset_id):
+                os.remove(file)
+            if not os.listdir(path):
+                os.rmdir(path)
 
     def purge(self) -> None:
         """Delete all datasets of specified type from the repository."""
@@ -102,12 +106,14 @@ class DatasetPath:
 
     def exists(self, state: Union[DatasetState, str]) -> bool:
         """Test if the dataset exists in given state."""
-        for _ in directory_with_prefix(self.get(state, False), self.__dataset_id):
-            return True
+        path = self.get(state)
+        if path:
+            for _ in directory_with_prefix(path, self.__dataset_id):
+                return True
         return False
 
     def exists_any(self) -> bool:
-        """Test if the dataset exists in any state."""
+        """Test if any dataset (of the specified type) exists."""
         for state in DatasetState:
             if self.exists(state):
                 return True
@@ -116,7 +122,7 @@ class DatasetPath:
     def move(self, state: Union[DatasetState, str], source: str, prefix_id: bool = True) -> None:
         """
         Move the source file to the repository of the dataset of given state.
-        If `prefix_id` is true, then prefix "dataset_id_" is added to the file.
+        If `prefix_id` is true, then prefix "{dataset_id}_" is added to the file.
         """
         if os.path.exists(source):
             path = self.get(state, False)
@@ -134,58 +140,85 @@ class DatasetRepository:
     """
 
     def __init__(self, repository: str):
-        self.repo = os.path.abspath(repository)
+        self.repository = os.path.abspath(repository)
+        if not os.path.exists(self.repository):
+            raise FileNotFoundError("Dataset Repository %s not found." % repository)
 
-    def dumps(self, dataset_type: DatasetType = None, state: DatasetState = None, dataset_id: str = '') -> str:
+    def dumps(self, dataset_type: Union[DatasetType, str] = None, state: Union[DatasetState, str] = None, dataset_id: str = '') -> str:
         """
         Return string representation of the specified dataset repository.
         The parameters represent the output filter options.
         """
         repo = self.get(dataset_type, state, dataset_id)
         repo_str = ''
-        for d_type in repo:
-            for d_state in d_type:
-                for dataset in d_state:
-                    repo_str += "{}:{}:{}\n".format(d_type, d_state, dataset)
+        for d_type, d_states in repo.items():
+            for d_state, d_datasets in d_states.items():
+                if d_datasets:
+                    repo_str += "{}: {}: [{}]\n".format(d_type, d_state, ', '.join(d_datasets))
         return repo_str
 
-    def dump(self, dataset_type: DatasetType = None, state: DatasetState = None, dataset_id: str = '') -> None:
+    def dump(self, dataset_type: Union[DatasetType, str] = None, state: Union[DatasetState, str] = None, dataset_id: str = '') -> None:
         """
         Print string representation of the specified dataset repository to the STDOUT.
         The parameters represent the output filter options.
         """
         print(self.dumps(dataset_type, state, dataset_id))
 
-    def get(self, dataset_type: DatasetType = None, state: DatasetState = None, dataset_id: str = '') -> dict:
+    def get(self, dataset_type: Union[DatasetType, str] = None, state: Union[DatasetState, str] = None, dataset_id: str = '') -> dict:
         """
         Return dictionary representation of the specified dataset repository.
         The parameters represent the output filter options.
         """
 
-        def get_state(state: DatasetState) -> tuple:
+        def get_state(state: Union[DatasetState, str]) -> tuple:
             path = dataset_path.get(state)
             if not path:
-                return tuple()
+                return None
             return tuple(directory_with_prefix(path, dataset_id, True))
 
         def get_type() -> dict:
             ret_type = {}
             if state:
-                ret_type[state.name] = get_state(state)
+                ret_state = get_state(state)
+                if ret_state:
+                    ret_type[state.name] = ret_state
             else:
                 for d_state in DatasetState:
-                    ret_type[d_state.name] = get_state(d_state)
+                    ret_state = get_state(d_state)
+                    if ret_state:
+                        ret_type[d_state.name] = ret_state
             return ret_type
+
+        # Validate dataset type
+        if dataset_type:
+            if isinstance(dataset_type, DatasetType) and dataset_type in DatasetType:
+                pass
+            elif isinstance(dataset_type, str) and dataset_type in DatasetType.__members__:
+                dataset_type = DatasetType[dataset_type]
+            else:
+                raise DatasetInvalidError("State %s not valid" % state)
+        # Validate dataset state
+        if state:
+            if isinstance(state, DatasetState) and state in DatasetState:
+                pass
+            elif isinstance(state, str) and state in DatasetState.__members__:
+                state = DatasetState[state]
+            else:
+                raise DatasetInvalidError("State %s not valid" % state)
 
         ret_repo = {}
 
         if dataset_type:
-            dataset_path = DatasetPath(self.repo, dataset_type, dataset_id)
-            ret_repo[dataset_type] = get_type()
+            dataset_path = DatasetPath(self.repository, dataset_type, dataset_id)
+            ret_type = get_type()
+            if ret_type:
+                ret_repo[dataset_type.name] = ret_type
         else:
             for d_type in DatasetType:
-                dataset_path = DatasetPath(self.repo, d_type, dataset_id)
-                ret_repo[d_type] = get_type()
+                dataset_path = DatasetPath(self.repository, d_type, dataset_id)
+                ret_type = get_type()
+                if ret_type:
+                    ret_repo[d_type.name] = ret_type
 
         return ret_repo
 
