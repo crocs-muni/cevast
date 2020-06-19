@@ -1,8 +1,8 @@
 """
 This module contains implementation of CertFileDB
 
-    CertFileDB is a simple local database that uses files
-    and a file system properties as a storage mechanism.
+    CertFileDB is a simple local database implementing CertDB interface that
+    uses files and a file system properties as a storage mechanism.
 
 Storage structure on the file system:
 storage/             - path to the storage given as an initial parameter to CertFileDB containing
@@ -11,7 +11,8 @@ storage/             - path to the storage given as an initial parameter to Cert
         - id[3].zip  - first 2 characters of certificate ID (fingerprint) (e.g. 1af.zip)
         - ...
     - ...
-    - .CertFileDB.toml    - CertFileDB configuration file
+    - .CertFileDB.toml       - CertFileDB configuration file
+    - .CertFileDB-META.toml  - CertFileDB meta-information file
 
 .CertFileDB.toml example:
 [PARAMETERS]
@@ -19,7 +20,9 @@ storage = "/var/tmp/cevast_storage"
 structure_level = 2
 cert_format = "PEM"
 compression_method = "ZIP_DEFLATED"
+maintain_info = True
 
+.CertFileDB-META.toml example:
 [INFO]
 owner = "cevast"
 description = "Certificate storage for Cevast tool"
@@ -68,17 +71,19 @@ class CertFileDBReadOnly(CertDBReadOnly):
     """
 
     CONF_FILENAME = '.CertFileDB.toml'
+    META_FILENAME = '.CertFileDB-META.toml'
 
     @staticmethod
     def setup(storage_path: str, structure_level: int = 2, cert_format: str = 'PEM',
               desc: str = 'CertFileDB', owner: str = '', maintain_info: bool = True) -> None:
         """
         Setup CertFileDB storage directory with the given parameters.
-        Directory and configuration file CertFileDB.toml is created.
+        Directory, configuration and META file is created.
         Raise ValueError for wrong parameters or if DB already exists.
         """
         storage_path = os.path.abspath(storage_path)
         config_path = os.path.join(storage_path, CertFileDB.CONF_FILENAME)
+        meta_path = os.path.join(storage_path, CertFileDB.META_FILENAME)
         if os.path.exists(config_path):
             raise ValueError('CertFileDB already exists')
         if not isinstance(structure_level, int):
@@ -92,13 +97,17 @@ class CertFileDBReadOnly(CertDBReadOnly):
         config['PARAMETERS']['cert_format'] = cert_format
         config['PARAMETERS']['compression_method'] = 'ZIP_DEFLATED'
         config['PARAMETERS']['maintain_info'] = maintain_info
-        config['INFO'] = OrderedDict()
-        config['INFO']['owner'] = owner
-        config['INFO']['description'] = desc
-        config['INFO']['created'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S%Z')
-
         with open(config_path, 'w') as cfg_file:
             toml.dump(config, cfg_file)
+        # Create META file
+        meta = OrderedDict()
+        meta['INFO'] = OrderedDict()
+        meta['INFO']['owner'] = owner
+        meta['INFO']['description'] = desc
+        meta['INFO']['created'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S%Z')
+        with open(meta_path, 'w') as meta_file:
+            toml.dump(meta, meta_file)
+
         log.info('CertFileDB was setup:\n%s', config)
 
     def __init__(self, storage: str):
@@ -445,21 +454,21 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             pass
 
     def __write_commit_info(self, inserted: int, deleted: int) -> None:
-        config_path = os.path.join(self.storage, self.CONF_FILENAME)
-        config = toml.load(config_path, OrderedDict)
+        meta_path = os.path.join(self.storage, self.META_FILENAME)
+        meta = toml.load(meta_path, OrderedDict)
         # Update DB INFO
-        total_cnt = config['INFO'].get('number_of_certificates', 0)
-        config['INFO']['number_of_certificates'] = total_cnt + inserted - deleted
-        config['INFO']['last_commit'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S%Z')
+        total_cnt = meta['INFO'].get('number_of_certificates', 0)
+        meta['INFO']['number_of_certificates'] = total_cnt + inserted - deleted
+        meta['INFO']['last_commit'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S%Z')
         # Append commit HISTORY
-        if 'HISTORY' not in config:
-            config['HISTORY'] = OrderedDict()
-        commit_nr = str(len(config['HISTORY']) + 1)
-        config['HISTORY'][commit_nr] = OrderedDict()
-        config['HISTORY'][commit_nr]['date'] = config['INFO']['last_commit']
-        config['HISTORY'][commit_nr]['inserted'] = inserted
-        config['HISTORY'][commit_nr]['deleted'] = deleted
+        if 'HISTORY' not in meta:
+            meta['HISTORY'] = OrderedDict()
+        commit_nr = str(len(meta['HISTORY']) + 1)
+        meta['HISTORY'][commit_nr] = OrderedDict()
+        meta['HISTORY'][commit_nr]['date'] = meta['INFO']['last_commit']
+        meta['HISTORY'][commit_nr]['inserted'] = inserted
+        meta['HISTORY'][commit_nr]['deleted'] = deleted
 
-        log.debug(config)
-        with open(config_path, 'w') as cfg_file:
-            toml.dump(config, cfg_file)
+        log.debug(meta)
+        with open(meta_path, 'w') as meta_file:
+            toml.dump(meta, meta_file)

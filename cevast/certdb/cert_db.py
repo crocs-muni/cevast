@@ -1,8 +1,8 @@
 """
 This module provides interface of CertDB class
 
-    CertDB is a database of X.509 certificates implemented as transaction
-    processing system with a common API (insert, remove, commit, rollback).
+    CertDB is a key-value database managing X.509 certificates. CertDb shares some attributes with classic
+    transaction processing systems (as SQL) and provides a common API (insert, remove, commit, rollback).
 
     Each certificate is uniquelly identified by its ID (fingerprint).
     A certificate is internally handled as string -> PEM format expected.
