@@ -2,8 +2,7 @@
 
 from typing import Union
 from cevast.dataset.dataset import DatasetType, DatasetInvalidError
-from cevast.dataset.manager import DatasetManager
-from cevast.dataset.rapid_manager import RapidDatasetManager
+import cevast.dataset.managers as managers
 
 
 class DatasetManagerFactory:
@@ -11,24 +10,27 @@ class DatasetManagerFactory:
 
     __classes = {}
 
-    # TODO automaticly search the package?
     @classmethod
-    def load_classes(cls):
-        """Utility function that initialize lookup dictionary with corresponding DatasetManager classes."""
-        if cls.__classes:
-            return
-        cls.__classes[DatasetType.RAPID.name] = RapidDatasetManager
-        # cls.__classes[DatasetType.CENSYS.name] = CensysManager
+    def __load_classes(cls):
+        """
+        Automatically initialize lookup dictionary with specialized DatasetManager classes.
+        To be automatically identified, the specialized DatasetManager class must implement
+        DatasetManager interface and put in "cevast.dataset.managers" package.
+        """
+        for manager_class in managers.DatasetManager.__subclasses__():
+            if(hasattr(manager_class, 'dataset_type')):
+                cls.__classes[manager_class.dataset_type] = manager_class
 
     @classmethod
-    def create_manager(cls, dataset_type: Union[DatasetType, str]) -> DatasetManager:
+    def create_manager(cls, dataset_type: Union[DatasetType, str]) -> managers.DatasetManager:
         """Instantiate a corresponding DatasetManager class based on `dataset_type`."""
-        if isinstance(dataset_type, DatasetType) and dataset_type in DatasetType:
+        if not cls.__classes:
+            cls.__load_classes()
+
+        if isinstance(dataset_type, DatasetType) and dataset_type.name in cls.__classes:
             return cls.__classes[dataset_type.name]()
-        if isinstance(dataset_type, str) and dataset_type in DatasetType:
+        if isinstance(dataset_type, str) and dataset_type in DatasetType.__members__ and dataset_type in cls.__classes:
             return cls.__classes[dataset_type]()
 
-        raise DatasetInvalidError("Dataset type %s not supported." % dataset_type)
-
-
-DatasetManagerFactory.load_classes()
+        raise DatasetInvalidError("Dataset type %s has no manager." % dataset_type)
+ 

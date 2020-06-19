@@ -1,9 +1,9 @@
 """This module contains collector implementation for Rapid dataset type"""
+# https://opendata.rapid7.com/apihelp/
 
 from cevast.dataset.dataset_manager import DatasetType
 
 __author__ = 'Radim Podola'
-
 
 class RapidCollector:
 
