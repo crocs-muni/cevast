@@ -9,6 +9,10 @@ from enum import IntEnum
 from cevast.utils import directory_with_prefix
 
 
+class DatasetCollectionError(ValueError):
+    """Raised when dataset collection fails."""
+
+
 class DatasetInvalidError(ValueError):
     """Raised when the dataset has an invalid identifier."""
 
