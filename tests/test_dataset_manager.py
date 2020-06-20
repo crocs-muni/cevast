@@ -2,27 +2,26 @@
 This module contains unit tests of cevast.dataset.managers package.
 """
 
-import os
-import shutil
 import unittest
 from enum import IntEnum
 from unittest.mock import patch, PropertyMock
-from cevast.dataset.dataset import DatasetPath, DatasetState, DatasetType, DatasetInvalidError, DatasetRepository
-from cevast.dataset.managers import RapidDatasetManager, DatasetManager
+from cevast.dataset.dataset import DatasetType, DatasetInvalidError
 from cevast.dataset.manager_factory import DatasetManagerFactory
 
 
 class DummyDatasetType(IntEnum):
+    """Dummy DatasetType ENUM used for Mock."""
+
     RAPIDOS = 1
     CENSYSOS = 2
 
 
-class DummyRapidosManager():
-    pass
+class DummyRapidosManager():  # pylint: disable=R0903
+    """Dummy DatasetManager used for Mock."""
 
 
-class DummyCensysosManager():
-    pass
+class DummyCensysosManager():  # pylint: disable=R0903
+    """Dummy DatasetManager used for Mock."""
 
 
 class TestDatasetManagerFactory(unittest.TestCase):
@@ -47,7 +46,7 @@ class TestDatasetManagerFactory(unittest.TestCase):
         mocked.return_value = {"RAPIDOS": DummyRapidosManager}
         self.assertRaises(DatasetInvalidError, DatasetManagerFactory.create_manager, DummyDatasetType.CENSYSOS)
         self.assertRaises(DatasetInvalidError, DatasetManagerFactory.create_manager, 'CENSYSOS')
-        
+
         # Test if not instance or part of Enum
         self.assertRaises(DatasetInvalidError, DatasetManagerFactory.create_manager, DatasetType.RAPID)
         self.assertRaises(DatasetInvalidError, DatasetManagerFactory.create_manager, None)

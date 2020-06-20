@@ -634,7 +634,6 @@ class TestCertFileDB(unittest.TestCase):
         """
         Test of using multiple instances of CertDB with the same storage.
         """
-        pass
 
     def test_config_info_maintain(self):
         """

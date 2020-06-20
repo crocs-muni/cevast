@@ -18,7 +18,7 @@ class DatasetManagerFactory:
         DatasetManager interface and put in "cevast.dataset.managers" package.
         """
         for manager_class in managers.DatasetManager.__subclasses__():
-            if(hasattr(manager_class, 'dataset_type')):
+            if hasattr(manager_class, 'dataset_type'):
                 cls.__classes[manager_class.dataset_type] = manager_class
 
     @classmethod
@@ -33,4 +33,3 @@ class DatasetManagerFactory:
             return cls.__classes[dataset_type]()
 
         raise DatasetInvalidError("Dataset type %s has no manager." % dataset_type)
- 

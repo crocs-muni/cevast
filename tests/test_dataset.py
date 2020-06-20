@@ -229,18 +229,18 @@ class TestDatasetPath(unittest.TestCase):
 
     def test_move(self):
         """Test implementation of DatasetPath method MOVE."""
-        dp = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12')
+        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12')
         path = os.path.join(self.TEST_REPO, DatasetType.RAPID.name, DatasetState.PARSED.name)
         ds = os.path.join(self.TEST_REPO, '2020-06-30_suffix.gz')
         ds_suffix_only = os.path.join(self.TEST_REPO, 'suffix.gz')
         # Test with source that doesn't exist
-        dp.move(DatasetState.PARSED, "totally_made_up")
+        dp_rapid.move(DatasetState.PARSED, "totally_made_up")
         assert not os.path.exists(path)
 
         # Create dataset and move it
         create_file(ds_suffix_only)
         assert os.path.exists(ds_suffix_only)
-        dp.move(DatasetState.PARSED, ds_suffix_only)
+        dp_rapid.move(DatasetState.PARSED, ds_suffix_only)
         assert os.path.exists(path)
         assert not os.path.exists(ds_suffix_only)
         assert os.path.exists(os.path.join(path, '2020-06-12_suffix.gz'))
@@ -248,16 +248,16 @@ class TestDatasetPath(unittest.TestCase):
         # Create dataset and move it without prefix
         create_file(ds)
         assert os.path.exists(ds)
-        dp.move(DatasetState.PARSED, ds, False)
+        dp_rapid.move(DatasetState.PARSED, ds, False)
         assert not os.path.exists(ds)
         assert os.path.exists(os.path.join(path, '2020-06-30_suffix.gz'))
 
         # Test with STRING state paramater
-        dp = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30')
+        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30')
         create_file(ds_suffix_only)
-        self.assertRaises(DatasetInvalidError, dp.move, "UNKNOWN", ds_suffix_only)
-        self.assertRaises(DatasetInvalidError, dp.move, "UNKNOWN", ds_suffix_only, False)
-        dp.move("VALIDATED", ds_suffix_only)
+        self.assertRaises(DatasetInvalidError, dp_rapid.move, "UNKNOWN", ds_suffix_only)
+        self.assertRaises(DatasetInvalidError, dp_rapid.move, "UNKNOWN", ds_suffix_only, False)
+        dp_rapid.move("VALIDATED", ds_suffix_only)
         assert not os.path.exists(ds_suffix_only)
         assert os.path.exists(
             os.path.join(self.TEST_REPO, DatasetType.CENSYS.name, DatasetState.VALIDATED.name, '2020-06-30_suffix.gz')
