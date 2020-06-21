@@ -16,11 +16,11 @@ class DummyDatasetType(IntEnum):
     CENSYSOS = 2
 
 
-class DummyRapidosManager():  # pylint: disable=R0903
+class DummyRapidosManager:  # pylint: disable=R0903
     """Dummy DatasetManager used for Mock."""
 
 
-class DummyCensysosManager():  # pylint: disable=R0903
+class DummyCensysosManager:  # pylint: disable=R0903
     """Dummy DatasetManager used for Mock."""
 
 

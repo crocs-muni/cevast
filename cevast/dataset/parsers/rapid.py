@@ -83,6 +83,7 @@ class RapidParser:
         If `separate_broken_chains`, the chains that are not available (in the dataset nor the CertDB)
         are stored into the separate file with suffix "_broken".
         """
+
         def write_chain(host: str, chain: list):
             self.__parsing_log['total_hosts'] += 1
             line = host + ',' + ','.join(chain) + '\n'

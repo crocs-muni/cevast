@@ -39,15 +39,16 @@ class RapidCollector:
         else:
             self.__api_key = api_key
 
-    def collect(self, download_dir: str = '.', date: datetime.date = None,
+    def collect(self, download_dir: str = '.', date: datetime.date = datetime.today().date(),
                 filter_ports: Union[Tuple[str], str] = '443',
                 filter_types: Union[Tuple[str], str] = ('hosts', 'certs')) -> Tuple[str]:
         """
-        Download the newest dataset that is closest to the given date and store it into
-        `download_dir` directory. Tuple with downloaded dataset's paths is returned.
-        If `date` is None, the newest dataset ever is downloaded.
+        Download the newest dataset by the given date and store it into `download_dir` directory.
+        If `date` is not specified, the newest dataset ever is downloaded by default.
         Datasets can be filtered by PORT and TYPE via paramaters `filter_ports` and `filter_types`.
         If a filter parameter is empty or None, the filter is not applied.
+
+        Tuple with downloaded dataset's paths is returned.
 
         Function first query Open Data API and get fresh list of all datasets. If filter parameters
         are given, list if filtered accordingly. Datasets are provided chronologically in a list
@@ -82,7 +83,7 @@ class RapidCollector:
         datasets = list(filter(match_filters, self.get_datasets()))
         log.debug('Filtered datasets: %s', datasets)
         for dataset in datasets:
-            if target_date is None and date >= datetime.strptime(dataset[:8], '%Y%m%d'):
+            if target_date is None and date >= datetime.strptime(dataset[:8], '%Y%m%d').date():
                 # Found the target date
                 target_date = dataset[:8]
             if target_date is not None:
