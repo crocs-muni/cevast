@@ -68,9 +68,11 @@ class CertFileDBReadOnly(CertDBReadOnly):
     """
     CertDBReadOnly interface implementation which uses files
     and a file system properties as a storage mechanism.
+
+    `storage` is path to the database storage.
     """
 
-    CONF_FILENAME = '.CertFileDB.toml'
+    CONF_FILENAME = 'CertFileDB.toml'
     META_FILENAME = '.CertFileDB-META.toml'
 
     @staticmethod
@@ -205,6 +207,9 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
     """
     CertDB interface implementation which uses files
     and a file system properties as a storage mechanism.
+
+    `storage` is path to the database storage.
+    `cpu_cores` is max number of CPU cores that might be used.
     """
 
     def __init__(self, storage: str, cpu_cores: int = 1):

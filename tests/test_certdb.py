@@ -1268,9 +1268,7 @@ class TestCompositeCertDB(unittest.TestCase):
         self.assertEqual(real_db2.get(valid_cert[0]), valid_cert[1])
 
     def test_rollback(self):
-        """
-        Test implementation of CompositeCertDB method ROLLBACK
-        """
+        """Test implementation of CompositeCertDB method ROLLBACK"""
         real_db = CertFileDB(self.TEST_STORAGE_1)
         real_db2 = CertFileDB(self.TEST_STORAGE_2)
         composite_db = CompositeCertDB()
