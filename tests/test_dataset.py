@@ -5,7 +5,7 @@ This module contains unit tests of Dataset module
 import os
 import shutil
 import unittest
-from cevast.dataset.dataset import DatasetPath, DatasetState, DatasetType, DatasetInvalidError, DatasetRepository
+from cevast.dataset.dataset import Dataset, DatasetState, DatasetType, DatasetInvalidError, DatasetRepository
 
 
 def create_file(name: str):
@@ -15,8 +15,8 @@ def create_file(name: str):
         w_file.write("adadadadadasdadadadasda")
 
 
-class TestDatasetPath(unittest.TestCase):
-    """Unit test class of DatasetPath class"""
+class TestDataset(unittest.TestCase):
+    """Unit test class of Dataset class"""
 
     TEST_REPO = os.path.join('tests', 'test_repository')
 
@@ -29,29 +29,29 @@ class TestDatasetPath(unittest.TestCase):
         shutil.rmtree(self.TEST_REPO, ignore_errors=True)
 
     def test_init(self):
-        """Test of DatasetPath class instantiation."""
+        """Test of Dataset class instantiation."""
         # Test init with wrong parameters
-        self.assertRaises(DatasetInvalidError, DatasetPath, self.TEST_REPO, DatasetState.PARSED, '', '443')
-        self.assertRaises(DatasetInvalidError, DatasetPath, self.TEST_REPO, 5, '', '443')
-        self.assertRaises(FileNotFoundError, DatasetPath, self.TEST_REPO + 'invalid', DatasetType.RAPID, '', '443')
-        # Create DatasetPath instance
-        DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
+        self.assertRaises(DatasetInvalidError, Dataset, self.TEST_REPO, DatasetState.PARSED, '', '443')
+        self.assertRaises(DatasetInvalidError, Dataset, self.TEST_REPO, 5, '', '443')
+        self.assertRaises(FileNotFoundError, Dataset, self.TEST_REPO + 'invalid', DatasetType.RAPID, '', '443')
+        # Create Dataset instance
+        Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
 
         # Test init with STRING type paramater
-        DatasetPath(self.TEST_REPO, "RAPID", '2020-06-12', 443)
-        self.assertRaises(DatasetInvalidError, DatasetPath, self.TEST_REPO, "UNKNOWN", '2020-06-12', '443')
+        Dataset(self.TEST_REPO, "RAPID", '2020-06-12', 443)
+        self.assertRaises(DatasetInvalidError, Dataset, self.TEST_REPO, "UNKNOWN", '2020-06-12', '443')
 
-    def test_assemble(self):
-        """Test implementation of DatasetPath method ASSEMBLE."""
-        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
-        dp_censys = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '443')
+    def test_path(self):
+        """Test implementation of Dataset method PATH."""
+        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
+        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '443')
         # Test GET with wrong state parameter
-        self.assertRaises(DatasetInvalidError, dp_rapid.get, 2, False)
+        self.assertRaises(DatasetInvalidError, ds_rapid.get, 2, False)
 
         # Test GET with correct state paramater
-        path = dp_rapid.assemble(DatasetState.PARSED, False)
-        path2 = dp_rapid.assemble(DatasetState.VALIDATED, False)
-        path3 = dp_censys.assemble(DatasetState.VALIDATED, False)
+        path = ds_rapid.path(DatasetState.PARSED, False)
+        path2 = ds_rapid.path(DatasetState.VALIDATED, False)
+        path3 = ds_censys.path(DatasetState.VALIDATED, False)
         assert not os.path.exists(path)
         self.assertNotEqual(path, path2)
         self.assertNotEqual(path2, path3)
@@ -59,32 +59,32 @@ class TestDatasetPath(unittest.TestCase):
         self.assertEqual(path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.PARSED.name))
 
         # Test GET with STRING state paramater
-        path = dp_rapid.assemble("PARSED", False)
+        path = ds_rapid.path("PARSED", False)
         assert not os.path.exists(path)
         self.assertEqual(path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.PARSED.name))
 
         # Test physically paramater
         assert not os.path.exists(path)
         self.assertEqual(
-            dp_rapid.assemble(DatasetState.PARSED, True),
+            ds_rapid.path(DatasetState.PARSED, True),
             os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.PARSED.name),
         )
         assert os.path.exists(path)
 
-    def test_assemble_full(self):
-        """Test implementation of DatasetPath method ASSEMBLE_FULL."""
+    def test_full_path(self):
+        """Test implementation of Dataset method FULL_PATH."""
         ext = 'ext'
-        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443', ext)
-        dp_censys = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', 443, ext)
+        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443', ext)
+        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', 443, ext)
         # Test GET_FULL with wrong state parameter
         self.assertRaises(
-            DatasetInvalidError, dp_rapid.assemble_full, 2,
+            DatasetInvalidError, ds_rapid.full_path, 2,
         )
 
         # Test GET_FULL with correct state paramater
-        path = dp_rapid.assemble_full(DatasetState.PARSED, '', False)
-        path2 = dp_rapid.assemble_full(DatasetState.VALIDATED, '', False)
-        path3 = dp_censys.assemble_full(DatasetState.VALIDATED, '', False)
+        path = ds_rapid.full_path(DatasetState.PARSED, '', False)
+        path2 = ds_rapid.full_path(DatasetState.VALIDATED, '', False)
+        path3 = ds_censys.full_path(DatasetState.VALIDATED, '', False)
         assert not os.path.exists(path)
         self.assertNotEqual(path, path2)
         self.assertNotEqual(path2, path3)
@@ -95,7 +95,7 @@ class TestDatasetPath(unittest.TestCase):
                 os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.PARSED.name, '2020-06-12_443.' + ext,
             ),
         )
-        path = dp_rapid.assemble_full(DatasetState.PARSED, 'suffix', False)
+        path = ds_rapid.full_path(DatasetState.PARSED, 'suffix', False)
         # GET_FULL should return /../repository/RAPID/PARSED/2020-06-12_443_suffix.ext
         self.assertEqual(
             path,
@@ -108,8 +108,8 @@ class TestDatasetPath(unittest.TestCase):
         )
 
         # Test GET_FULL without port
-        dp_censys = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '', ext)
-        path = dp_censys.assemble_full(DatasetState.PARSED, 'suffix', False)
+        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '', ext)
+        path = ds_censys.full_path(DatasetState.PARSED, 'suffix', False)
         # GET_FULL should return /../repository/CENSYS/PARSED/2020-06-30_suffix.ext
         self.assertEqual(
             path,
@@ -117,7 +117,7 @@ class TestDatasetPath(unittest.TestCase):
                 os.path.abspath(self.TEST_REPO), DatasetType.CENSYS.name, DatasetState.PARSED.name, '2020-06-30_suffix.' + ext,
             ),
         )
-        path = dp_censys.assemble_full(DatasetState.PARSED, '', False)
+        path = ds_censys.full_path(DatasetState.PARSED, '', False)
         # GET_FULL should return /../repository/CENSYS/PARSED/2020-06-30.ext
         self.assertEqual(
             path,
@@ -127,7 +127,7 @@ class TestDatasetPath(unittest.TestCase):
         )
 
         # Test GET_FULL with STRING state paramater
-        path = dp_rapid.assemble_full("PARSED", '', False)
+        path = ds_rapid.full_path("PARSED", '', False)
         assert not os.path.exists(path)
         self.assertEqual(
             path,
@@ -138,27 +138,27 @@ class TestDatasetPath(unittest.TestCase):
 
         # Test check_if_exists paramater
         assert not os.path.exists(path)
-        self.assertEqual(dp_rapid.assemble_full(DatasetState.PARSED, '', True), None)
+        self.assertEqual(ds_rapid.full_path(DatasetState.PARSED, '', True), None)
         os.makedirs(path)
         assert os.path.exists(path)
         self.assertEqual(
-            dp_rapid.assemble_full(DatasetState.PARSED, '', True),
+            ds_rapid.full_path(DatasetState.PARSED, '', True),
             os.path.join(
                 os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.PARSED.name, '2020-06-12_443.' + ext,
             ),
         )
 
     def test_delete(self):
-        """Test implementation of DatasetPath method DELETE."""
+        """Test implementation of Dataset method DELETE."""
         # Test DELETE with not existing file
-        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
-        dp_rapid2 = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-30', '443')
-        dp_rapid_noport = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
-        dp_censys = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', None)
-        dp_rapid.delete(DatasetState.PARSED)
+        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
+        ds_rapid2 = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-30', '443')
+        ds_rapid_noport = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
+        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', None)
+        ds_rapid.delete(DatasetState.PARSED)
 
         # Create some datasets
-        path = dp_rapid.assemble(DatasetState.PARSED, False)
+        path = ds_rapid.path(DatasetState.PARSED, False)
         create_file(os.path.join(path, '2020-06-12_443.gz'))
         create_file(os.path.join(path, '2020-06-12.gz'))
         create_file(os.path.join(path, '2020-06-30_443.gz'))
@@ -167,135 +167,135 @@ class TestDatasetPath(unittest.TestCase):
         assert os.path.exists(os.path.join(path, '2020-06-12.gz'))
         assert os.path.exists(os.path.join(path, '2020-06-30_443.gz'))
         assert os.path.exists(os.path.join(path, '2020-06-30_443_suffix.gz'))
-        dp_rapid.delete(DatasetState.VALIDATED)
+        ds_rapid.delete(DatasetState.VALIDATED)
         # dataset should still exists
         assert os.path.exists(os.path.join(path, '2020-06-12_443.gz'))
-        dp_rapid.delete(DatasetState.PARSED)
-        dp_censys.delete(DatasetState.PARSED)
+        ds_rapid.delete(DatasetState.PARSED)
+        ds_censys.delete(DatasetState.PARSED)
         # dataset should NOT exists but others yes
         assert not os.path.exists(os.path.join(path, '2020-06-12_443.gz'))
         assert os.path.exists(os.path.join(path, '2020-06-12.gz'))
         assert os.path.exists(os.path.join(path, '2020-06-30_443.gz'))
         assert os.path.exists(os.path.join(path, '2020-06-30_443_suffix.gz'))
-        dp_rapid2.delete(DatasetState.PARSED)
+        ds_rapid2.delete(DatasetState.PARSED)
         # only no port dataset should exists
         assert not os.path.exists(os.path.join(path, '2020-06-30_443.gz'))
         assert not os.path.exists(os.path.join(path, '2020-06-30_443_suffix.gz'))
         assert os.path.exists(os.path.join(path, '2020-06-12.gz'))
         # whole dataset state directory should be deleted
-        dp_rapid_noport.delete(DatasetState.PARSED)
+        ds_rapid_noport.delete(DatasetState.PARSED)
         assert not os.path.exists(path)
 
         # Test DELETE with STRING state paramater
-        path = dp_rapid.assemble(DatasetState.PARSED, False)
-        path_cen = dp_censys.assemble(DatasetState.PARSED, False)
+        path = ds_rapid.path(DatasetState.PARSED, False)
+        path_cen = ds_censys.path(DatasetState.PARSED, False)
         create_file(os.path.join(path, '2020-06-12_443.gz'))
         create_file(os.path.join(path_cen, '2020-06-30.gz'))
         assert os.path.exists(path)
         assert os.path.exists(path_cen)
-        self.assertRaises(DatasetInvalidError, dp_rapid.delete, "UNKNOWN")
-        self.assertRaises(DatasetInvalidError, dp_censys.delete, "UNKNOWN")
-        dp_rapid2.delete("PARSED")
-        dp_censys.delete("PARSED")
+        self.assertRaises(DatasetInvalidError, ds_rapid.delete, "UNKNOWN")
+        self.assertRaises(DatasetInvalidError, ds_censys.delete, "UNKNOWN")
+        ds_rapid2.delete("PARSED")
+        ds_censys.delete("PARSED")
         assert os.path.exists(path)
         assert not os.path.exists(path_cen)
-        dp_rapid.delete("PARSED")
+        ds_rapid.delete("PARSED")
         assert not os.path.exists(path)
 
     def test_purge(self):
-        """Test implementation of DatasetPath method PURGE."""
-        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
-        dp_censys = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '')
+        """Test implementation of Dataset method PURGE."""
+        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
+        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '')
         path_r = os.path.join(self.TEST_REPO, DatasetType.RAPID.name)
         path_c = os.path.join(self.TEST_REPO, DatasetType.CENSYS.name)
         # Test PURGE on empty repository
-        dp_rapid.purge()
+        ds_rapid.purge()
         # Create some datasets and PURGE rapid repository
         create_file(os.path.join(path_r, '2020-06-12.gz'))
         create_file(os.path.join(path_c, '2020-06-12.gz'))
         assert os.path.exists(path_r)
         assert os.path.exists(path_c)
-        dp_rapid.purge()
+        ds_rapid.purge()
         assert not os.path.exists(path_r)
         assert os.path.exists(path_c)
         # now purge also the other repository
-        dp_censys.purge()
+        ds_censys.purge()
         assert not os.path.exists(path_r)
         assert not os.path.exists(path_c)
         assert not os.listdir(self.TEST_REPO)
 
     def test_get(self):
-        """Test implementation of DatasetPath method GET."""
-        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', None)
-        dp_censys = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '22')
+        """Test implementation of Dataset method GET."""
+        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', None)
+        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '22')
         path_r = os.path.join(self.TEST_REPO, DatasetType.RAPID.name, DatasetState.PARSED.name)
         path_c = os.path.join(self.TEST_REPO, DatasetType.CENSYS.name, DatasetState.PARSED.name)
-        assert not dp_rapid.get(DatasetState.PARSED)
-        assert not dp_censys.get(DatasetState.PARSED)
+        assert not ds_rapid.get(DatasetState.PARSED)
+        assert not ds_censys.get(DatasetState.PARSED)
         create_file(os.path.join(path_r, '2020-06-12.gz'))
         create_file(os.path.join(path_r, '2020-06-12_suffix.gz'))
         create_file(os.path.join(path_c, '2020-06-12.gz'))
         create_file(os.path.join(path_c, '2020-06-12_22.gz'))
 
         # Check filter by state only
-        assert not dp_rapid.get(DatasetState.VALIDATED)
-        assert not dp_censys.get(DatasetState.VALIDATED)
+        assert not ds_rapid.get(DatasetState.VALIDATED)
+        assert not ds_censys.get(DatasetState.VALIDATED)
 
         # Check filter by port
-        get_rapid = dp_rapid.get(DatasetState.PARSED)
+        get_rapid = ds_rapid.get(DatasetState.PARSED)
         self.assertEqual(get_rapid, ('2020-06-12.gz', '2020-06-12_suffix.gz'))
-        get_censys = dp_censys.get(DatasetState.PARSED)
+        get_censys = ds_censys.get(DatasetState.PARSED)
         self.assertEqual(get_censys, ('2020-06-12_22.gz',))
 
         # Check filter by suffix
-        get_rapid = dp_rapid.get(DatasetState.PARSED, 'suffix')
+        get_rapid = ds_rapid.get(DatasetState.PARSED, 'suffix')
         self.assertEqual(get_rapid, ('2020-06-12_suffix.gz',))
-        assert not dp_censys.get(DatasetState.PARSED, '22')
+        assert not ds_censys.get(DatasetState.PARSED, '22')
 
     def test_exists(self):
-        """Test implementation of DatasetPath method EXISTS and EXISTS_ANY."""
-        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', None)
-        dp_censys = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '22')
+        """Test implementation of Dataset method EXISTS and EXISTS_ANY."""
+        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', None)
+        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '22')
         path_r = os.path.join(self.TEST_REPO, DatasetType.RAPID.name, DatasetState.PARSED.name)
         path_c = os.path.join(self.TEST_REPO, DatasetType.CENSYS.name, DatasetState.PARSED.name)
-        assert not dp_rapid.exists_any()
-        assert not dp_rapid.exists_any()
-        assert not dp_censys.exists(DatasetState.PARSED)
+        assert not ds_rapid.exists_any()
+        assert not ds_rapid.exists_any()
+        assert not ds_censys.exists(DatasetState.PARSED)
         # Create RAPID dataset and check if exists
         create_file(os.path.join(path_r, '2020-06-12.gz'))
-        assert dp_rapid.exists_any()
-        assert dp_rapid.exists(DatasetState.PARSED)
-        assert not dp_rapid.exists(DatasetState.VALIDATED)
-        assert not dp_censys.exists_any()
+        assert ds_rapid.exists_any()
+        assert ds_rapid.exists(DatasetState.PARSED)
+        assert not ds_rapid.exists(DatasetState.VALIDATED)
+        assert not ds_censys.exists_any()
         # create different dataset ID that should NOT exists
         create_file(os.path.join(path_c, '2020-06-30_suffix.gz'))
         create_file(os.path.join(path_c, '2020-06-12_11_suffix.gz'))
-        assert not dp_censys.exists_any()
-        assert not dp_censys.exists(DatasetState.PARSED)
+        assert not ds_censys.exists_any()
+        assert not ds_censys.exists(DatasetState.PARSED)
         # now create correct CENSYS dataset and check if exists
         create_file(os.path.join(path_c, '2020-06-12_22_suffix.gz'))
-        assert dp_censys.exists_any()
-        assert dp_censys.exists(DatasetState.PARSED)
-        assert not dp_censys.exists(DatasetState.VALIDATED)
+        assert ds_censys.exists_any()
+        assert ds_censys.exists(DatasetState.PARSED)
+        assert not ds_censys.exists(DatasetState.VALIDATED)
 
         # Test STRING state paramater
-        assert dp_censys.exists("PARSED")
-        self.assertRaises(DatasetInvalidError, dp_censys.exists, "UNKNOWN")
+        assert ds_censys.exists("PARSED")
+        self.assertRaises(DatasetInvalidError, ds_censys.exists, "UNKNOWN")
 
     def test_move(self):
-        """Test implementation of DatasetPath method MOVE."""
-        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
+        """Test implementation of Dataset method MOVE."""
+        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
         path = os.path.join(self.TEST_REPO, DatasetType.RAPID.name, DatasetState.PARSED.name)
         dataset = os.path.join(self.TEST_REPO, '2020-06-30_suffix.gz')
         ds_suffix_only = os.path.join(self.TEST_REPO, 'suffix.gz')
         # Test with source that doesn't exist
-        dp_rapid.move(DatasetState.PARSED, "totally_made_up")
+        ds_rapid.move(DatasetState.PARSED, "totally_made_up")
         assert not os.path.exists(path)
 
         # Create dataset and move it
         create_file(ds_suffix_only)
         assert os.path.exists(ds_suffix_only)
-        dp_rapid.move(DatasetState.PARSED, ds_suffix_only)
+        ds_rapid.move(DatasetState.PARSED, ds_suffix_only)
         assert os.path.exists(path)
         assert not os.path.exists(ds_suffix_only)
         assert os.path.exists(os.path.join(path, '2020-06-12_443_suffix.gz'))
@@ -303,26 +303,26 @@ class TestDatasetPath(unittest.TestCase):
         # Create dataset and move it without prefix
         create_file(dataset)
         assert os.path.exists(dataset)
-        dp_rapid.move(DatasetState.PARSED, dataset, False)
+        ds_rapid.move(DatasetState.PARSED, dataset, False)
         assert not os.path.exists(dataset)
         assert os.path.exists(os.path.join(path, '2020-06-30_suffix.gz'))
 
         # Test with STRING state paramater
-        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '')
+        ds_rapid = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '')
         create_file(ds_suffix_only)
-        self.assertRaises(DatasetInvalidError, dp_rapid.move, "UNKNOWN", ds_suffix_only)
-        self.assertRaises(DatasetInvalidError, dp_rapid.move, "UNKNOWN", ds_suffix_only, False)
-        dp_rapid.move("VALIDATED", ds_suffix_only)
+        self.assertRaises(DatasetInvalidError, ds_rapid.move, "UNKNOWN", ds_suffix_only)
+        self.assertRaises(DatasetInvalidError, ds_rapid.move, "UNKNOWN", ds_suffix_only, False)
+        ds_rapid.move("VALIDATED", ds_suffix_only)
         assert not os.path.exists(ds_suffix_only)
         assert os.path.exists(
             os.path.join(self.TEST_REPO, DatasetType.CENSYS.name, DatasetState.VALIDATED.name, '2020-06-30_suffix.gz')
         )
 
     def test_str(self):
-        """Test implementation of DatasetPath override method __str__."""
-        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
+        """Test implementation of Dataset override method __str__."""
+        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
         # string representation should look like: repository/type/{placeholder for state}/id
-        self.assertEqual(str(dp_rapid).format('COLLECTED'), os.path.join(dp_rapid.assemble('COLLECTED', False), '2020-06-12'))
+        self.assertEqual(str(ds_rapid).format('COLLECTED'), os.path.join(ds_rapid.path('COLLECTED', False), '2020-06-12'))
 
 
 class TestDatasetRepository(unittest.TestCase):
@@ -349,9 +349,9 @@ class TestDatasetRepository(unittest.TestCase):
 
     def test_get(self):
         """Test implementation of DatasetRepository method GET."""
-        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
-        dp_censys = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '443')
-        dp_censys2 = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '')
+        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
+        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '443')
+        ds_censys2 = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '')
         repo = DatasetRepository(self.TEST_REPO)
         # Test GET on empty repository
         assert not repo.get()
@@ -362,13 +362,13 @@ class TestDatasetRepository(unittest.TestCase):
 
         # Fill repository with various datasets
         create_file(os.path.join(self.TEST_REPO, 'ds1.gz'))
-        dp_rapid.move(DatasetState.PARSED, os.path.join(self.TEST_REPO, 'ds1.gz'))
+        ds_rapid.move(DatasetState.PARSED, os.path.join(self.TEST_REPO, 'ds1.gz'))
         create_file(os.path.join(self.TEST_REPO, 'ds2.gz'))
-        dp_censys.move(DatasetState.PARSED, os.path.join(self.TEST_REPO, 'ds2.gz'))
+        ds_censys.move(DatasetState.PARSED, os.path.join(self.TEST_REPO, 'ds2.gz'))
         create_file(os.path.join(self.TEST_REPO, 'ds2_2.gz'))
-        dp_censys.move(DatasetState.PARSED, os.path.join(self.TEST_REPO, 'ds2_2.gz'))
+        ds_censys.move(DatasetState.PARSED, os.path.join(self.TEST_REPO, 'ds2_2.gz'))
         create_file(os.path.join(self.TEST_REPO, 'ds3.gz'))
-        dp_censys2.move(DatasetState.VALIDATED, os.path.join(self.TEST_REPO, 'ds3.gz'))
+        ds_censys2.move(DatasetState.VALIDATED, os.path.join(self.TEST_REPO, 'ds3.gz'))
 
         # Test GET all
         get_repo = repo.get()
@@ -420,9 +420,9 @@ class TestDatasetRepository(unittest.TestCase):
 
     def test_dumps(self):
         """Test implementation of DatasetRepository method DUMPS and __str__."""
-        dp_rapid = DatasetPath(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
-        dp_censys = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '')
-        dp_censys2 = DatasetPath(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '')
+        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
+        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '')
+        ds_censys2 = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '')
         repo = DatasetRepository(self.TEST_REPO)
         # Test DUMPS on empty repository
         assert not repo.dumps()
@@ -434,13 +434,13 @@ class TestDatasetRepository(unittest.TestCase):
 
         # Fill repository with various datasets
         create_file(os.path.join(self.TEST_REPO, 'ds1.gz'))
-        dp_rapid.move(DatasetState.PARSED, os.path.join(self.TEST_REPO, 'ds1.gz'))
+        ds_rapid.move(DatasetState.PARSED, os.path.join(self.TEST_REPO, 'ds1.gz'))
         create_file(os.path.join(self.TEST_REPO, 'ds2.gz'))
-        dp_censys.move(DatasetState.PARSED, os.path.join(self.TEST_REPO, 'ds2.gz'))
+        ds_censys.move(DatasetState.PARSED, os.path.join(self.TEST_REPO, 'ds2.gz'))
         create_file(os.path.join(self.TEST_REPO, 'ds2_2.gz'))
-        dp_censys.move(DatasetState.PARSED, os.path.join(self.TEST_REPO, 'ds2_2.gz'))
+        ds_censys.move(DatasetState.PARSED, os.path.join(self.TEST_REPO, 'ds2_2.gz'))
         create_file(os.path.join(self.TEST_REPO, 'ds3.gz'))
-        dp_censys2.move(DatasetState.VALIDATED, os.path.join(self.TEST_REPO, 'ds3.gz'))
+        ds_censys2.move(DatasetState.VALIDATED, os.path.join(self.TEST_REPO, 'ds3.gz'))
 
         # Test DUMPS all
         dumps_repo = repo.dumps()

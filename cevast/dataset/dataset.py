@@ -37,9 +37,9 @@ class DatasetState(IntEnum):
     VALIDATED = 4  # Dataset was already run through validation, result might be available
 
 
-class DatasetPath:
+class Dataset:
     """
-    Wrapper around a dataset location providing an interface to the dataset on the filesystem.
+    Class representing a single dataset and providing an interface to the dataset on the filesystem.
 
     Dataset is identified by `dataset_type`, `state` and filename where filename consists of mandatory
     `date_id`, `port` number and optional suffix. date_id represents the date (or date range) when
@@ -76,6 +76,10 @@ class DatasetPath:
         self._port = str(port) if port is not None else ''
         self._extension = extension
 
+    @classmethod
+    def create_from_path(cls, path: str) -> 'Dataset':
+        pass
+
     @staticmethod
     def format_filename(date: str, port: str = '', suffix: str = '') -> str:
         """Format dataset filename."""
@@ -87,9 +91,9 @@ class DatasetPath:
 
     def get_static_filename(self) -> str:
         """Return static part of dataset filename."""
-        return DatasetPath.format_filename(self._date_id, self._port)
+        return Dataset.format_filename(self._date_id, self._port)
 
-    def assemble(self, state: Union[DatasetState, str], physically: bool = True) -> str:
+    def path(self, state: Union[DatasetState, str], physically: bool = True) -> str:
         """
         Assemble and return path to the dataset in given state.
         If `physically` flag is set and and path does not exist, create it.
@@ -106,23 +110,23 @@ class DatasetPath:
             os.makedirs(path)
         return path
 
-    def assemble_full(self, state: Union[DatasetState, str], suffix: str = '', check_if_exists: bool = False) -> str:
+    def full_path(self, state: Union[DatasetState, str], suffix: str = '', check_if_exists: bool = False) -> str:
         """
         Assemble and return full path to the dataset file in given state including custome suffix.
         Return None if `check_if_exists` and file does not exist.
         """
-        filename = DatasetPath.format_filename(self._date_id, self._port, suffix)
-        path = os.path.join(self.assemble(state, False), filename + '.' + self._extension)
+        filename = Dataset.format_filename(self._date_id, self._port, suffix)
+        path = os.path.join(self.path(state, False), filename + '.' + self._extension)
         if check_if_exists and not os.path.exists(path):
             return None
         return path
 
     def delete(self, state: Union[DatasetState, str]) -> None:
         """Delete the dataset of given state from the repository."""
-        path = self.assemble(state, False)
+        path = self.path(state, False)
         if not os.path.exists(path):
             return
-        for file in directory_with_prefix(path, DatasetPath.format_filename(self._date_id, self._port)):
+        for file in directory_with_prefix(path, Dataset.format_filename(self._date_id, self._port)):
             os.remove(file)
         if not os.listdir(path):
             os.rmdir(path)
@@ -133,14 +137,14 @@ class DatasetPath:
 
     def get(self, state: Union[DatasetState, str], suffix: str = '', full_path: bool = False) -> Tuple[str]:
         """Return all datasets stored in the dataset repository matching the paramaters."""
-        filename = DatasetPath.format_filename(self._date_id, self._port, suffix)
-        path = self.assemble(state, False)
+        filename = Dataset.format_filename(self._date_id, self._port, suffix)
+        path = self.path(state, False)
         return tuple(directory_with_prefix(path, filename, not full_path))
 
     def exists(self, state: Union[DatasetState, str]) -> bool:
         """Test if the dataset exists in given state."""
-        path = self.assemble(state, False)
-        for _ in directory_with_prefix(path, DatasetPath.format_filename(self._date_id, self._port)):
+        path = self.path(state, False)
+        for _ in directory_with_prefix(path, Dataset.format_filename(self._date_id, self._port)):
             return True
         return False
 
@@ -157,14 +161,14 @@ class DatasetPath:
         If `format_name` is true, then name is formatted.
         """
         if os.path.exists(source):
-            path = self.assemble(state)
+            path = self.path(state)
             filename = os.path.basename(source)
             if format_name:
-                filename = DatasetPath.format_filename(self._date_id, self._port, filename)
+                filename = Dataset.format_filename(self._date_id, self._port, filename)
             shutil.move(os.path.abspath(source), os.path.join(path, filename))
 
     def __str__(self):
-        return os.path.join(self._repository, self._dataset_type, "{}", DatasetPath.format_filename(self._date_id, self._port))
+        return os.path.join(self._repository, self._dataset_type, "{}", Dataset.format_filename(self._date_id, self._port))
 
 
 class DatasetRepository:
@@ -238,7 +242,7 @@ class DatasetRepository:
         types = [dataset_type] if dataset_type else DatasetType
         # Iterate through filtered types and get its states
         for d_type in types:
-            dataset_path = DatasetPath(self.repository, d_type, dataset_id, None)
+            dataset_path = Dataset(self.repository, d_type, dataset_id, None)
             ret_type = get_type()
             if ret_type:
                 ret_repo[d_type.name] = ret_type
