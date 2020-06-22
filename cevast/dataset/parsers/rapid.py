@@ -18,18 +18,18 @@ class RapidParser:
 
     dataset_type = DatasetType.RAPID
 
-    # TODO design init and config properly
-    def __init__(self, certs_dataset: str, hosts_dataset: str, dataset_id: str):
+    def __init__(self, certs_dataset: str, hosts_dataset: str, chain_file: str, broken_chain_file: str = None):
         # Check dataset files
         if not os.path.isfile(certs_dataset):
             raise FileNotFoundError(certs_dataset)
         if not os.path.isfile(hosts_dataset):
             raise FileNotFoundError(hosts_dataset)
         # Initialize parser
-        log.info('Initializing parser for dataset %s (%s:%s)', dataset_id, certs_dataset, hosts_dataset)
-        self.certs_dataset = certs_dataset
-        self.hosts_dataset = hosts_dataset
-        self.dataset_id = dataset_id
+        log.info('Initializing parser for dataset files (%s:%s)', certs_dataset, hosts_dataset)
+        self._certs_dataset = certs_dataset
+        self._hosts_dataset = hosts_dataset
+        self._chain_file = chain_file
+        self._broken_chain_file = broken_chain_file
         # Initialize dataset parsing log
         self.__parsing_log = {
             'total_certs': 0,
@@ -37,6 +37,26 @@ class RapidParser:
             'total_host_certs': 0,
             'broken_chains': 0,
         }
+
+    @property
+    def certs_dataset(self):
+        """Getter property of certs dataset."""
+        return self._certs_dataset
+
+    @property
+    def hosts_dataset(self):
+        """Getter property of hosts dataset."""
+        return self._hosts_dataset
+
+    @property
+    def chain_file(self):
+        """Getter property of chain file."""
+        return self._chain_file
+
+    @property
+    def parsing_log(self) -> dict:
+        """Getter property of parsing log."""
+        return self.__parsing_log
 
     @staticmethod
     def read_certs(dataset: str) -> tuple:
@@ -72,22 +92,22 @@ class RapidParser:
 
     def store_certs(self, certdb: CertDB) -> None:
         """Parses certificates from dataset and stores them into DB."""
-        for sha, cert in self.read_certs(self.certs_dataset):
+        for sha, cert in self.read_certs(self._certs_dataset):
             certdb.insert(sha, BASE64_to_PEM(cert))
             self.__parsing_log['total_certs'] += 1
 
-    def store_chains(self, certdb: CertDB, separate_broken_chains: bool = True) -> None:
+    def store_chains(self, certdb: CertDB) -> None:
         """
-        Parses certificate chains from dataset and stores them into the `dataset_id` file.
+        Parses certificate chains from dataset and stores them into the `chain_file` file.
 
-        If `separate_broken_chains`, the chains that are not available (in the dataset nor the CertDB)
-        are stored into the separate file with suffix "_broken".
+        If `broken_chain_file` is provided, the chains that are not available (in the dataset nor the CertDB)
+        are stored into this separate file.
         """
 
         def write_chain(host: str, chain: list):
             self.__parsing_log['total_hosts'] += 1
             line = host + ',' + ','.join(chain) + '\n'
-            if separate_broken_chains:
+            if self._broken_chain_file:
                 # Try to find all the certificates in DB
                 if certdb.exists_all(chain):
                     f_full_chains.write(line)
@@ -97,20 +117,15 @@ class RapidParser:
             else:
                 f_full_chains.write(line)
 
-        if not separate_broken_chains:
+        if not self._broken_chain_file:
             self.__parsing_log['broken_chains'] = -1
 
         with ExitStack() as stack:
-            f_full_chains = stack.enter_context(gzip.open(self.dataset_id + ".gz", 'wt'))
-            if separate_broken_chains:
-                f_broken_chains = stack.enter_context(gzip.open(self.dataset_id + '_broken.gz', 'wt'))
+            f_full_chains = stack.enter_context(gzip.open(self._chain_file, 'wt'))
+            if self._broken_chain_file:
+                f_broken_chains = stack.enter_context(gzip.open(self._broken_chain_file, 'wt'))
 
-            for host, chain in self.read_chains(self.hosts_dataset):
+            for host, chain in self.read_chains(self._hosts_dataset):
                 self.__parsing_log['total_host_certs'] += 1
                 # Writing chain
                 write_chain(host, chain)
-
-    @property
-    def parsing_log(self) -> dict:
-        """Getter property of parsing log."""
-        return self.__parsing_log

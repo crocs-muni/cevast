@@ -8,7 +8,7 @@ import re
 from datetime import datetime
 from typing import List, Union, Tuple
 import requests
-from cevast.dataset.dataset import DatasetType, DatasetCollectionError
+from cevast.dataset.dataset import DatasetType, DatasetCollectionError, Dataset
 
 __author__ = 'Radim Podola'
 
@@ -39,6 +39,7 @@ class RapidCollector:
         else:
             self.__api_key = api_key
 
+    # TODO add date_range strategy via paramater date_since=None
     def collect(self, download_dir: str = '.', date: datetime.date = datetime.today().date(),
                 filter_ports: Union[Tuple[str], str] = '443',
                 filter_types: Union[Tuple[str], str] = ('hosts', 'certs')) -> Tuple[str]:
@@ -91,16 +92,20 @@ class RapidCollector:
                 if match.group('date') != target_date:
                     break  # Another date encountered, we have all datasets now -> break
                 path = os.path.join(
-                    download_dir, "{}_{}_{}.gz".format(match.group('date'), match.group('port'), match.group('type'))
+                    download_dir,
+                    Dataset.format_filename(match.group('date'), match.group('port'), match.group('type') + '.gz'),
                 )
-                datasets_to_download[path] = dataset
+                datasets_to_download[dataset] = path
         # Download the datasets
-        for path, dataset_file in datasets_to_download.items():
+        for dataset_file, path in datasets_to_download.items():
             log.info('Download dataset <%s> to <%s>.', dataset_file, path)
-            self.__download(dataset_file, path)
+            if os.path.exists(path):
+                log.info('Dataset is already downloaded.')
+            else:
+                self.__download(dataset_file, path)
 
         log.info('Rapid datasets collected.')
-        return tuple(datasets_to_download.keys())
+        return tuple(datasets_to_download.values())
 
     def get_datasets(self) -> List[str]:
         """
