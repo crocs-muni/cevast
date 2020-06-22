@@ -1,8 +1,8 @@
 """This module contains DatasetManager factory implementation."""
 
 from typing import Union
-from cevast.dataset.dataset import DatasetType, DatasetInvalidError
-import cevast.dataset.managers as managers
+from .dataset import DatasetType, DatasetInvalidError
+from . import managers as managers
 
 
 class DatasetManagerFactory:
