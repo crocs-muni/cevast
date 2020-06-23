@@ -1,6 +1,6 @@
 """This module contains DatasetManager interface."""
 
-from typing import Tuple
+from typing import Tuple, Optional
 from abc import ABC, abstractmethod, abstractclassmethod
 from enum import IntEnum
 from cevast.dataset.dataset import DatasetType
@@ -39,10 +39,11 @@ class DatasetManager(ABC):
         """
 
     @abstractmethod
-    def run(self, task_pipline: Tuple[DatasetManagerTask]) -> bool:
+    def run(self, task_pipline: Tuple[DatasetManagerTask], certdb: Optional[CertDB]) -> bool:
         """
         Run a series of tasks.
         `task_pipline` is list composed of the required tasks.
+        `certdb` is CertDB instance to work with (if any task do not need it, might be None).
         """
 
     @abstractmethod

@@ -234,13 +234,12 @@ class Dataset:
     def __str__(self):
         return os.path.join(self._repository, self._dataset_type, "{}", Dataset.format_filename(self._date_id, self._port))
 
-    def __eq__(self, other): 
+    def __eq__(self, other):
         if not isinstance(other, Dataset):
             # don't attempt to compare against unrelated types
             return NotImplemented
 
-        return (self._port == other.port and self._date_id == other.date and
-                self._dataset_type == other.dataset_type)
+        return self._port == other.port and self._date_id == other.date and self._dataset_type == other.dataset_type
 
     def __hash__(self):
         return hash((self._port, self._date_id, self._dataset_type))
@@ -298,7 +297,7 @@ class DatasetRepository:
 
         # Validate dataset type
         if dataset_type and not DatasetType.validate(dataset_type):
-                raise DatasetInvalidError("Dataset type %s is not valid." % dataset_type)
+            raise DatasetInvalidError("Dataset type %s is not valid." % dataset_type)
         # Validate dataset state
         if state and not DatasetState.validate(state):
             raise DatasetInvalidError("Dataset state %s is not valid." % state)

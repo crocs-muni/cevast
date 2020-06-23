@@ -3,13 +3,14 @@
 import os
 import logging
 import json
+from collections import OrderedDict
 from datetime import datetime
-from typing import Tuple, List
-from cevast.dataset.managers.manager import DatasetManager
-from cevast.dataset.parsers import RapidParser
-from cevast.dataset.collectors import RapidCollector
-from cevast.dataset.dataset import DatasetType, Dataset, DatasetState, DatasetRepository, DatasetParsingError
+from typing import Tuple, Optional
 from cevast.certdb import CertDB
+from .manager import DatasetManager, DatasetManagerTask
+from ..parsers import RapidParser
+from ..collectors import RapidCollector
+from ..dataset import DatasetType, Dataset, DatasetState, DatasetRepository, DatasetParsingError
 
 __author__ = 'Radim Podola'
 
@@ -38,23 +39,25 @@ class RapidDatasetManager(DatasetManager):
         self.__dataset_repo = DatasetRepository(repository)
         log.info('RapidDatasetManager initialized with repository=%s, date=%s, cpu_cores=%s', repository, date, cpu_cores)
 
-    def run(self, operation_pipline: list) -> bool:
-        """
-        Run a series of operations.
-        `operation_pipline` is list composed of the required operations.
-        """
-        pass
+    def run(self, task_pipline: Tuple[DatasetManagerTask], certdb: Optional[CertDB]) -> bool:
+        collected_datasets = self.collect()
+        log.info("%s", str(collected_datasets))
+        parsed_datasets = self.__parse(certdb=certdb, datasets=collected_datasets)
+        log.info("%s", parsed_datasets)
+        return True
 
-    def collect(self, api_key: str = None) -> Tuple[str]:
+    def collect(self, api_key: str = None) -> Tuple[Dataset]:
         log.info('Collecting started')
         collector = RapidCollector(api_key)
         download_dir = self.__dataset_path_any_port.path(DatasetState.COLLECTED)
         # Collect datasets
         collected = collector.collect(download_dir=download_dir, date=self._date,
                                       filter_ports=self._ports, filter_types=('hosts', 'certs'))
-        log.info('%d datasets were downloaded', len(collected))
+        # Remove duplicates (same datasets with e.g. different suffix)
+        datasets = list(OrderedDict.fromkeys(map(Dataset.from_full_path, collected)))
+        log.info('%d dataset were downloaded', len(datasets))
         log.info('Collecting finished')
-        return collected
+        return datasets
 
     def analyse(self, methods: list = None) -> str:
         raise NotImplementedError
@@ -65,29 +68,29 @@ class RapidDatasetManager(DatasetManager):
         #    self.__dataset_path_any_port.get(DatasetState.COLLECTED)
         # ...
         # else:
-        datasets = [Dataset(self._repository, self.dataset_type, self.__date_id, port) for port in self._ports]
+        datasets = tuple(Dataset(self._repository, self.dataset_type, self.__date_id, port) for port in self._ports)
         # Parse datasets
         parsed = self.__parse(certdb=certdb, datasets=datasets)
-        # Remove parsed datasets
-        for dataset in datasets:
-            dataset.delete(DatasetState.COLLECTED)
         log.info('Parsing finished')
         return parsed
 
-    def __parse(self, certdb: CertDB, datasets: List[Dataset], commit: bool = True, store_log: bool = True) -> Tuple[str]:
-        parsers = []
+    def __init_parser(self, dataset: Dataset) -> RapidParser:
+        certs_file = dataset.full_path(DatasetState.COLLECTED, self._CERT_NAME_SUFFIX, True)
+        hosts_file = dataset.full_path(DatasetState.COLLECTED, self._HOSTS_NAME_SUFFIX, True)
+        if certs_file and hosts_file:
+            chain_file = dataset.full_path(DatasetState.PARSED, self._CHAINS_NAME_SUFFIX, physically=True)
+            broken_file = dataset.full_path(DatasetState.PARSED, self._BROKEN_CHAINS_NAME_SUFFIX, physically=True)
+            try:
+                parser = RapidParser(certs_file, hosts_file, chain_file, broken_file)
+                log.info("Will parse dataset: %s", dataset.static_filename)
+                return parser
+            except FileNotFoundError:
+                log.exception("Collected dataset not found")
+        return None
+
+    def __parse(self, certdb: CertDB, datasets: Tuple[Dataset], commit: bool = True, store_log: bool = True) -> Tuple[str]:
         # First init parsers
-        for dataset in datasets:
-            certs_file = dataset.full_path(DatasetState.COLLECTED, self._CERT_NAME_SUFFIX, True)
-            hosts_file = dataset.full_path(DatasetState.COLLECTED, self._HOSTS_NAME_SUFFIX, True)
-            if certs_file and hosts_file:
-                chain_file = dataset.full_path(DatasetState.PARSED, self._CHAINS_NAME_SUFFIX)
-                broken_file = dataset.full_path(DatasetState.PARSED, self._BROKEN_CHAINS_NAME_SUFFIX)
-                try:
-                    parsers.append(RapidParser(certs_file, hosts_file, chain_file, broken_file))
-                    log.info("Will parse dataset: %s", dataset.static_filename)
-                except FileNotFoundError:
-                    log.exception("Collected dataset not found")
+        parsers = tuple(self.__init_parser(d) for d in datasets if d is not None)
         # Parse and store certificates
         for parser in parsers:
             try:
@@ -95,6 +98,7 @@ class RapidDatasetManager(DatasetManager):
             except (OSError, ValueError):
                 log.exception("Error during certs dataset parsing -> rollback and exit")
                 certdb.rollback()
+                return None
         # Now parse and store chains
         for parser in parsers:
             try:
@@ -114,7 +118,10 @@ class RapidDatasetManager(DatasetManager):
         # Commit inserted certificates now (ertdb.exists_all is faster before commit)
         if commit:
             certdb.commit()
-        return tuple([parser.chain_file for parser in parsers])
+        # Remove parsed datasets
+        for dataset in datasets:
+            dataset.delete(DatasetState.COLLECTED)
+        return tuple(parser.chain_file for parser in parsers)
 
     def validate(self, database: CertDB, validation_cfg: dict) -> str:
         pass

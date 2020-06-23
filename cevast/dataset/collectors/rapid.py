@@ -98,7 +98,7 @@ class RapidCollector:
                 datasets_to_download[dataset] = path
         # Download the datasets
         for dataset_file, path in datasets_to_download.items():
-            log.info('Download dataset <%s> to <%s>.', dataset_file, path)
+            log.info('Download dataset file <%s> to <%s>.', dataset_file, path)
             if os.path.exists(path):
                 log.info('Dataset is already downloaded.')
             else:

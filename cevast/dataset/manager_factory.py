@@ -2,7 +2,7 @@
 
 from typing import Union
 from .dataset import DatasetType, DatasetInvalidError
-from . import managers as managers
+from . import managers
 
 
 class DatasetManagerFactory:

@@ -2,21 +2,30 @@ import sys
 import json
 import cevast.dataset.parsers as parser
 from cevast.certdb import CertFileDB
+from cevast.dataset import DatasetManagerFactory
 from cevast.utils.logging import setup_cevast_logger
 
 
 #Will work with DatasetManager
 # will pass config file to function as **kwargs
 
-log = setup_cevast_logger(debug=True)
+log = setup_cevast_logger(debug=False)
 log.info('Starting')
 
 storage = sys.argv[1]
 dataset_id = sys.argv[2]
+repo = sys.argv[3]
 
-CertFileDB.setup(storage, owner='cevast', desc='Cevast CertFileDB')
-db = CertFileDB(storage, 64)
+try:
+    db = CertFileDB(storage, 64)
+except ValueError:
+    CertFileDB.setup(storage, owner='cevast', desc='Cevast CertFileDB')
+    db = CertFileDB(storage, 64)
 
+manager = DatasetManagerFactory.get_manager("RAPID")
+
+manager(repo, ports='50880').run([], db)
+exit()
 rapid_parser = parser.RapidParser(dataset_id + "_certs.gz", dataset_id + "_hosts.gz", dataset_id + "_chain.gz", dataset_id + "_broken_chain.gz")
 
 try:

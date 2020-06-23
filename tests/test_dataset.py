@@ -45,7 +45,7 @@ class TestDataset(unittest.TestCase):
         """Test of Dataset classmethod from_full_path."""
         # Test incorrect path
         # incorrect repository
-        assert Dataset.from_full_path("repository/RAPID/COLLECTED/66112211_22_suffix.ext") is None
+        assert Dataset.from_full_path("totally_made_up/RAPID/COLLECTED/66112211_22_suffix.ext") is None
         # incorrect type
         assert Dataset.from_full_path(os.path.join(self.TEST_REPO, "RAPIDOSS/COLLECTED/66112211_22_suffix.ext")) is None
         # incorrect date
