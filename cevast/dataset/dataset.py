@@ -42,7 +42,7 @@ class DatasetType(IntEnum):
         return False
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
 
 class DatasetState(IntEnum):
@@ -63,7 +63,7 @@ class DatasetState(IntEnum):
         return False
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
 
 class Dataset:
@@ -172,13 +172,13 @@ class Dataset:
             os.makedirs(path)
         return path
 
-    def full_path(self, state: Union[DatasetState, str], suffix: str = '', check_if_exists: bool = False) -> str:
+    def full_path(self, state: Union[DatasetState, str], suffix: str = '', check_if_exists: bool = False, physically: bool = False) -> str:
         """
         Assemble and return full path to the dataset file in given state including custome suffix.
         Return None if `check_if_exists` and file does not exist.
         """
         filename = Dataset.format_filename(self._date_id, self._port, suffix)
-        path = os.path.join(self.path(state, False), filename + '.' + self._extension)
+        path = os.path.join(self.path(state, physically), filename + '.' + self._extension)
         if check_if_exists and not os.path.exists(path):
             return None
         return path
@@ -233,6 +233,17 @@ class Dataset:
 
     def __str__(self):
         return os.path.join(self._repository, self._dataset_type, "{}", Dataset.format_filename(self._date_id, self._port))
+
+    def __eq__(self, other): 
+        if not isinstance(other, Dataset):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return (self._port == other.port and self._date_id == other.date and
+                self._dataset_type == other.dataset_type)
+
+    def __hash__(self):
+        return hash((self._port, self._date_id, self._dataset_type))
 
 
 class DatasetRepository:

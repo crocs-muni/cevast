@@ -19,17 +19,18 @@ class DatasetManagerFactory:
         """
         for manager_class in managers.DatasetManager.__subclasses__():
             if hasattr(manager_class, 'dataset_type'):
-                cls.__classes[manager_class.dataset_type] = manager_class
+                cls.__classes[str(manager_class.dataset_type)] = manager_class
 
     @classmethod
-    def create_manager(cls, dataset_type: Union[DatasetType, str]) -> managers.DatasetManager:
+    def get_manager(cls, dataset_type: Union[DatasetType, str]) -> managers.DatasetManager:
         """Instantiate a corresponding DatasetManager class based on `dataset_type`."""
         if not cls.__classes:
             cls.__load_classes()
 
-        if isinstance(dataset_type, DatasetType) and dataset_type.name in cls.__classes:
-            return cls.__classes[dataset_type.name]()
-        if isinstance(dataset_type, str) and dataset_type in DatasetType.__members__ and dataset_type in cls.__classes:
-            return cls.__classes[dataset_type]()
+        # Validate and init dataset manager
+        if not DatasetType.validate(dataset_type):
+            raise DatasetInvalidError("Dataset type %s is not valid." % dataset_type)
+        if str(dataset_type) not in cls.__classes:
+            raise DatasetInvalidError("Dataset type %s has no manager." % dataset_type)
 
-        raise DatasetInvalidError("Dataset type %s has no manager." % dataset_type)
+        return cls.__classes[str(dataset_type)]
