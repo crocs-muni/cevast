@@ -2,6 +2,7 @@
 This module contains unit tests of cevast.dataset.collectors package.
 """
 
+import os
 import unittest
 import unittest.mock
 import datetime
@@ -35,16 +36,16 @@ class TestRapidCollector(unittest.TestCase):
         # Test date filter
         res = collector.collect(date=datetime.date(2020, 6, 17), filter_ports=None, filter_types=None)
         # the newest dataset should match
-        self.assertEqual(res, ('./20200613_443_certs.gz',))
+        self.assertEqual(res, (os.path.normcase('./20200613_443_certs.gz'),))
         res_nodate = collector.collect(filter_ports=None, filter_types=None)
-        self.assertEqual(res_nodate, ('./20200613_443_certs.gz',))
+        self.assertEqual(res_nodate, (os.path.normcase('./20200613_443_certs.gz'),))
         self.assertEqual(res, res_nodate)
         # exact date should be collected
         res_12 = collector.collect(date=datetime.date(2020, 6, 12), filter_ports=None, filter_types=None)
-        self.assertEqual(res_12, ('./20200612_443_names.gz',))
+        self.assertEqual(res_12, (os.path.normcase('./20200612_443_names.gz'),))
         res_11 = collector.collect(date=datetime.date(2020, 6, 11), filter_ports=None, filter_types=None)
         res_9 = collector.collect(date=datetime.date(2020, 6, 9), filter_ports=None, filter_types=None)
-        self.assertEqual(res_11, ('./20200609_22_names.gz', './20200609_443_certs.gz'))
+        self.assertEqual(res_11, tuple(map(os.path.normcase, ('./20200609_22_names.gz', './20200609_443_certs.gz'))))
         self.assertEqual(res_11, res_9)
         # dataset newer that this date should not be collected
         res_8 = collector.collect(date=datetime.date(2020, 6, 8), filter_ports=None, filter_types=None)
@@ -52,18 +53,18 @@ class TestRapidCollector(unittest.TestCase):
 
         # Test filter_ports paramater
         res = collector.collect(filter_ports='22', filter_types=None)
-        self.assertEqual(res, ('./20200609_22_names.gz',))
+        self.assertEqual(res, (os.path.normcase('./20200609_22_names.gz'),))
         res = collector.collect(date=datetime.date(2020, 6, 9), filter_ports=['22', '443'], filter_types=None)
-        self.assertEqual(res, ('./20200609_22_names.gz', './20200609_443_certs.gz'))
+        self.assertEqual(res, tuple(map(os.path.normcase, ('./20200609_22_names.gz', './20200609_443_certs.gz'))))
         # everything should be filtered out
         res = collector.collect(filter_ports='XXX', filter_types=None)
         self.assertEqual(res, ())
 
         # Test filter_types paramater
         res = collector.collect(date=datetime.date(2020, 6, 9), filter_ports=None, filter_types='names')
-        self.assertEqual(res, ('./20200609_22_names.gz',))
+        self.assertEqual(res, (os.path.normcase('./20200609_22_names.gz'),))
         res = collector.collect(date=datetime.date(2020, 6, 9), filter_ports=None, filter_types=['names', 'certs'])
-        self.assertEqual(res, ('./20200609_22_names.gz', './20200609_443_certs.gz'))
+        self.assertEqual(res, tuple(map(os.path.normcase, ('./20200609_22_names.gz', './20200609_443_certs.gz'))))
         # everything should be filtered out
         res = collector.collect(filter_ports=None, filter_types=['XXX', 'X'])
         self.assertEqual(res, ())
