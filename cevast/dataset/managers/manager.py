@@ -2,21 +2,33 @@
 
 from typing import Tuple
 from abc import ABC, abstractmethod, abstractclassmethod
+from enum import IntEnum
 from cevast.dataset.dataset import DatasetType
 from cevast.certdb import CertDB
 
 
+class DatasetManagerTask(IntEnum):
+    """Enumaration class of all supported tasks with a certificate dataset."""
+
+    COLLECT = 1
+    ANALYSE = 2
+    PARSE = 3
+    VALIDATE = 4
+
+
 class DatasetManager(ABC):
     """
-    Abstract class representing DatasetManager interface that is providing operations with a certificate dataset.
+    An abstract DatasetManager class representing an interface that can be used to perform
+    various tasks with a certificate dataset.
 
-    For Manager to operate, at least a repository path and date must be provided. Date works as an identifier
-    of the dataset even though the date don't need to match exactly - the newest dataset by that date is identified.
-    Additionally a port number might be used to more specify the dataset.
+    For Manager to perform a task, a repository path and date must be provided. Date works
+    as an identifier of the dataset even though the date don't need to match exactly
+     - the newest dataset by that date is identified. Additionally a port number might be
+    used to more specify the dataset.
 
-    DatasetManager offers running the operations independently or running a series of operations at once by `run` method
-    (usefull for running operations that would be rather complex and/or long-lasting running separatelly).
-    Running a series might also be more optimized.
+    DatasetManager offers performing tasks independently or running a series of tasks at once
+    by `run` method (usefull for performing tasks that would be rather complex and/or long-lasting
+    running separatelly). Running a series might also be more optimized.
     """
 
     @property
@@ -27,10 +39,10 @@ class DatasetManager(ABC):
         """
 
     @abstractmethod
-    def run(self, work_queue: list) -> bool:
+    def run(self, task_pipline: Tuple[DatasetManagerTask]) -> bool:
         """
-        Run a series of operations.
-        `work_queue` is list composed of the required operations.
+        Run a series of tasks.
+        `task_pipline` is list composed of the required tasks.
         """
 
     @abstractmethod

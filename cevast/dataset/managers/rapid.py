@@ -38,10 +38,10 @@ class RapidDatasetManager(DatasetManager):
         self.__dataset_repo = DatasetRepository(repository)
         log.info('RapidDatasetManager initialized with repository=%s, date=%s, cpu_cores=%s', repository, date, cpu_cores)
 
-    def run(self, work_pipline: list) -> bool:
+    def run(self, operation_pipline: list) -> bool:
         """
         Run a series of operations.
-        `work_pipline` is list composed of the required operations.
+        `operation_pipline` is list composed of the required operations.
         """
         pass
 
