@@ -33,13 +33,51 @@ class TestDataset(unittest.TestCase):
         # Test init with wrong parameters
         self.assertRaises(DatasetInvalidError, Dataset, self.TEST_REPO, DatasetState.PARSED, '', '443')
         self.assertRaises(DatasetInvalidError, Dataset, self.TEST_REPO, 5, '', '443')
-        self.assertRaises(FileNotFoundError, Dataset, self.TEST_REPO + 'invalid', DatasetType.RAPID, '', '443')
+        self.assertRaises(DatasetInvalidError, Dataset, self.TEST_REPO + 'invalid', DatasetType.RAPID, '', '443')
         # Create Dataset instance
         Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
 
         # Test init with STRING type paramater
         Dataset(self.TEST_REPO, "RAPID", '2020-06-12', 443)
         self.assertRaises(DatasetInvalidError, Dataset, self.TEST_REPO, "UNKNOWN", '2020-06-12', '443')
+
+    def test_from_full_path(self):
+        """Test of Dataset classmethod from_full_path."""
+        # Test incorrect path
+        # incorrect repository
+        assert Dataset.from_full_path("repository/RAPID/COLLECTED/66112211_22_suffix.ext") is None
+        # incorrect type
+        assert Dataset.from_full_path(os.path.join(self.TEST_REPO, "RAPIDOSS/COLLECTED/66112211_22_suffix.ext")) is None
+        # incorrect date
+        assert Dataset.from_full_path(os.path.join(self.TEST_REPO, "RAPID/COLLECTED/661122_22_suffix.ext")) is None
+        # incorrect name
+        assert Dataset.from_full_path(os.path.join(self.TEST_REPO, "RAPID/COLLECTED/66112211_.ext")) is None
+        assert Dataset.from_full_path(os.path.join(self.TEST_REPO, "RAPID/COLLECTED/66112211")) is None
+        assert Dataset.from_full_path(os.path.join(self.TEST_REPO, "RAPID/COLLECTED/66112211_.gz")) is None
+
+        # Test correct path
+        dataset = Dataset.from_full_path(os.path.join(self.TEST_REPO, "RAPID/COLLECTED/66112211_22_suffix.ext"))
+        assert dataset
+        self.assertEqual(dataset.port, "22")
+        self.assertEqual(dataset.date, "66112211")
+        self.assertEqual(dataset.extension, "ext")
+        self.assertEqual(dataset.dataset_type, "RAPID")
+        # test without port
+        dataset = Dataset.from_full_path(os.path.join(self.TEST_REPO, "RAPID/COLLECTED/66112211_5a_adasd.ext"))
+        assert dataset
+        self.assertEqual(dataset.port, "")
+        path = os.path.abspath(os.path.join(self.TEST_REPO, "RAPID/VALIDATED/66112211_adasd.ext"))
+        dataset = Dataset.from_full_path(path)
+        assert dataset
+        self.assertEqual(dataset.full_path('VALIDATED', 'adasd'), path)
+        self.assertEqual(dataset.port, "")
+        # test without suffix
+        path = os.path.abspath(os.path.join(self.TEST_REPO, "RAPID/COLLECTED/66112211_55.json"))
+        dataset = Dataset.from_full_path(path)
+        assert dataset
+        self.assertEqual(dataset.full_path('COLLECTED'), path)
+        self.assertEqual(dataset.port, "55")
+        self.assertEqual(dataset.extension, "json")
 
     def test_path(self):
         """Test implementation of Dataset method PATH."""

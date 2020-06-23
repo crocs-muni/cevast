@@ -3,11 +3,15 @@ This module contains structures and classes logically related to a certificate d
 """
 
 import os
+import logging
 import shutil
 import re
 from typing import Union, Tuple
 from enum import IntEnum
 from cevast.utils import directory_with_prefix
+
+
+log = logging.getLogger(__name__)
 
 
 class DatasetCollectionError(ValueError):
@@ -28,6 +32,18 @@ class DatasetType(IntEnum):
     RAPID = 1
     CENSYS = 2
 
+    @classmethod
+    def validate(cls, dataset_type: Union['DatasetType', str]) -> bool:
+        """Validate DatasetType."""
+        if isinstance(dataset_type, cls):
+            return dataset_type in cls
+        if isinstance(dataset_type, str):
+            return dataset_type in cls.__members__
+        return False
+
+    def __str__(self):
+        return self.name
+
 
 class DatasetState(IntEnum):
     """Enumaration class of all supported Dataset states."""
@@ -36,6 +52,18 @@ class DatasetState(IntEnum):
     ANALYZED = 2  # Dataset was analyzed
     PARSED = 3  # Dataset was parsed to internal format, certificates were stored to CertDB
     VALIDATED = 4  # Dataset was already run through validation, result might be available
+
+    @classmethod
+    def validate(cls, state: Union['DatasetState', str]) -> bool:
+        """Validate DatasetState."""
+        if isinstance(state, cls):
+            return state in cls
+        if isinstance(state, str):
+            return state in cls.__members__
+        return False
+
+    def __str__(self):
+        return self.name
 
 
 class Dataset:
@@ -64,36 +92,60 @@ class Dataset:
         """Initialize the static identifiers"""
         # Validate and init dataset repository
         if not os.path.exists(repository):
-            raise FileNotFoundError("Repository %s not found" % repository)
+            raise DatasetInvalidError("Repository %s not found" % repository)
         self._repository = os.path.abspath(repository)
         # Validate and init dataset type
-        if isinstance(dataset_type, DatasetType) and dataset_type in DatasetType:
-            self._dataset_type = dataset_type.name
-        elif isinstance(dataset_type, str) and dataset_type in DatasetType.__members__:
-            self._dataset_type = dataset_type
-        else:
-            raise DatasetInvalidError("Dataset type %s not supported." % dataset_type)
+        if not DatasetType.validate(dataset_type):
+            raise DatasetInvalidError("Dataset type %s is not valid." % dataset_type)
+        self._dataset_type = str(dataset_type)
         self._date_id = date_id
         self._port = str(port) if port is not None else ''
         self._extension = extension
 
     @property
+    def dataset_type(self) -> str:
+        """Get the Dataset Type."""
+        return self._dataset_type
+
+    @property
+    def date(self) -> str:
+        """Get the DATE ID."""
+        return self._date_id
+
+    @property
+    def port(self) -> str:
+        """Get the PORT."""
+        return self._port
+
+    @property
+    def extension(self) -> str:
+        """Get the extension."""
+        return self._extension
+
+    @property
     def static_filename(self) -> str:
-        """Getter property of static part of dataset filename."""
+        """Get the static part of dataset filename."""
         return Dataset.format_filename(self._date_id, self._port)
 
     @classmethod
     def from_full_path(cls, path: str) -> 'Dataset':
-        """Initialize Dataset object from the given path."""
-        template = r"^(?P<repo>\S+)/(?P<type>\S+)/(?P<state>\S+)/(?P<date>\d{6})(_(?P<port>\d+))?(_\S+)?\.(?P<ext>\S+)$"
+        """
+        Initialize Dataset object from the given path,
+        or return None if object cannot be initialized.
+        """
+        template = r"^(?P<repo>\S+)[/\\](?P<type>\S+)[/\\](?P<state>\S+)[/\\](?P<date>\d{8})(_(?P<port>\d+))?(_\S+)?\.(?P<ext>\S+)$"
         match = re.match(template, path)
         if not match:
             return None
-        return cls(repository=match.group('repo'),
-                   dataset_type=match.group('type'),
-                   date_id=match.group('date'),
-                   port=match.group('type'),
-                   extension=match.group('ext'))
+        try:
+            return cls(repository=match.group('repo'),
+                       dataset_type=match.group('type'),
+                       date_id=match.group('date'),
+                       port=match.group('port'),
+                       extension=match.group('ext'))
+        except DatasetInvalidError:
+            log.exception("Cannot initialize Dataset class from the given path.")
+            return None
 
     @staticmethod
     def format_filename(date: str, port: str = '', suffix: str = '') -> str:
@@ -110,14 +162,13 @@ class Dataset:
         If `physically` flag is set and and path does not exist, create it.
         """
         # Validate dataset state
-        if isinstance(state, DatasetState) and state in DatasetState:
-            path = os.path.join(self._repository, self._dataset_type, state.name)
-        elif isinstance(state, str) and state in DatasetState.__members__:
-            path = os.path.join(self._repository, self._dataset_type, state)
-        else:
-            raise DatasetInvalidError("State %s not valid" % state)
+        if not DatasetState.validate(state):
+            raise DatasetInvalidError("Dataset state %s is not valid." % state)
+
+        path = os.path.join(self._repository, self._dataset_type, str(state))
 
         if physically and not os.path.exists(path):
+            log.info("Path <%s> does not exist yet, will be created.", path)
             os.makedirs(path)
         return path
 
@@ -138,8 +189,10 @@ class Dataset:
         if not os.path.exists(path):
             return
         for file in directory_with_prefix(path, Dataset.format_filename(self._date_id, self._port)):
+            log.debug("Will delete dataset <%s>.", file)
             os.remove(file)
         if not os.listdir(path):
+            log.info("No more datasets in state <%s>, directory will be deleted.", state)
             os.rmdir(path)
 
     def purge(self) -> None:
@@ -229,25 +282,15 @@ class DatasetRepository:
             for d_state in states:
                 ret_state = dataset_path.get(d_state)
                 if ret_state:
-                    ret_type[d_state.name] = ret_state
+                    ret_type[str(d_state)] = ret_state
             return ret_type
 
         # Validate dataset type
-        if dataset_type:
-            if isinstance(dataset_type, DatasetType) and dataset_type in DatasetType:
-                pass
-            elif isinstance(dataset_type, str) and dataset_type in DatasetType.__members__:
-                dataset_type = DatasetType[dataset_type]
-            else:
-                raise DatasetInvalidError("State %s not valid" % state)
+        if dataset_type and not DatasetType.validate(dataset_type):
+                raise DatasetInvalidError("Dataset type %s is not valid." % dataset_type)
         # Validate dataset state
-        if state:
-            if isinstance(state, DatasetState) and state in DatasetState:
-                pass
-            elif isinstance(state, str) and state in DatasetState.__members__:
-                state = DatasetState[state]
-            else:
-                raise DatasetInvalidError("State %s not valid" % state)
+        if state and not DatasetState.validate(state):
+            raise DatasetInvalidError("Dataset state %s is not valid." % state)
 
         ret_repo = {}
         types = [dataset_type] if dataset_type else DatasetType
@@ -256,7 +299,7 @@ class DatasetRepository:
             dataset_path = Dataset(self.repository, d_type, dataset_id, None)
             ret_type = get_type()
             if ret_type:
-                ret_repo[d_type.name] = ret_type
+                ret_repo[str(d_type)] = ret_type
 
         return ret_repo
 
