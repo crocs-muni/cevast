@@ -4,6 +4,7 @@ This module contains structures and classes logically related to a certificate d
 
 import os
 import shutil
+import re
 from typing import Union, Tuple
 from enum import IntEnum
 from cevast.utils import directory_with_prefix
@@ -55,7 +56,7 @@ class Dataset:
         - PARSED
         - VALIDATED
 
-    Full Dataset path template: {repository}/{type}/{state}/{date_id}_{port}[_suffix].{extension}
+    Full Dataset path template: {repository}/{type}/{state}/{date_id}[_{port}][_suffix].{extension}
     """
 
     def __init__(self, repository: str, dataset_type: Union[DatasetType, str],
@@ -76,9 +77,23 @@ class Dataset:
         self._port = str(port) if port is not None else ''
         self._extension = extension
 
+    @property
+    def static_filename(self) -> str:
+        """Getter property of static part of dataset filename."""
+        return Dataset.format_filename(self._date_id, self._port)
+
     @classmethod
-    def create_from_path(cls, path: str) -> 'Dataset':
-        pass
+    def from_full_path(cls, path: str) -> 'Dataset':
+        """Initialize Dataset object from the given path."""
+        template = r"^(?P<repo>\S+)/(?P<type>\S+)/(?P<state>\S+)/(?P<date>\d{6})(_(?P<port>\d+))?(_\S+)?\.(?P<ext>\S+)$"
+        match = re.match(template, path)
+        if not match:
+            return None
+        return cls(repository=match.group('repo'),
+                   dataset_type=match.group('type'),
+                   date_id=match.group('date'),
+                   port=match.group('type'),
+                   extension=match.group('ext'))
 
     @staticmethod
     def format_filename(date: str, port: str = '', suffix: str = '') -> str:
@@ -88,10 +103,6 @@ class Dataset:
         if port or suffix:
             return "{}_{}".format(date, port or suffix)
         return date
-
-    def get_static_filename(self) -> str:
-        """Return static part of dataset filename."""
-        return Dataset.format_filename(self._date_id, self._port)
 
     def path(self, state: Union[DatasetState, str], physically: bool = True) -> str:
         """

@@ -39,17 +39,17 @@ class RapidParser:
         }
 
     @property
-    def certs_dataset(self):
+    def certs_dataset(self) -> str:
         """Getter property of certs dataset."""
         return self._certs_dataset
 
     @property
-    def hosts_dataset(self):
+    def hosts_dataset(self) -> str:
         """Getter property of hosts dataset."""
         return self._hosts_dataset
 
     @property
-    def chain_file(self):
+    def chain_file(self) -> str:
         """Getter property of chain file."""
         return self._chain_file
 

@@ -38,10 +38,10 @@ class RapidDatasetManager(DatasetManager):
         self.__dataset_repo = DatasetRepository(repository)
         log.info('RapidDatasetManager initialized with repository=%s, date=%s, cpu_cores=%s', repository, date, cpu_cores)
 
-    def run(self, work_queue: list) -> bool:
+    def run(self, work_pipline: list) -> bool:
         """
         Run a series of operations.
-        `work_queue` is list composed of the required operations.
+        `work_pipline` is list composed of the required operations.
         """
         pass
 
@@ -49,6 +49,7 @@ class RapidDatasetManager(DatasetManager):
         log.info('Collecting started')
         collector = RapidCollector(api_key)
         download_dir = self.__dataset_path_any_port.path(DatasetState.COLLECTED)
+        # Collect datasets
         collected = collector.collect(download_dir=download_dir, date=self._date,
                                       filter_ports=self._ports, filter_types=('hosts', 'certs'))
         log.info('%d datasets were downloaded', len(collected))
@@ -65,7 +66,7 @@ class RapidDatasetManager(DatasetManager):
         # ...
         # else:
         datasets = [Dataset(self._repository, self.dataset_type, self.__date_id, port) for port in self._ports]
-
+        # Parse datasets
         parsed = self.__parse(certdb=certdb, datasets=datasets)
         # Remove parsed datasets
         for dataset in datasets:
@@ -84,6 +85,7 @@ class RapidDatasetManager(DatasetManager):
                 broken_file = dataset.full_path(DatasetState.PARSED, self._BROKEN_CHAINS_NAME_SUFFIX)
                 try:
                     parsers.append(RapidParser(certs_file, hosts_file, chain_file, broken_file))
+                    log.info("Will parse dataset: %s", dataset.static_filename)
                 except FileNotFoundError:
                     log.exception("Collected dataset not found")
         # Parse and store certificates
@@ -102,6 +104,7 @@ class RapidDatasetManager(DatasetManager):
                     log_name = os.path.splitext(parser.chain_file)[0] + '.log'
                     log_str = json.dumps(parser.parsing_log, sort_keys=True, indent=4)
                     log.info('Storing parsing log: %s', log_name)
+                    log.debug('%s', log_str)
                     with open(log_name, 'w') as outfile:
                         outfile.write(log_str)
             except OSError:
