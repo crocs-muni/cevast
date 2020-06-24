@@ -13,6 +13,7 @@ setup(
     description=cevast.__doc__,
     long_description=long_description,
     long_description_content_type='text/markdown',
+    license = "MIT",
     url='https://github.com/crocs-muni/cert-validation-stats',
     packages=find_packages(),
     classifiers=[
@@ -20,5 +21,9 @@ setup(
          'License :: OSI Approved :: MIT License',
          'Operating System :: OS Independent',
     ],
-    python_requires='>=3.6'
+    python_requires='>=3.6',
+    entry_points='''
+        [console_scripts]
+        cevast=cevast.cli:cli
+    ''',
 )

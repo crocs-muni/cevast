@@ -1,76 +1,80 @@
-import sys
-import json
+import os
+import argparse
+from typing import List
 from datetime import datetime
-import cevast.dataset.parsers as parser
 from cevast.certdb import CertFileDB
-from cevast.dataset import DatasetManagerFactory, DatasetManagerTask, DatasetManager
+from cevast.dataset import DatasetManagerFactory, DatasetManagerTask, DatasetType
 from cevast.utils.logging import setup_cevast_logger
 from cevast.validation import validator
 
 
-#Will work with DatasetManager
-# will pass config file to function as **kwargs
+log = setup_cevast_logger(debug=False)
 
-log = setup_cevast_logger(debug=True)
-log.info('Starting')
 
-storage = sys.argv[1]
-dataset_id = sys.argv[2]
-repo = sys.argv[3]
+def valid_date(s):
+    try:
+        return datetime.strptime(s, "%Y-%m-%d").date()
+    except ValueError:
+        msg = "Not a valid date: '{0}'.".format(s)
+        raise argparse.ArgumentTypeError(msg)
 
-try:
-    db = CertFileDB(storage, 64)
-except ValueError:
-    CertFileDB.setup(storage, owner='cevast', desc='Cevast CertFileDB')
-    db = CertFileDB(storage, 64)
 
-manager: DatasetManager = DatasetManagerFactory.get_manager("RAPID")
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('type', type=str.upper, choices=[str(t) for t in DatasetType])
+    parser.add_argument('repository', nargs='?', default=os.getcwd())
+    parser.add_argument("-d",
+                        "--date",
+                        help="The Date ID - format YYYY-MM-DD",
+                        required=True,
+                        type=valid_date)
+    parser.add_argument('--certdb', required=True)
+    parser.add_argument('-t', '--task', action='append', type=str.upper, choices=[str(t) for t in DatasetManagerTask])
+    parser.add_argument('--port', default='443')
+    parser.add_argument('--cpu', default=os.cpu_count() - 1)
 
-params = {}
-params['validator'] = validator
-params['validator_cfg'] = {"param": 'aaaaaaaaa'}
-tasks = (
-    (DatasetManagerTask.PARSE, {'certdb': db}),
-    (DatasetManagerTask.VALIDATE, {'certdb': db, **params}),
-)
+    return parser.parse_args()
 
-manager(repo, date=datetime.strptime(dataset_id, '%Y%m%d'), ports=('12443')).run(tasks)
-db.commit()
-exit()
 
-rapid_parser = parser.RapidParser(dataset_id + "_certs.gz", dataset_id + "_hosts.gz", dataset_id + "_chain.gz", dataset_id + "_broken_chain.gz")
+def cli():
+    """Runs the cli."""
+    log.info('Starting')
+    args = parse_args()
+    log.info(args)
 
-try:
-    rapid_parser.store_certs(db)
-except (OSError, ValueError):
-    log.exception("Fatal error during parsing certificates -> rollback and return")
-    db.rollback()
-    exit(2)
+    try:
+        db = CertFileDB(args.certdb, args.cpu)
+    except ValueError:
+        log.info('CertFileDB does not exist yet, will be created.')
+        CertFileDB.setup(args.certdb, owner='cevast', desc='Cevast CertFileDB')
+        db = CertFileDB(args.certdb, args.cpu)
 
-try:
-    rapid_parser.store_chains(db)
-    # Commit inserted certificates now
-    # certdb.exists_all is faster before commit
+    manager = DatasetManagerFactory.get_manager(args.type)(args.repository, date=args.date, ports=args.port, cpu_cores=args.cpu)
+
+    if not args.task:
+        log.warning('Nothing to do, yeaaaa')
+        return None
+
+    tasks = []
+    for args_task in args.task:
+        if DatasetManagerTask.validate(args_task):
+            task = DatasetManagerTask[args_task]
+            params = {}
+            if task == DatasetManagerTask.COLLECT:
+                pass
+            elif task == DatasetManagerTask.PARSE:
+                params['certdb'] = db
+            elif task == DatasetManagerTask.VALIDATE:
+                params['certdb'] = db
+                params['validator'] = validator
+                params['validator_cfg'] = {"param": 'aaaaaaaaa'}
+
+            tasks.append((task, params))
+    print(tasks)
+    manager.run(tasks)
+
     db.commit()
-    # Store dataset parsing log
-    log_filename = dataset_id + '.json'
-    log_str = json.dumps(rapid_parser.parsing_log, sort_keys=True, indent=4)
-    log.info('Storing parsing log about dataset: %s', dataset_id)
-    log.debug(log_str)
-    with open(log_filename, 'w') as outfile:
-        outfile.write(log_str)
-except OSError:
-    log.exception("Fatal error during parsing host scans -> commit and return")
-    db.commit()
-    exit(2)
 
 
-# TODO change validator -> validation modul with function like validate_chain(cfg_validators)
-#   - rather only validation logic with registered validators not related to dataset
-
-# TODO make dataset_manager generic implementing some interface
-#   - will magage DB, so even can make different implementation based on DB type
-#   - will manage work pipline related to dataset_type, so specific dataset_manager will only use the utility functions from submodules as parsers
-#      - some list argument work_pipeline would be nice - user can specify on commandline or cfg
-#   - can then improve pipeline liek not commit DB after parsing and immediatelly analyse not zipped files, or even analyse during parsing of hosts
-#        - parsers will have some generator function yielding host chains
+if __name__ == "__main__":
+    cli()

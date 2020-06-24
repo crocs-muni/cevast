@@ -43,12 +43,12 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -> loggin
     # Setup formatter
     if process_id:
         formatter = logging.Formatter(
-            '[%(process)d] %(asctime)s - %(levelname)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s',
+            '[%(process)d] %(asctime)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)s - %(funcName)s() ]',
             datefmt='%m/%d/%Y %H:%M:%S',
         )
     else:
         formatter = logging.Formatter(
-            '%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s',
+            '%(asctime)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)s - %(funcName)s() ]',
             datefmt='%m/%d/%Y %H:%M:%S',
         )
 

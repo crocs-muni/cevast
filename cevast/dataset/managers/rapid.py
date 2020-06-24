@@ -36,7 +36,7 @@ class RapidDatasetManager(DatasetManager):
         self._cpu_cores = cpu_cores
         self.__date_id = date.strftime('%Y%m%d')
         self.__dataset_path_any_port = Dataset(self._repository, self.dataset_type, self.__date_id, None)
-        log.info('RapidDatasetManager initialized with repository=%s, date=%s', repository, date)
+        log.info('RapidDatasetManager initialized with repository=%s, date=%s, ports=%s', repository, date, ports)
 
     def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -> None:
         collected_datasets, parsed_datasets = None, None
@@ -58,18 +58,18 @@ class RapidDatasetManager(DatasetManager):
 
             # Runs parsing TASK, parsed datasets might be used in next task
             elif task == DatasetManagerTask.PARSE:
-                if collected_datasets:
-                    parsed_datasets = self.parse(**params)
-                else:  # If some datasets were just collected, use these
+                if collected_datasets:  # If some datasets were just collected in pipeline, use these
                     parsed_datasets = self.__parse(datasets=collected_datasets, **params)
+                else:
+                    parsed_datasets = self.parse(**params)
                 log.info("Parsed datasets: %s", parsed_datasets)
 
             # Runs validation TASK
             elif task == DatasetManagerTask.VALIDATE:
                 if parsed_datasets:
-                    validated_datasets = self.validate(**params)
-                else:
                     validated_datasets = self.__validate(datasets=parsed_datasets, **params)
+                else:  # If some datasets were just parsed in pipeline, use these
+                    validated_datasets = self.validate(**params)
                 log.info("Validated datasets: %s", validated_datasets)
         log.info("Finished")
 
@@ -171,7 +171,7 @@ class RapidDatasetManager(DatasetManager):
                 for host, chain in RapidParser.read_chains(chain_file):
                     _ = validator(chain, validator_cfg)
                     print(host, chain)
-                    certdb.export()
+                    #certdb.export()
                 validatable.append(dataset)
 
         return tuple(validatable) if validatable else None
