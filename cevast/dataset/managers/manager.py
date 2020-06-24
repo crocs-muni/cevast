@@ -1,6 +1,6 @@
 """This module contains DatasetManager interface."""
 
-from typing import Tuple
+from typing import Tuple, Callable, Union
 from datetime import datetime
 from abc import ABC, abstractmethod, abstractclassmethod
 from enum import IntEnum
@@ -9,12 +9,24 @@ from cevast.certdb import CertDB
 
 
 class DatasetManagerTask(IntEnum):
-    """Enumaration class of all supported tasks with a certificate dataset."""
+    """Enumeration of DatasetManager Tasks"""
 
     COLLECT = 1
     ANALYSE = 2
     PARSE = 3
     VALIDATE = 4
+
+    @classmethod
+    def validate(cls, state: Union['DatasetManagerTask', str]) -> bool:
+        """Validate DatasetManagerTask."""
+        if isinstance(state, cls):
+            return state in cls
+        if isinstance(state, str):
+            return state in cls.__members__
+        return False
+
+    def __str__(self):
+        return str(self.name)
 
 
 class DatasetManager(ABC):
@@ -85,7 +97,7 @@ class DatasetManager(ABC):
         """
 
     @abstractmethod
-    def validate(self, certdb: CertDB, validator: object, validator_cfg: dict) -> Tuple[Dataset]:
+    def validate(self, certdb: CertDB, validator: Callable, validator_cfg: dict) -> Tuple[Dataset]:
         """
         Validate a dataset with given validor.
         `validator` is a validator callback function.

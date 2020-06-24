@@ -1,6 +1,6 @@
 """This module contains DatasetManager factory implementation."""
 
-from typing import Union
+from typing import Union, Type
 from .dataset import DatasetType, DatasetInvalidError
 from . import managers
 
@@ -22,7 +22,7 @@ class DatasetManagerFactory:
                 cls.__classes[str(manager_class.dataset_type)] = manager_class
 
     @classmethod
-    def get_manager(cls, dataset_type: Union[DatasetType, str]) -> managers.DatasetManager:
+    def get_manager(cls, dataset_type: Union[DatasetType, str]) -> Type[managers.DatasetManager]:
         """Instantiate a corresponding DatasetManager class based on `dataset_type`."""
         if not cls.__classes:
             cls.__load_classes()
