@@ -54,10 +54,13 @@ class TestRapidCollector(unittest.TestCase):
         # Test filter_ports paramater
         res = collector.collect(filter_ports='22', filter_types=None)
         self.assertEqual(res, (os.path.normcase('./20200609_22_names.gz'),))
-        res = collector.collect(date=datetime.date(2020, 6, 9), filter_ports=['22', '443'], filter_types=None)
+        res = collector.collect(date=datetime.date(2020, 6, 9), filter_ports=('22', '443'), filter_types=None)
         self.assertEqual(res, tuple(map(os.path.normcase, ('./20200609_22_names.gz', './20200609_443_certs.gz'))))
         # everything should be filtered out
         res = collector.collect(filter_ports='XXX', filter_types=None)
+        self.assertEqual(res, ())
+        # everything should be filtered out
+        res = collector.collect(filter_ports='12443', filter_types=None)
         self.assertEqual(res, ())
 
         # Test filter_types paramater
@@ -66,7 +69,10 @@ class TestRapidCollector(unittest.TestCase):
         res = collector.collect(date=datetime.date(2020, 6, 9), filter_ports=None, filter_types=['names', 'certs'])
         self.assertEqual(res, tuple(map(os.path.normcase, ('./20200609_22_names.gz', './20200609_443_certs.gz'))))
         # everything should be filtered out
-        res = collector.collect(filter_ports=None, filter_types=['XXX', 'X'])
+        res = collector.collect(filter_ports=None, filter_types=('XXX', 'X'))
+        self.assertEqual(res, ())
+        # everything should be filtered out
+        res = collector.collect(filter_ports=None, filter_types='namess')
         self.assertEqual(res, ())
 
         # Test not supported format of dataset names

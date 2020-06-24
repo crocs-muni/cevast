@@ -75,6 +75,10 @@ class RapidCollector:
                 return False
             return True
 
+        if isinstance(filter_ports, str):
+            filter_ports = (filter_ports,)
+        if isinstance(filter_types, str):
+            filter_types = (filter_types,)
         dataset_name_rgx = r"^(?P<date>\d{8}).*_(?P<port>\d+)_(?P<type>\w+)\.gz$"
         datasets_to_download = {}
         target_date = None
