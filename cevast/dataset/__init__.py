@@ -9,6 +9,8 @@ __all__ = [
     'DatasetInvalidError',
     'DatasetParsingError',
     'DatasetManagerFactory',
+    'DatasetManager',
+    'DatasetManagerTask',
 ]
 __version__ = '0.1'
 __author__ = 'Radim Podola'
@@ -23,3 +25,4 @@ from .dataset import (
     DatasetParsingError,
 )
 from .manager_factory import DatasetManagerFactory
+from .managers import DatasetManagerTask, DatasetManager

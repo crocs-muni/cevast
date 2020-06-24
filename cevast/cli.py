@@ -1,15 +1,17 @@
 import sys
 import json
+from datetime import datetime
 import cevast.dataset.parsers as parser
 from cevast.certdb import CertFileDB
-from cevast.dataset import DatasetManagerFactory
+from cevast.dataset import DatasetManagerFactory, DatasetManagerTask, DatasetManager
 from cevast.utils.logging import setup_cevast_logger
+from cevast.validation import validator
 
 
 #Will work with DatasetManager
 # will pass config file to function as **kwargs
 
-log = setup_cevast_logger(debug=False)
+log = setup_cevast_logger(debug=True)
 log.info('Starting')
 
 storage = sys.argv[1]
@@ -22,10 +24,20 @@ except ValueError:
     CertFileDB.setup(storage, owner='cevast', desc='Cevast CertFileDB')
     db = CertFileDB(storage, 64)
 
-manager = DatasetManagerFactory.get_manager("RAPID")
+manager: DatasetManager = DatasetManagerFactory.get_manager("RAPID")
 
-manager(repo, ports='50880').run([], db)
+params = {}
+params['validator'] = validator
+params['validator_cfg'] = {"param": 'aaaaaaaaa'}
+tasks = (
+    (DatasetManagerTask.PARSE, {'certdb': db}),
+    (DatasetManagerTask.VALIDATE, {'certdb': db, **params}),
+)
+
+manager(repo, date=datetime.strptime(dataset_id, '%Y%m%d'), ports=('12443')).run(tasks)
+db.commit()
 exit()
+
 rapid_parser = parser.RapidParser(dataset_id + "_certs.gz", dataset_id + "_hosts.gz", dataset_id + "_chain.gz", dataset_id + "_broken_chain.gz")
 
 try:

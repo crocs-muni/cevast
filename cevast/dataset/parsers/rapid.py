@@ -3,6 +3,7 @@
 import os
 import gzip
 import logging
+import json
 from contextlib import ExitStack
 from cevast.dataset import DatasetType
 from cevast.certdb import CertDB
@@ -59,7 +60,7 @@ class RapidParser:
         return self.__parsing_log
 
     @staticmethod
-    def read_certs(dataset: str) -> tuple:
+    def parse_certs(dataset: str) -> tuple:
         """
         Generator parsing certificates from dataset one by one.
         Tuple ('cert_id', 'certificate') is returned for each parsed certificated.
@@ -70,7 +71,7 @@ class RapidParser:
                 yield [x.strip() for x in line.split(',')]
 
     @staticmethod
-    def read_chains(dataset: str) -> tuple:
+    def parse_chains(dataset: str) -> tuple:
         """
         Generator parsing host certificate chains from dataset one by one.
         Tuple ('host IP', [certificate chain]) is returned for each parsed certificated.
@@ -90,9 +91,21 @@ class RapidParser:
                 last = curr
             yield last, chain
 
+    @staticmethod
+    def read_chains(dataset: str) -> tuple:
+        """
+        Generator reading host certificate chains from parsed dataset one by one.
+        Tuple ('host IP', [certificate chain]) is returned for each parsed certificated.
+        """
+        log.info('Start reading host chains from dataset: %s', dataset)
+        with gzip.open(dataset, 'rt') as r_file:
+            for line in r_file:
+                read_line = line.strip().split(',')
+                yield read_line[0], read_line[1:]
+
     def store_certs(self, certdb: CertDB) -> None:
         """Parses certificates from dataset and stores them into DB."""
-        for sha, cert in self.read_certs(self._certs_dataset):
+        for sha, cert in self.parse_certs(self._certs_dataset):
             certdb.insert(sha, BASE64_to_PEM(cert))
             self.__parsing_log['total_certs'] += 1
 
@@ -125,7 +138,14 @@ class RapidParser:
             if self._broken_chain_file:
                 f_broken_chains = stack.enter_context(gzip.open(self._broken_chain_file, 'wt'))
 
-            for host, chain in self.read_chains(self._hosts_dataset):
+            for host, chain in self.parse_chains(self._hosts_dataset):
                 self.__parsing_log['total_host_certs'] += 1
                 # Writing chain
                 write_chain(host, chain)
+
+    def save_parsing_log(self, filename: str) -> None:
+        """Save parsing log to filename."""
+        log_str = json.dumps(self.parsing_log, sort_keys=True, indent=4)
+        log.info('Saving parsing log: %s', filename)
+        with open(filename, 'w') as outfile:
+            outfile.write(log_str)

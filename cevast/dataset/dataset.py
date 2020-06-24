@@ -142,7 +142,8 @@ class Dataset:
                        dataset_type=match.group('type'),
                        date_id=match.group('date'),
                        port=match.group('port'),
-                       extension=match.group('ext'))
+                       extension=match.group('ext'),
+                       )
         except DatasetInvalidError:
             log.exception("Cannot initialize Dataset class from the given path.")
             return None
@@ -172,7 +173,8 @@ class Dataset:
             os.makedirs(path)
         return path
 
-    def full_path(self, state: Union[DatasetState, str], suffix: str = '', check_if_exists: bool = False, physically: bool = False) -> str:
+    def full_path(self, state: Union[DatasetState, str], suffix: str = '',
+                  check_if_exists: bool = False, physically: bool = False) -> str:
         """
         Assemble and return full path to the dataset file in given state including custome suffix.
         Return None if `check_if_exists` and file does not exist.
@@ -235,13 +237,13 @@ class Dataset:
         return os.path.join(self._repository, self._dataset_type, "{}", Dataset.format_filename(self._date_id, self._port))
 
     def __repr__(self):
-        s = "<%s.%s dataset_type=%s, date_id=%s, port=%s>" \
-            % (self.__class__.__module__,
-               self.__class__.__qualname__,
-               self._dataset_type,
-               self._date_id,
-               self._port)
-        return s
+        return "<%s.%s dataset_type=%s, date_id=%s, port=%s>" % (
+            self.__class__.__module__,
+            self.__class__.__qualname__,
+            self._dataset_type,
+            self._date_id,
+            self._port,
+        )
 
     def __eq__(self, other):
         if not isinstance(other, Dataset):

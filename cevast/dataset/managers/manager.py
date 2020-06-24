@@ -1,6 +1,7 @@
 """This module contains DatasetManager interface."""
 
-from typing import Tuple, Optional
+from typing import Tuple
+from datetime import datetime
 from abc import ABC, abstractmethod, abstractclassmethod
 from enum import IntEnum
 from cevast.dataset.dataset import DatasetType, Dataset
@@ -36,6 +37,17 @@ class DatasetManager(ABC):
     def dataset_type(cls) -> DatasetType:
         """
         Dataset type property used to identify a manager specification.
+        """
+
+    @abstractmethod
+    def __init__(self, repository: str, date: datetime.date = datetime.today().date(),
+                 ports: Tuple[str] = ('443',), cpu_cores: int = 1):
+        """
+        Initialize Manager.
+        `repository` is dataset repository,
+        'date' is date,
+        'ports' is list of ports more specifying datasets,
+        'cpu_cores' is maximum number of CPU cores that might be used.
         """
 
     @abstractmethod
