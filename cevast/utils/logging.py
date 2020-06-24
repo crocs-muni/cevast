@@ -36,6 +36,7 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -> loggin
     Each module-level logger must start with 'cevast.' to inherit the setup.
 
     TODO: add support for config file
+    TODO: add filter for console outputs
     """
     if not os.path.exists(LOG_DIR):
         os.mkdir(LOG_DIR)

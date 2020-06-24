@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     env:
-      targets: cevast/utils cevast/dataset/parsers cevast/certdb tests/test_* cevast/dataset/dataset.py cevast/dataset/*manager* cevast/dataset/collectors/
+      targets: cevast/ tests/test_*
 
     runs-on: ubuntu-latest
 
@@ -40,5 +40,5 @@ jobs:
       run: |
         # stop the build if there are Python syntax errors or undefined names
         pylint -E $targets
-        # stop the build if code has been rated under 7
-        pylint --fail-under=7 --max-line-length=127 $targets
+        # stop the build if code has been rated under 8
+        pylint --fail-under=8 --max-line-length=127 $targets

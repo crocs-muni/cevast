@@ -1,5 +1,5 @@
 interpret = python3.6
-trg = cevast/utils cevast/dataset/parsers cevast/certdb tests/test_* cevast/dataset/dataset.py cevast/dataset/*manager* cevast/dataset/collectors/
+trg = cevast/ tests/test_*
 max_line_len = 127
 
 install:
@@ -18,8 +18,8 @@ check:
 	@$(interpret) -m pylint -E $(trg)
 	@echo -e "\e[0;32m[3/4]\e[0;35mflake8 --count --exit-zero --max-complexity=10 --max-line-length=$(max_line_len) --statistics $(trg)$<\e[0m"
 	@$(interpret) -m flake8 --count --exit-zero --max-complexity=10 --max-line-length=$(max_line_len) --statistics $(trg)
-	@echo -e "\e[0;32m[4/4]\e[0;35mpylint -f colorized --max-line-length=$(max_line_len) --fail-under=7 $(trg)$<\e[0m"
-	@$(interpret) -m pylint -f colorized --max-line-length=$(max_line_len) --fail-under=7 $(trg)
+	@echo -e "\e[0;32m[4/4]\e[0;35mpylint -f colorized --max-line-length=$(max_line_len) --fail-under=8 $(trg)$<\e[0m"
+	@$(interpret) -m pylint -f colorized --max-line-length=$(max_line_len) --fail-under=8 $(trg)
 
 format:
 	$(interpret) -m black -l $(max_line_len) --target-version py36 -S --diff $(trg) | vim -R -
