@@ -3,7 +3,7 @@
 from typing import Tuple, Optional
 from abc import ABC, abstractmethod, abstractclassmethod
 from enum import IntEnum
-from cevast.dataset.dataset import DatasetType
+from cevast.dataset.dataset import DatasetType, Dataset
 from cevast.certdb import CertDB
 
 
@@ -39,37 +39,47 @@ class DatasetManager(ABC):
         """
 
     @abstractmethod
-    def run(self, task_pipline: Tuple[DatasetManagerTask], certdb: Optional[CertDB]) -> bool:
+    def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -> None:
         """
         Run a series of tasks.
-        `task_pipline` is list composed of the required tasks.
-        `certdb` is CertDB instance to work with (if any task do not need it, might be None).
+        `task_pipline` is tuple composed of the required tasks in form of pairs ('task', 'cfg'), where:
+            - 'task' is supported DatasetManagerTask,
+            - 'cfg' is dictionary filled of parameters that will be passed to individual task methods.
+        Caller function must ensure that 'cfg' parameters match task method's declaration.
+        TODO dict is optional
         """
 
     @abstractmethod
-    def collect(self) -> Tuple[str]:
+    def collect(self, api_key: str = None) -> Tuple[Dataset]:
         """
         Collect a dataset.
-        Return tuple of collected datasets (full paths).
+        `api_key` is API access key that might be needed to retrieve datasets (depends on type implementation).
+        Return tuple of collected Datasets.
         """
 
     @abstractmethod
-    def analyse(self, methods: list = None) -> str:
+    def analyse(self, methods: list = None) -> Tuple[Dataset]:
         """
-        Analyse a dataset.
-        Return result as formatted string.
+        Analyse a dataset with given methods.
+        Return tuple of analysed Datasets.
         """
 
     @abstractmethod
-    def parse(self, certdb: CertDB) -> Tuple[str]:
+    def parse(self, certdb: CertDB) -> Tuple[Dataset]:
         """
         Parse a dataset.
-        Return tuple of parsed datasets (full paths).
+        `certdb` is CertDB instance to work with (to insert parsed certificates to).
+        Return tuple of parsed Datasets.
         """
 
     @abstractmethod
-    def validate(self, dataset_id: str, validation_cfg: dict) -> str:
+    def validate(self, certdb: CertDB, validator: object, validator_cfg: dict) -> Tuple[Dataset]:
         """
-        Validate a dataset.
-        Return result as formatted string.
+        Validate a dataset with given validor.
+        `validator` is a validator callback function.
+        `validator_cfg` is a validator config that will be passed to the function.
+
+        Call to validator is performed like this: validator(cert_chain, validator_cfg)
+
+        Return tuple of validated Datasets.
         """

@@ -28,23 +28,49 @@ class RapidDatasetManager(DatasetManager):
     dataset_type = DatasetType.RAPID.name
 
     # TODO add date range
-    def __init__(self, repository: str, date: datetime.date = datetime.today().date(),
-                 ports: Tuple[str] = ('443',), cpu_cores: int = 1):
+    def __init__(self, repository: str, date: datetime.date = datetime.today().date(), ports: Tuple[str] = ('443',)):
         self._repository = repository
         self._date = date
         self._ports = ports
-        self._cpu_cores = cpu_cores
         self.__date_id = date.strftime('%Y%m%d')
         self.__dataset_path_any_port = Dataset(self._repository, self.dataset_type, self.__date_id, None)
         self.__dataset_repo = DatasetRepository(repository)
-        log.info('RapidDatasetManager initialized with repository=%s, date=%s, cpu_cores=%s', repository, date, cpu_cores)
+        log.info('RapidDatasetManager initialized with repository=%s, date=%s', repository, date)
 
-    def run(self, task_pipline: Tuple[DatasetManagerTask], certdb: Optional[CertDB]) -> bool:
-        collected_datasets = self.collect()
-        log.info("%s", str(collected_datasets))
-        parsed_datasets = self.__parse(certdb=certdb, datasets=collected_datasets)
-        log.info("%s", parsed_datasets)
-        return True
+    def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -> None:
+        collected_datasets, parsed_datasets = None, None
+        # Sort just to ensure valid sequence
+        task_pipline = sorted(task_pipline, key=lambda x: x[0])
+        log.info('Started with task pipeline %s', task_pipline)
+        # Run tasks
+        for task_item in task_pipline:
+            task, params = task_item
+            log.info('Run task %s with parameters: %s', task, params)
+            # Runs collection TASK, collected datasets might be used in next task
+            if task == DatasetManagerTask.COLLECT:
+                collected_datasets = self.collect(**params)
+                log.info("Collected datasets: %s", collected_datasets)
+
+            # Runs analyzing TASK
+            elif task == DatasetManagerTask.ANALYSE:
+                pass  # Not implemented yet
+
+            # Runs parsing TASK, parsed datasets might be used in next task
+            elif task == DatasetManagerTask.PARSE:
+                if collected_datasets is None:
+                    parsed_datasets = self.parse(**params)
+                else:  # If some datasets were just collected, use these
+                    parsed_datasets = self.__parse(datasets=collected_datasets, **params)
+                log.info("Parsed datasets: %s", parsed_datasets)
+
+            # Runs validation TASK
+            elif task == DatasetManagerTask.VALIDATE:
+                if parsed_datasets is None:
+                    validated_datasets = self.validate(**params)
+                else:
+                    validated_datasets = self.__validate(datasets=parsed_datasets, **params)
+                log.info("Validated datasets: %s", validated_datasets)
+        log.info("Finished")
 
     def collect(self, api_key: str = None) -> Tuple[Dataset]:
         log.info('Collecting started')
@@ -62,17 +88,32 @@ class RapidDatasetManager(DatasetManager):
     def analyse(self, methods: list = None) -> str:
         raise NotImplementedError
 
-    def parse(self, certdb: CertDB) -> Tuple[str]:
+    def parse(self, certdb: CertDB) -> Tuple[Dataset]:
         log.info('Parsing started')
         # if not self._ports:
         #    self.__dataset_path_any_port.get(DatasetState.COLLECTED)
         # ...
         # else:
-        datasets = tuple(Dataset(self._repository, self.dataset_type, self.__date_id, port) for port in self._ports)
+        datasets = self.__init_datasets()
         # Parse datasets
         parsed = self.__parse(certdb=certdb, datasets=datasets)
         log.info('Parsing finished')
         return parsed
+
+    def validate(self, certdb: CertDB, validator: object, validator_cfg: dict, cpu_cores: int = 1) -> Tuple[Dataset]:
+        log.info('Validation started')
+        datasets = self.__init_datasets()
+        # Validate datasets
+        validated = self.__validate(certdb=certdb,
+                                    datasets=datasets,
+                                    validator=validator,
+                                    validator_cfg=validator_cfg,
+                                    cpu_cores=cpu_cores)
+        log.info('Validation finished')
+        return validated
+
+    def __init_datasets(self) -> Tuple[Dataset]:
+        return tuple(Dataset(self._repository, self.dataset_type, self.__date_id, port) for port in self._ports)
 
     def __init_parser(self, dataset: Dataset) -> RapidParser:
         certs_file = dataset.full_path(DatasetState.COLLECTED, self._CERT_NAME_SUFFIX, True)
@@ -88,17 +129,22 @@ class RapidDatasetManager(DatasetManager):
                 log.exception("Collected dataset not found")
         return None
 
-    def __parse(self, certdb: CertDB, datasets: Tuple[Dataset], commit: bool = True, store_log: bool = True) -> Tuple[str]:
-        # First init parsers
-        parsers = tuple(self.__init_parser(d) for d in datasets if d is not None)
+    def __parse(self, certdb: CertDB, datasets: Tuple[Dataset], store_log: bool = True) -> Tuple[Dataset]:
+        # First validate datasets and init parsers
+        parsable, parsers = [], []
+        for dataset in datasets:
+            parser = self.__init_parser(dataset)
+            if parser is not None:
+                parsers.append(parser)
+                parsable.append(dataset)
         # Parse and store certificates
         for parser in parsers:
             try:
                 parser.store_certs(certdb)
             except (OSError, ValueError):
-                log.exception("Error during certs dataset parsing -> rollback and exit")
+                log.exception("Error during certs dataset parsing -> rollback")
                 certdb.rollback()
-                return None
+                raise DatasetParsingError("Error during certs dataset parsing")
         # Now parse and store chains
         for parser in parsers:
             try:
@@ -112,16 +158,16 @@ class RapidDatasetManager(DatasetManager):
                     with open(log_name, 'w') as outfile:
                         outfile.write(log_str)
             except OSError:
-                log.exception("Error during hosts dataset parsing -> commit and return")
+                log.exception("Error during hosts dataset parsing -> commit")
                 certdb.commit()
                 raise DatasetParsingError("Error during hosts dataset parsing")
-        # Commit inserted certificates now (ertdb.exists_all is faster before commit)
-        if commit:
-            certdb.commit()
         # Remove parsed datasets
-        for dataset in datasets:
+        for dataset in parsable:
             dataset.delete(DatasetState.COLLECTED)
-        return tuple(parser.chain_file for parser in parsers)
+        return tuple(parsable)
 
-    def validate(self, database: CertDB, validation_cfg: dict) -> str:
-        pass
+    def __validate(self, datasets: Tuple[Dataset], certdb: CertDB,
+                   validator: object, validator_cfg: dict, cpu_cores: int = 1) -> Tuple[Dataset]:
+        res = validator(["cert_mock"], validator_cfg)
+        print(res)
+        return datasets

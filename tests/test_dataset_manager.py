@@ -8,6 +8,7 @@ from enum import IntEnum
 from unittest.mock import patch, PropertyMock
 from cevast.dataset.dataset import DatasetType, DatasetInvalidError
 from cevast.dataset.manager_factory import DatasetManagerFactory
+from cevast.dataset.managers import RapidDatasetManager, DatasetManagerTask
 
 
 class DummyDatasetType(IntEnum):
@@ -65,3 +66,22 @@ class TestDatasetManagerFactory(unittest.TestCase):
         self.assertRaises(DatasetInvalidError, DatasetManagerFactory.get_manager, None)
         mocked.return_value = {"VALID": DummyRapidosManager}
         self.assertRaises(DatasetInvalidError, DatasetManagerFactory.get_manager, "VALID")
+
+
+class TestRapidDatasetManager(unittest.TestCase):
+    """Unit test class of RapidDatasetManager class"""
+
+    TEST_REPO = 'tests/data'
+
+
+    def test_run(self):
+        from cevast.validation import validator
+        params = {}
+        params['validator'] = validator
+        params['validator_cfg'] = {"param": 'aaaaaaaaa'}
+        tasks = (
+            (DatasetManagerTask.VALIDATE, {'certdb': 2, **params}),
+        )
+        rm = RapidDatasetManager(self.TEST_REPO)
+        rm.run(tasks)
+        #rm.validate(None, validator, {"paam": 'aaaaaaaaa'})

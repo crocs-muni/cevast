@@ -149,3 +149,4 @@ class RapidCollector:
             with open(target_filename, 'wb') as w_obj:
                 for chunk in stream_f.iter_content(chunk_size=8192):
                     w_obj.write(chunk)
+                    # TODO make some progress logs (25%, 50%, 75%)
