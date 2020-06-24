@@ -5,6 +5,7 @@ This module contains unit tests of Dataset module
 import os
 import shutil
 import unittest
+from enum import IntEnum
 from cevast.dataset.dataset import Dataset, DatasetState, DatasetType, DatasetInvalidError, DatasetRepository
 
 
@@ -13,6 +14,38 @@ def create_file(name: str):
     os.makedirs(os.path.dirname(name), exist_ok=True)
     with open(name, 'w') as w_file:
         w_file.write("adadadadadasdadadadasda")
+
+
+class TestDatasetType(unittest.TestCase):
+    """Unit test class of DatasetType Enum"""
+
+    def test_validate(self):
+        """Test of DatasetType classmethod validate."""
+        # Test correct
+        assert DatasetType.validate(DatasetType.RAPID)
+        assert DatasetType.validate("CENSYS")
+        # Test incorrect
+        assert not DatasetType.validate(5)
+        assert not DatasetType.validate(None)
+        assert not DatasetType.validate(DatasetState.PARSED)
+        # IntEnum is instance of class but not managed
+        assert not DatasetType.validate(IntEnum)
+
+
+class TestDatasetState(unittest.TestCase):
+    """Unit test class of DatasetState Enum"""
+
+    def test_validate(self):
+        """Test of DatasetState classmethod validate."""
+        # Test correct
+        assert DatasetState.validate(DatasetState.VALIDATED)
+        assert DatasetState.validate("PARSED")
+        # Test incorrect
+        assert not DatasetState.validate(5)
+        assert not DatasetState.validate(None)
+        assert not DatasetState.validate(DatasetType.RAPID)
+        # IntEnum is instance of class but not managed
+        assert not DatasetState.validate(IntEnum)
 
 
 class TestDataset(unittest.TestCase):
@@ -361,6 +394,31 @@ class TestDataset(unittest.TestCase):
         ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
         # string representation should look like: repository/type/{placeholder for state}/id
         self.assertEqual(str(ds_rapid).format('COLLECTED'), os.path.join(ds_rapid.path('COLLECTED', False), '2020-06-12'))
+
+    def test_hashable(self):
+        """Test implementation of Dataset override method __hash__ and __eq__."""
+        rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-30', '443')
+        rapid_eq = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-30', '443')
+        rapid_1 = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-16', '')
+        rapid_2 = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-30', '22')
+        censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '')
+        # Test equal
+        self.assertEqual(rapid, rapid_eq)
+        self.assertNotEqual(rapid, rapid_1)
+        self.assertNotEqual(rapid, rapid_2)
+        self.assertNotEqual(rapid_1, rapid_2)
+        self.assertNotEqual(rapid, censys)
+        # Test hash
+        self.assertEqual(hash(rapid), hash(rapid_eq))
+        self.assertNotEqual(hash(rapid), hash(rapid_1))
+        self.assertNotEqual(hash(rapid), hash(rapid_2))
+        self.assertNotEqual(hash(rapid_1), hash(rapid_2))
+        self.assertNotEqual(hash(rapid), hash(censys))
+        # Test use of hashable
+        assert rapid in tuple((rapid,))
+        assert rapid in tuple((rapid_1, rapid_eq))
+        assert rapid not in tuple((rapid_1, rapid_2, censys))
+        assert censys in tuple((rapid_1, rapid_2, censys))
 
 
 class TestDatasetRepository(unittest.TestCase):
