@@ -234,6 +234,15 @@ class Dataset:
     def __str__(self):
         return os.path.join(self._repository, self._dataset_type, "{}", Dataset.format_filename(self._date_id, self._port))
 
+    def __repr__(self):
+        s = "<%s.%s dataset_type=%s, date_id=%s, port=%s>" \
+            % (self.__class__.__module__,
+               self.__class__.__qualname__,
+               self._dataset_type,
+               self._date_id,
+               self._port)
+        return s
+
     def __eq__(self, other):
         if not isinstance(other, Dataset):
             # don't attempt to compare against unrelated types
