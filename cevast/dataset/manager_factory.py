@@ -13,9 +13,11 @@ class DatasetManagerFactory:
     @classmethod
     def __load_classes(cls):
         """
-        Automatically initialize lookup dictionary with specialized DatasetManager classes.
-        To be automatically identified, the specialized DatasetManager class must implement
-        DatasetManager interface and put in "cevast.dataset.managers" package.
+        Automatically initialize lookup dictionary with subclasses of DatasetManager class
+        that are visible to the Python interpreter (obtained from `type.__subclasses__()`).
+
+        .. DANGER:: To be automatically identified, the specialized DatasetManager class
+        must inherit DatasetManager and be placed in "cevast.dataset.managers" package.
         """
         for manager_class in managers.DatasetManager.__subclasses__():
             if hasattr(manager_class, 'dataset_type'):

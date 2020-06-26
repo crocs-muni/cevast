@@ -4,6 +4,8 @@ This module contains implementation of CertFileDB
     CertFileDB is a simple local database implementing CertDB interface that
     uses files and a file system properties as a storage mechanism.
 
+.. todo::Put this in separate Markdown
+
 Storage structure on the file system:
 storage/             - path to the storage given as an initial parameter to CertFileDB containing
                        hierarchy of certificate blocks (group of certificates with equal prefix)
