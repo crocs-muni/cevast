@@ -33,7 +33,13 @@ from . import managers
 
 
 class DatasetManagerFactory:
-    &#34;&#34;&#34;Class implementing factory design patter for creation of DatasetManager objects.&#34;&#34;&#34;
+    &#34;&#34;&#34;
+    Factory class providing the specific DatasetManager class based on DatasetType.
+
+    .. IMPORTANT:: DatasetManager classes are registered automatically. To add a new
+    specialized DatasetManager class, it must inherit DatasetManager and be placed
+    in &#34;cevast.dataset.managers&#34; package.
+    &#34;&#34;&#34;
 
     __classes = {}
 
@@ -42,9 +48,6 @@ class DatasetManagerFactory:
         &#34;&#34;&#34;
         Automatically initialize lookup dictionary with subclasses of DatasetManager class
         that are visible to the Python interpreter (obtained from `type.__subclasses__()`).
-
-        .. DANGER:: To be automatically identified, the specialized DatasetManager class
-        must inherit DatasetManager and be placed in &#34;cevast.dataset.managers&#34; package.
         &#34;&#34;&#34;
         for manager_class in managers.DatasetManager.__subclasses__():
             if hasattr(manager_class, &#39;dataset_type&#39;):
@@ -52,7 +55,7 @@ class DatasetManagerFactory:
 
     @classmethod
     def get_manager(cls, dataset_type: Union[DatasetType, str]) -&gt; Type[managers.DatasetManager]:
-        &#34;&#34;&#34;Instantiate a corresponding DatasetManager class based on `dataset_type`.&#34;&#34;&#34;
+        &#34;&#34;&#34;Return a corresponding DatasetManager class based on `dataset_type`.&#34;&#34;&#34;
         if not cls.__classes:
             cls.__load_classes()
 
@@ -78,13 +81,24 @@ class DatasetManagerFactory:
 <span>class <span class="ident">DatasetManagerFactory</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Class implementing factory design patter for creation of DatasetManager objects.</p></div>
+<div class="desc"><p>Factory class providing the specific DatasetManager class based on DatasetType.</p>
+<div class="admonition important">
+<p class="admonition-title">Important:&ensp;DatasetManager classes are registered automatically. To add a new</p>
+</div>
+<p>specialized DatasetManager class, it must inherit DatasetManager and be placed
+in "cevast.dataset.managers" package.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class DatasetManagerFactory:
-    &#34;&#34;&#34;Class implementing factory design patter for creation of DatasetManager objects.&#34;&#34;&#34;
+    &#34;&#34;&#34;
+    Factory class providing the specific DatasetManager class based on DatasetType.
+
+    .. IMPORTANT:: DatasetManager classes are registered automatically. To add a new
+    specialized DatasetManager class, it must inherit DatasetManager and be placed
+    in &#34;cevast.dataset.managers&#34; package.
+    &#34;&#34;&#34;
 
     __classes = {}
 
@@ -93,9 +107,6 @@ class DatasetManagerFactory:
         &#34;&#34;&#34;
         Automatically initialize lookup dictionary with subclasses of DatasetManager class
         that are visible to the Python interpreter (obtained from `type.__subclasses__()`).
-
-        .. DANGER:: To be automatically identified, the specialized DatasetManager class
-        must inherit DatasetManager and be placed in &#34;cevast.dataset.managers&#34; package.
         &#34;&#34;&#34;
         for manager_class in managers.DatasetManager.__subclasses__():
             if hasattr(manager_class, &#39;dataset_type&#39;):
@@ -103,7 +114,7 @@ class DatasetManagerFactory:
 
     @classmethod
     def get_manager(cls, dataset_type: Union[DatasetType, str]) -&gt; Type[managers.DatasetManager]:
-        &#34;&#34;&#34;Instantiate a corresponding DatasetManager class based on `dataset_type`.&#34;&#34;&#34;
+        &#34;&#34;&#34;Return a corresponding DatasetManager class based on `dataset_type`.&#34;&#34;&#34;
         if not cls.__classes:
             cls.__load_classes()
 
@@ -121,14 +132,14 @@ class DatasetManagerFactory:
 <span>def <span class="ident">get_manager</span></span>(<span>dataset_type: Union[cevast.dataset.dataset.DatasetType, str]) -> Type[<a title="cevast.dataset.managers.manager.DatasetManager" href="managers/manager.html#cevast.dataset.managers.manager.DatasetManager">DatasetManager</a>]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Instantiate a corresponding DatasetManager class based on <code>dataset_type</code>.</p></div>
+<div class="desc"><p>Return a corresponding DatasetManager class based on <code>dataset_type</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
 def get_manager(cls, dataset_type: Union[DatasetType, str]) -&gt; Type[managers.DatasetManager]:
-    &#34;&#34;&#34;Instantiate a corresponding DatasetManager class based on `dataset_type`.&#34;&#34;&#34;
+    &#34;&#34;&#34;Return a corresponding DatasetManager class based on `dataset_type`.&#34;&#34;&#34;
     if not cls.__classes:
         cls.__load_classes()
 
