@@ -24,6 +24,11 @@ check:
 format:
 	$(interpret) -m black -l $(max_line_len) --target-version py36 -S --diff $(trg) | vim -R -
 
+docs:
+	pdoc3 --html --force -o docs/ cevast
+	rsync -a --remove-source-files docs/cevast/ docs/
+	rm -rf docs/cevast/
+
 clear:
 	rm -rf build/
 	rm -rf dist/
@@ -31,4 +36,4 @@ clear:
 	find . -name __pycache__ -type d -exec rm -rv {} +
 	find . -name *.pyc -delete
 
-.PHONY: install user_install test check clear
+.PHONY: install user_install test check clear docs
