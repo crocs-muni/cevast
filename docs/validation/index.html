@@ -246,22 +246,6 @@ with certificates. Directory will be clean-up upon calling <code>done</code>.</p
         WORKER_TMP_DIR = tmp_dir
 
     def schedule(self, host: str, chain: List[str]) -&gt; None:
-<<<<<<< HEAD
-        # Get certificate files
-        pems = []
-        for cert in chain:
-            # check if already exported first
-            path = self.__export_dir + make_PEM_filename(cert)
-            if not os.path.exists(path):
-                try:
-                    path = self.__certdb.export(cert, self.__export_dir, False)
-                except CertNotAvailableError:
-                    log.info(&#34;HOST &lt;%s&gt; has broken chain&#34;, host)
-                    return
-            pems.append(path)
-        # Validate
-=======
->>>>>>> Move CertDB.export to worker process
         if self.__single:
             self.__out.write(ChainValidator._validate(host, chain))
         else:
