@@ -86,14 +86,7 @@ def python_OpenSSL(chain: list) -&gt; str:
         return str(err.args[0][0])
     except crypto.Error as err:
         log.warning(&#34;FULL_ERROR: %s&#34;, err)
-        return UNKNOWN
-
-
-if __name__ == &#34;__main__&#34;:
-    print(python_OpenSSL((
-    &#39;/var/tmp/xpodola/tmp_chain_validator/555005e815c13b993bc29a453cda3ae37aa42781.pem&#39;,
-    &#39;/var/tmp/xpodola/tmp_chain_validator/0b2c7db5f2dbce8a6367be442ab898d965d5c567.pem&#39;,
-                       )))</code></pre>
+        return UNKNOWN</code></pre>
 </details>
 </section>
 <section>
