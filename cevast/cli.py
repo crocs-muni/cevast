@@ -5,10 +5,11 @@ from datetime import datetime
 from cevast.certdb import CertFileDB
 from cevast.dataset import DatasetManagerFactory, DatasetManagerTask, DatasetType
 from cevast.utils.logging import setup_cevast_logger
-from cevast.validation import validator
+from cevast.validation import ChainValidator
 
 
-log = setup_cevast_logger(debug=False)
+# based on cpus set process_id
+log = setup_cevast_logger(debug=False, process_id=True)
 
 
 def valid_date(s):
@@ -31,9 +32,12 @@ def parse_args():
     parser.add_argument('--certdb', required=True)
     parser.add_argument('-t', '--task', action='append', type=str.upper, choices=[str(t) for t in DatasetManagerTask])
     parser.add_argument('--port', default='443')
-    parser.add_argument('--cpu', default=os.cpu_count() - 1)
+    parser.add_argument('--cpu', default=os.cpu_count() - 1, type=int)
 
     return parser.parse_args()
+
+
+# If only validation -> use CertDBReadonly!!!
 
 
 def cli():
@@ -66,8 +70,7 @@ def cli():
                 params['certdb'] = db
             elif task == DatasetManagerTask.VALIDATE:
                 params['certdb'] = db
-                params['validator'] = validator
-                params['validator_cfg'] = {"param": 'aaaaaaaaa'}
+                params['validator'] = ChainValidator
 
             tasks.append((task, params))
     print(tasks)

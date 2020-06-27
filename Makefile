@@ -28,6 +28,7 @@ docs:
 	pdoc3 --html --force -o docs/ cevast
 	rsync -a --remove-source-files docs/cevast/ docs/
 	rm -rf docs/cevast/
+	git add docs/ -u
 
 clear:
 	rm -rf build/

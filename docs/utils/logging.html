@@ -52,6 +52,7 @@ def __rotator(source, dest):
     os.remove(source)
 
 
+# TODO fix problem with mp logging https://medium.com/@rui.jorge.rei/semi-correct-handling-of-log-rotation-in-multiprocess-python-applications-75c56eca6780
 def setup_cevast_logger(debug: bool = False, process_id: bool = False) -&gt; logging.Logger:
     &#34;&#34;&#34;
     Setup the project logger &#39;CEVAST&#39;.

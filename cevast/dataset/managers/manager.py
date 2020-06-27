@@ -70,7 +70,7 @@ class DatasetManager(ABC):
             - 'task' is supported DatasetManagerTask,
             - 'cfg' is dictionary filled of parameters that will be passed to individual task methods.
         Caller function must ensure that 'cfg' parameters match task method's declaration.
-        TODO dict is optional
+        TODO make cfg dict optional
         """
 
     @abstractmethod

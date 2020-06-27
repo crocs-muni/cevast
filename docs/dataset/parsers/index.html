@@ -185,7 +185,7 @@ from .rapid import RapidParser</code></pre>
                 f_broken_chains = stack.enter_context(gzip.open(self._broken_chain_file, &#39;wt&#39;))
 
             for host, chain in self.parse_chains(self._hosts_dataset):
-                self.__parsing_log[&#39;total_host_certs&#39;] += 1
+                self.__parsing_log[&#39;total_host_certs&#39;] += len(chain)
                 # Writing chain
                 write_chain(host, chain)
 
@@ -414,7 +414,7 @@ are stored into this separate file.</p></div>
             f_broken_chains = stack.enter_context(gzip.open(self._broken_chain_file, &#39;wt&#39;))
 
         for host, chain in self.parse_chains(self._hosts_dataset):
-            self.__parsing_log[&#39;total_host_certs&#39;] += 1
+            self.__parsing_log[&#39;total_host_certs&#39;] += len(chain)
             # Writing chain
             write_chain(host, chain)</code></pre>
 </details>

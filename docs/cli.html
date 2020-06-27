@@ -31,7 +31,7 @@ from datetime import datetime
 from cevast.certdb import CertFileDB
 from cevast.dataset import DatasetManagerFactory, DatasetManagerTask, DatasetType
 from cevast.utils.logging import setup_cevast_logger
-from cevast.validation import validator
+from cevast.validation import ChainValidator
 
 
 # based on cpus set process_id
@@ -58,9 +58,12 @@ def parse_args():
     parser.add_argument(&#39;--certdb&#39;, required=True)
     parser.add_argument(&#39;-t&#39;, &#39;--task&#39;, action=&#39;append&#39;, type=str.upper, choices=[str(t) for t in DatasetManagerTask])
     parser.add_argument(&#39;--port&#39;, default=&#39;443&#39;)
-    parser.add_argument(&#39;--cpu&#39;, default=os.cpu_count() - 1)
+    parser.add_argument(&#39;--cpu&#39;, default=os.cpu_count() - 1, type=int)
 
     return parser.parse_args()
+
+
+# If only validation -&gt; use CertDBReadonly!!!
 
 
 def cli():
@@ -93,8 +96,7 @@ def cli():
                 params[&#39;certdb&#39;] = db
             elif task == DatasetManagerTask.VALIDATE:
                 params[&#39;certdb&#39;] = db
-                params[&#39;validator&#39;] = validator
-                params[&#39;validator_cfg&#39;] = {&#34;cl_open_ssl&#34;: True}
+                params[&#39;validator&#39;] = ChainValidator
 
             tasks.append((task, params))
     print(tasks)
@@ -153,8 +155,7 @@ if __name__ == &#34;__main__&#34;:
                 params[&#39;certdb&#39;] = db
             elif task == DatasetManagerTask.VALIDATE:
                 params[&#39;certdb&#39;] = db
-                params[&#39;validator&#39;] = validator
-                params[&#39;validator_cfg&#39;] = {&#34;cl_open_ssl&#34;: True}
+                params[&#39;validator&#39;] = ChainValidator
 
             tasks.append((task, params))
     print(tasks)
@@ -184,7 +185,7 @@ if __name__ == &#34;__main__&#34;:
     parser.add_argument(&#39;--certdb&#39;, required=True)
     parser.add_argument(&#39;-t&#39;, &#39;--task&#39;, action=&#39;append&#39;, type=str.upper, choices=[str(t) for t in DatasetManagerTask])
     parser.add_argument(&#39;--port&#39;, default=&#39;443&#39;)
-    parser.add_argument(&#39;--cpu&#39;, default=os.cpu_count() - 1)
+    parser.add_argument(&#39;--cpu&#39;, default=os.cpu_count() - 1, type=int)
 
     return parser.parse_args()</code></pre>
 </details>

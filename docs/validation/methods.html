@@ -32,19 +32,6 @@ import subprocess
 log = logging.getLogger(__name__)
 
 
-def validate_chain_open_ssl(chain: list):
-    print(&#39;validate_chain_open_ssl&#39;)
-    print(chain)
-    return 20
-
-
-def validate_chain_python_ssl(chain: list):
-    print(&#39;validate_chain_python_ssl&#39;)
-    print(chain)
-
-    return 0
-
-
 def cl_open_ssl(chain: list) -&gt; str:
     try:
         inter = []
@@ -63,7 +50,7 @@ def cl_open_ssl(chain: list) -&gt; str:
             return match_object.group(1)
         else:
             log.warning(&#34;FULL_ERROR: %s&#34;, e.output.decode(encoding=&#39;utf-8&#39;))
-            return e.output.decode(encoding=&#39;utf-8&#39;)</code></pre>
+            return &#34;XX&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -100,38 +87,7 @@ def cl_open_ssl(chain: list) -&gt; str:
             return match_object.group(1)
         else:
             log.warning(&#34;FULL_ERROR: %s&#34;, e.output.decode(encoding=&#39;utf-8&#39;))
-            return e.output.decode(encoding=&#39;utf-8&#39;)</code></pre>
-</details>
-</dd>
-<dt id="cevast.validation.methods.validate_chain_open_ssl"><code class="name flex">
-<span>def <span class="ident">validate_chain_open_ssl</span></span>(<span>chain: list)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def validate_chain_open_ssl(chain: list):
-    print(&#39;validate_chain_open_ssl&#39;)
-    print(chain)
-    return 20</code></pre>
-</details>
-</dd>
-<dt id="cevast.validation.methods.validate_chain_python_ssl"><code class="name flex">
-<span>def <span class="ident">validate_chain_python_ssl</span></span>(<span>chain: list)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def validate_chain_python_ssl(chain: list):
-    print(&#39;validate_chain_python_ssl&#39;)
-    print(chain)
-
-    return 0</code></pre>
+            return &#34;XX&#34;</code></pre>
 </details>
 </dd>
 </dl>
@@ -153,8 +109,6 @@ def cl_open_ssl(chain: list) -&gt; str:
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="cevast.validation.methods.cl_open_ssl" href="#cevast.validation.methods.cl_open_ssl">cl_open_ssl</a></code></li>
-<li><code><a title="cevast.validation.methods.validate_chain_open_ssl" href="#cevast.validation.methods.validate_chain_open_ssl">validate_chain_open_ssl</a></code></li>
-<li><code><a title="cevast.validation.methods.validate_chain_python_ssl" href="#cevast.validation.methods.validate_chain_python_ssl">validate_chain_python_ssl</a></code></li>
 </ul>
 </li>
 </ul>

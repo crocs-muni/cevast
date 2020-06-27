@@ -23,28 +23,7 @@ log = logging.getLogger(__name__)
 
 class RapidAnalyzer:
     """A analyzer class of RAPID dataset type."""
-
-    dataset_type = DatasetType.RAPID
-    datasets = {}
-
-    for filename in sys.argv[1:]:
-        match_object = re.search(r'\d{4}-\d{2}-\d{2}', filename)
-
-    if match_object:
-        date = match_object.group(0)
-        datasets[date] = datasets.get(date, {})
-
-        if re.search(r'certs\.gz', filename):
-            datasets[date]["certs_file"] = filename
-        elif re.search(r'hosts\.gz', filename):
-            datasets[date]["hosts_file"] = filename
-        else:
-            assert False
-    else:
-        assert False
-
-    print(datasets)
-
+"""
     #SortedList to manage certificates IDs of all datasets
     all_certificates = SortedList()
 
@@ -115,4 +94,4 @@ class RapidAnalyzer:
         print("")
         st_values = host_certs_cntr.values()
         print("Median:", statistics.median(st_values))
-        print("Mean:", statistics.mean(st_values))
+        print("Mean:", statistics.mean(st_values))"""

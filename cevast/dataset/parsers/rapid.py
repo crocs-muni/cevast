@@ -5,9 +5,9 @@ import gzip
 import logging
 import json
 from contextlib import ExitStack
-from cevast.dataset import DatasetType
 from cevast.certdb import CertDB
 from cevast.utils import BASE64_to_PEM
+from ..dataset import DatasetType
 
 __author__ = 'Radim Podola'
 
@@ -139,7 +139,7 @@ class RapidParser:
                 f_broken_chains = stack.enter_context(gzip.open(self._broken_chain_file, 'wt'))
 
             for host, chain in self.parse_chains(self._hosts_dataset):
-                self.__parsing_log['total_host_certs'] += 1
+                self.__parsing_log['total_host_certs'] += len(chain)
                 # Writing chain
                 write_chain(host, chain)
 

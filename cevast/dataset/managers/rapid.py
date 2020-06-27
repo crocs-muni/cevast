@@ -28,6 +28,7 @@ class RapidDatasetManager(DatasetManager):
 
     # TODO add date range
     # TODO make ports optional
+    # TODO support port range in signle validate or parse tasks
     def __init__(self, repository: str, date: datetime.date = datetime.today().date(),
                  ports: Tuple[str] = ('443',), cpu_cores: int = 1):
         self._repository = repository
@@ -35,7 +36,6 @@ class RapidDatasetManager(DatasetManager):
         self._ports = (ports,) if isinstance(ports, str) else ports
         self._cpu_cores = cpu_cores
         self.__date_id = date.strftime('%Y%m%d')
-        self.__dataset_path_any_port = Dataset(self._repository, self.dataset_type, self.__date_id, None)
         log.info('RapidDatasetManager initialized with repository=%s, date=%s, ports=%s', repository, date, ports)
 
     def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -> None:
@@ -54,7 +54,7 @@ class RapidDatasetManager(DatasetManager):
 
             # Runs analyzing TASK
             elif task == DatasetManagerTask.ANALYSE:
-                pass  # Not implemented yet
+                raise NotImplementedError  # Not implemented yet
 
             # Runs parsing TASK, parsed datasets might be used in next task
             elif task == DatasetManagerTask.PARSE:
@@ -76,7 +76,9 @@ class RapidDatasetManager(DatasetManager):
     def collect(self, api_key: str = None) -> Tuple[Dataset]:
         log.info('Collecting started')
         collector = RapidCollector(api_key)
-        download_dir = self.__dataset_path_any_port.path(DatasetState.COLLECTED)
+        # Create dummy dataset only to get target dir
+        dummyDataset = Dataset(self._repository, self.dataset_type, self.__date_id, None)
+        download_dir = dummyDataset.path(DatasetState.COLLECTED)
         # Collect datasets
         collected = collector.collect(
             download_dir=download_dir, date=self._date, filter_ports=self._ports, filter_types=('hosts', 'certs')
@@ -91,25 +93,15 @@ class RapidDatasetManager(DatasetManager):
         raise NotImplementedError
 
     def parse(self, certdb: CertDB) -> Tuple[Dataset]:
-        log.info('Parsing started')
-        # if not self._ports:
-        #    self.__dataset_path_any_port.get(DatasetState.COLLECTED)
-        # ...
-        # else:
         datasets = self.__init_datasets()
         # Parse datasets
         parsed = self.__parse(certdb=certdb, datasets=datasets)
-        log.info('Parsing finished')
         return parsed if parsed else None
 
-    def validate(self, certdb: CertDB, validator: object, validator_cfg: dict) -> Tuple[Dataset]:
-        log.info('Validation started')
+    def validate(self, certdb: CertDB, validator: object) -> Tuple[Dataset]:
         datasets = self.__init_datasets()
         # Validate datasets
-        validated = self.__validate(
-            certdb=certdb, datasets=datasets, validator=validator, validator_cfg=validator_cfg
-        )
-        log.info('Validation finished')
+        validated = self.__validate(certdb=certdb, datasets=datasets, validator=validator)
         return validated if validated else None
 
     def __init_datasets(self) -> Tuple[Dataset]:
@@ -130,6 +122,7 @@ class RapidDatasetManager(DatasetManager):
         return None
 
     def __parse(self, certdb: CertDB, datasets: Tuple[Dataset], store_log: bool = True) -> Tuple[Dataset]:
+        log.info('Parsing started')
         # First validate datasets and init parsers
         parsable, parsers = [], []
         for dataset in datasets:
@@ -159,19 +152,26 @@ class RapidDatasetManager(DatasetManager):
         # Remove parsed datasets
         for dataset in parsable:
             dataset.delete(DatasetState.COLLECTED)
+        log.info('Parsing finished')
         return tuple(parsable) if parsable else None
 
-    def __validate(self, datasets: Tuple[Dataset], certdb: CertDB,
-                   validator: object, validator_cfg: dict) -> Tuple[Dataset]:
+    def __validate(self, datasets: Tuple[Dataset], certdb: CertDB, validator: object) -> Tuple[Dataset]:
+        log.info('Validation started')
         validatable = []
+
         for dataset in datasets:
             chain_file = dataset.full_path(DatasetState.PARSED, self._CHAINS_NAME_SUFFIX, True)
             if chain_file:
-                log.info("Will validate dataset: %s", dataset.static_filename)
-                for host, chain in RapidParser.read_chains(chain_file):
-                    _ = validator(chain, validator_cfg)
-                    print(host, chain)
-                    #certdb.export()
                 validatable.append(dataset)
+                filename = os.path.join(dataset.path(DatasetState.VALIDATED), dataset.static_filename)
+                # Open validator as context manager
+                with validator(filename, certdb, self._cpu_cores) as validator_ctx:
+                    log.info("Will validate dataset: %s", dataset.static_filename)
+                    for host, chain in RapidParser.read_chains(chain_file):
+                        validator_ctx.schedule(host, chain)
+                    # Indicate that no more validation data will be scheduled
+                    validator_ctx.done()
+                    log.info("Dataset validation finished")
 
+        log.info('Validation finished')
         return tuple(validatable) if validatable else None

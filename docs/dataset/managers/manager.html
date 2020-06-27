@@ -97,7 +97,7 @@ class DatasetManager(ABC):
             - &#39;task&#39; is supported DatasetManagerTask,
             - &#39;cfg&#39; is dictionary filled of parameters that will be passed to individual task methods.
         Caller function must ensure that &#39;cfg&#39; parameters match task method&#39;s declaration.
-        TODO dict is optional
+        TODO make cfg dict optional
         &#34;&#34;&#34;
 
     @abstractmethod
@@ -147,7 +147,7 @@ class DatasetManager(ABC):
 <dl>
 <dt id="cevast.dataset.managers.manager.DatasetManager"><code class="flex name class">
 <span>class <span class="ident">DatasetManager</span></span>
-<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 6, 26), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
+<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 6, 27), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>An abstract DatasetManager class representing an interface that can be used to perform
@@ -209,7 +209,7 @@ running separatelly). Running a series might also be more optimized.</p>
             - &#39;task&#39; is supported DatasetManagerTask,
             - &#39;cfg&#39; is dictionary filled of parameters that will be passed to individual task methods.
         Caller function must ensure that &#39;cfg&#39; parameters match task method&#39;s declaration.
-        TODO dict is optional
+        TODO make cfg dict optional
         &#34;&#34;&#34;
 
     @abstractmethod
@@ -339,7 +339,7 @@ def parse(self, certdb: CertDB) -&gt; Tuple[Dataset]:
 - 'task' is supported DatasetManagerTask,
 - 'cfg' is dictionary filled of parameters that will be passed to individual task methods.
 Caller function must ensure that 'cfg' parameters match task method's declaration.
-TODO dict is optional</p></div>
+TODO make cfg dict optional</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -352,7 +352,7 @@ def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -&gt; None:
         - &#39;task&#39; is supported DatasetManagerTask,
         - &#39;cfg&#39; is dictionary filled of parameters that will be passed to individual task methods.
     Caller function must ensure that &#39;cfg&#39; parameters match task method&#39;s declaration.
-    TODO dict is optional
+    TODO make cfg dict optional
     &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
