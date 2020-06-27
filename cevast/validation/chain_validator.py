@@ -51,28 +51,29 @@ class ChainValidator(CertValidator):
             self.__cleanup_export_dir = False
         # Initialize pool and workers
         if not self.__single:
-            self.__pool = multiprocessing.Pool(processes)
+            self.__pool = multiprocessing.Pool(
+                processes, initializer=ChainValidator.__init_worker, initargs=(self.__certdb, self.__export_dir)
+            )
+        else:
+            ChainValidator.__init_worker(self.__certdb, self.__export_dir)
 
         log.info("ChainValidator created: output_file=%s, processes=%d", output_file, processes)
 
+    @staticmethod
+    def __init_worker(certdb: CertDB, tmp_dir: str):
+        """Create and initialize global variables used in validate method. {Not nice, but working well
+        with multiprocessing pool -> sharing instance of CertDB - object is not copied because of copy-on-write fork()}
+        """
+        global WORKER_CERTDB
+        global WORKER_TMP_DIR
+        WORKER_CERTDB = certdb
+        WORKER_TMP_DIR = tmp_dir
+
     def schedule(self, host: str, chain: List[str]) -> None:
-        # Get certificate files
-        pems = []
-        for cert in chain:
-            # check if already exported first
-            path = self.__export_dir + make_PEM_filename(cert)
-            if not os.path.exists(path):
-                try:
-                    path = self.__certdb.export(cert, self.__export_dir, False)
-                except CertNotAvailableError:
-                    log.info("HOST <%s> has broken chain", host)
-                    return
-            pems.append(path)
-        # Validate
         if self.__single:
-            self.__out.write(ChainValidator.validate(host, pems))
+            self.__out.write(ChainValidator._validate(host, chain))
         else:
-            self.__pool.apply_async(ChainValidator.validate, args=(host, pems), callback=self.__out.write)
+            self.__pool.apply_async(ChainValidator._validate, args=(host, chain), callback=self.__out.write)
 
     def done(self) -> None:
         # Wait for workers to finish
@@ -87,16 +88,27 @@ class ChainValidator(CertValidator):
             shutil.rmtree(self.__export_dir)
 
     @staticmethod
-    def validate(host: str, chain: List[str]) -> str:
+    def _validate(host: str, chain: List[str]) -> str:
         """
         Validation function of single validation task. Return formatted result.
         `host` is host name,
-        `chain` is list of paths to certificates files in PEM format forming
-        SSL Certificate Chain (strating with server certificate).
+        `chain` is list of certificate IDs forming SSL Certificate Chain (starting with server certificate).
         """
         result = []
+        pems = []
+        # check if already exported first
+        for cert in chain:
+            path = WORKER_TMP_DIR + make_PEM_filename(cert)
+            if not os.path.exists(path):
+                try:
+                    path = WORKER_CERTDB.export(cert, WORKER_TMP_DIR, False)
+                except CertNotAvailableError:
+                    log.info("HOST <%s> has broken chain", host)
+                    return ""
+            pems.append(path)
+
         # Call cl_open_ssl validation
-        result.append(cl_open_ssl(chain))
+        result.append(cl_open_ssl(pems))
         # Call other validations here....
 
         return "{}, {}, {}\n".format(host.rjust(15), ",".join(result), " -> ".join(chain))
