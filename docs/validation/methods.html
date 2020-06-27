@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.8.1" />
 <title>cevast.validation.methods API documentation</title>
-<meta name="description" content="" />
+<meta name="description" content="This module contains various certificate validation functions." />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
@@ -20,19 +20,23 @@
 <h1 class="title">Module <code>cevast.validation.methods</code></h1>
 </header>
 <section id="section-intro">
+<p>This module contains various certificate validation functions.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import logging
+<pre><code class="python">&#34;&#34;&#34;This module contains various certificate validation functions.&#34;&#34;&#34;
+
 import re
 import subprocess
+import logging
 
 
 log = logging.getLogger(__name__)
 
 
 def cl_open_ssl(chain: list) -&gt; str:
+    &#34;&#34;&#34;Validate SSL Certificate chain via command line openssl. Return result code.&#34;&#34;&#34;
     try:
         inter = []
         server = chain[0]
@@ -64,12 +68,13 @@ def cl_open_ssl(chain: list) -&gt; str:
 <span>def <span class="ident">cl_open_ssl</span></span>(<span>chain: list) -> str</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Validate SSL Certificate chain via command line openssl. Return result code.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def cl_open_ssl(chain: list) -&gt; str:
+    &#34;&#34;&#34;Validate SSL Certificate chain via command line openssl. Return result code.&#34;&#34;&#34;
     try:
         inter = []
         server = chain[0]
