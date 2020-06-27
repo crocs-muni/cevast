@@ -27,6 +27,7 @@
 </summary>
 <pre><code class="python">&#34;&#34;&#34;This module contains various certificate validation functions.&#34;&#34;&#34;
 
+import sys
 import re
 import subprocess
 import logging
@@ -45,9 +46,13 @@ def cl_open_ssl(chain: list) -&gt; str:
     try:
         inter = []
         server = chain[0]
-        if len(chain) &gt; 1:
+        if len(chain) == 2:
+            inter = (&#39;--CAfile&#39;, chain[1])
+        elif len(chain) &gt; 2:
             inter = [v for elt in chain[1:] for v in (&#39;-untrusted&#39;, elt)]
-        # openssl verify -show_chain -untrusted int.pem server.pem
+        # TODO check if only untrusted really works
+        # openssl verify -show_chain -untrusted int.pem -untrusted int2.pem server.pem
+        # openssl verify -show_chain --CAfile ca.pem server.pem
         subprocess.check_output([&#34;openssl&#34;, &#34;verify&#34;, &#34;-show_chain&#34;, *inter, server], stderr=subprocess.STDOUT)
         return OK
     except subprocess.CalledProcessError as err:
@@ -69,14 +74,13 @@ def python_OpenSSL(chain: list) -&gt; str:
         # Load the server certificate
         with open(server) as cert_file:
             certificate = crypto.load_certificate(crypto.FILETYPE_PEM, cert_file.read())
-        #Create a certificate store and add trusted certs
+        # Create a certificate store and add trusted certs
         store = crypto.X509Store()
-        # Assuming the certificates are in PEM format in a trusted_certs list
-        for _cert in inter:
-            with open(server) as cert_file:
+        for cert in inter:
+            with open(cert) as cert_file:
                 int_certificate = crypto.load_certificate(crypto.FILETYPE_PEM, cert_file.read())
                 store.add_cert(int_certificate)
-        # Create a certificate context using the store and the downloaded certificate
+        # Create a certificate context using the store and the server certificate
         store_ctx = crypto.X509StoreContext(store, certificate)
         # Verify the certificate, returns None if it can validate the certificate
         store_ctx.verify_certificate()
@@ -86,7 +90,12 @@ def python_OpenSSL(chain: list) -&gt; str:
         return str(err.args[0][0])
     except crypto.Error as err:
         log.warning(&#34;FULL_ERROR: %s&#34;, err)
-        return UNKNOWN</code></pre>
+        return UNKNOWN
+
+
+if __name__ == &#34;__main__&#34;:
+    print(&#39;cl_open_ssl   : &#39;, cl_open_ssl(sys.argv[1:]))
+    print(&#39;python_OpenSSL: &#39;, python_OpenSSL(sys.argv[1:]))</code></pre>
 </details>
 </section>
 <section>
@@ -110,9 +119,13 @@ def python_OpenSSL(chain: list) -&gt; str:
     try:
         inter = []
         server = chain[0]
-        if len(chain) &gt; 1:
+        if len(chain) == 2:
+            inter = (&#39;--CAfile&#39;, chain[1])
+        elif len(chain) &gt; 2:
             inter = [v for elt in chain[1:] for v in (&#39;-untrusted&#39;, elt)]
-        # openssl verify -show_chain -untrusted int.pem server.pem
+        # TODO check if only untrusted really works
+        # openssl verify -show_chain -untrusted int.pem -untrusted int2.pem server.pem
+        # openssl verify -show_chain --CAfile ca.pem server.pem
         subprocess.check_output([&#34;openssl&#34;, &#34;verify&#34;, &#34;-show_chain&#34;, *inter, server], stderr=subprocess.STDOUT)
         return OK
     except subprocess.CalledProcessError as err:
@@ -143,14 +156,13 @@ def python_OpenSSL(chain: list) -&gt; str:
         # Load the server certificate
         with open(server) as cert_file:
             certificate = crypto.load_certificate(crypto.FILETYPE_PEM, cert_file.read())
-        #Create a certificate store and add trusted certs
+        # Create a certificate store and add trusted certs
         store = crypto.X509Store()
-        # Assuming the certificates are in PEM format in a trusted_certs list
-        for _cert in inter:
-            with open(server) as cert_file:
+        for cert in inter:
+            with open(cert) as cert_file:
                 int_certificate = crypto.load_certificate(crypto.FILETYPE_PEM, cert_file.read())
                 store.add_cert(int_certificate)
-        # Create a certificate context using the store and the downloaded certificate
+        # Create a certificate context using the store and the server certificate
         store_ctx = crypto.X509StoreContext(store, certificate)
         # Verify the certificate, returns None if it can validate the certificate
         store_ctx.verify_certificate()

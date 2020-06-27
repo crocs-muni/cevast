@@ -67,8 +67,6 @@ class ChainValidator(CertValidator):
                 except CertNotAvailableError:
                     log.info("HOST <%s> has broken chain", host)
                     return
-            else:
-                log.info("path <%s> exists", path)
             pems.append(path)
         # Validate
         if self.__single:

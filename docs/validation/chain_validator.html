@@ -94,8 +94,6 @@ class ChainValidator(CertValidator):
                 except CertNotAvailableError:
                     log.info(&#34;HOST &lt;%s&gt; has broken chain&#34;, host)
                     return
-            else:
-                log.info(&#34;path &lt;%s&gt; exists&#34;, path)
             pems.append(path)
         # Validate
         if self.__single:
@@ -221,8 +219,6 @@ with certificates. Directory will be clean-up upon calling <code>done</code>.</p
                 except CertNotAvailableError:
                     log.info(&#34;HOST &lt;%s&gt; has broken chain&#34;, host)
                     return
-            else:
-                log.info(&#34;path &lt;%s&gt; exists&#34;, path)
             pems.append(path)
         # Validate
         if self.__single:
