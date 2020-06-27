@@ -9,3 +9,7 @@ def validate_chain_python_ssl(chain: list):
     print(chain)
 
     return 0
+
+
+def cl_open_ssl(*args):
+    return '0'
