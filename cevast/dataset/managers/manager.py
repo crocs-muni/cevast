@@ -1,11 +1,12 @@
 """This module contains DatasetManager interface."""
 
-from typing import Tuple, Callable, Union
+from typing import Tuple, Union, Type
 from datetime import datetime
 from abc import ABC, abstractmethod, abstractclassmethod
 from enum import IntEnum
 from cevast.dataset.dataset import DatasetType, Dataset
 from cevast.certdb import CertDB
+from cevast.validation import CertValidator
 
 
 class DatasetManagerTask(IntEnum):
@@ -97,13 +98,13 @@ class DatasetManager(ABC):
         """
 
     @abstractmethod
-    def validate(self, certdb: CertDB, validator: Callable, validator_cfg: dict) -> Tuple[Dataset]:
+    def validate(self, validator: Type[CertValidator], validator_cfg: dict) -> Tuple[Dataset]:
         """
         Validate a dataset with given validor.
-        `validator` is a validator callback function.
-        `validator_cfg` is a validator config that will be passed to the function.
+        `validator` is a CertValidator class,
+        `validator_cfg` is a dictionary with validator paramaters that will be passed to the initializer.
 
-        Call to validator is performed like this: validator(cert_chain, validator_cfg)
+        Call to validator is performed like this: validator(cert_chain, **validator_cfg).
 
         Return tuple of validated Datasets.
         """

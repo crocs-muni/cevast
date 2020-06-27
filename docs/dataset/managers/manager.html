@@ -27,12 +27,13 @@
 </summary>
 <pre><code class="python">&#34;&#34;&#34;This module contains DatasetManager interface.&#34;&#34;&#34;
 
-from typing import Tuple, Callable, Union
+from typing import Tuple, Union, Type
 from datetime import datetime
 from abc import ABC, abstractmethod, abstractclassmethod
 from enum import IntEnum
 from cevast.dataset.dataset import DatasetType, Dataset
 from cevast.certdb import CertDB
+from cevast.validation import CertValidator
 
 
 class DatasetManagerTask(IntEnum):
@@ -124,13 +125,13 @@ class DatasetManager(ABC):
         &#34;&#34;&#34;
 
     @abstractmethod
-    def validate(self, certdb: CertDB, validator: Callable, validator_cfg: dict) -&gt; Tuple[Dataset]:
+    def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
         Validate a dataset with given validor.
-        `validator` is a validator callback function.
-        `validator_cfg` is a validator config that will be passed to the function.
+        `validator` is a CertValidator class,
+        `validator_cfg` is a dictionary with validator paramaters that will be passed to the initializer.
 
-        Call to validator is performed like this: validator(cert_chain, validator_cfg)
+        Call to validator is performed like this: validator(cert_chain, **validator_cfg).
 
         Return tuple of validated Datasets.
         &#34;&#34;&#34;</code></pre>
@@ -236,13 +237,13 @@ running separatelly). Running a series might also be more optimized.</p>
         &#34;&#34;&#34;
 
     @abstractmethod
-    def validate(self, certdb: CertDB, validator: Callable, validator_cfg: dict) -&gt; Tuple[Dataset]:
+    def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
         Validate a dataset with given validor.
-        `validator` is a validator callback function.
-        `validator_cfg` is a validator config that will be passed to the function.
+        `validator` is a CertValidator class,
+        `validator_cfg` is a dictionary with validator paramaters that will be passed to the initializer.
 
-        Call to validator is performed like this: validator(cert_chain, validator_cfg)
+        Call to validator is performed like this: validator(cert_chain, **validator_cfg).
 
         Return tuple of validated Datasets.
         &#34;&#34;&#34;</code></pre>
@@ -357,26 +358,26 @@ def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -&gt; None:
 </details>
 </dd>
 <dt id="cevast.dataset.managers.manager.DatasetManager.validate"><code class="name flex">
-<span>def <span class="ident">validate</span></span>(<span>self, certdb: <a title="cevast.certdb.cert_db.CertDB" href="../../certdb/cert_db.html#cevast.certdb.cert_db.CertDB">CertDB</a>, validator: Callable, validator_cfg: dict) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
+<span>def <span class="ident">validate</span></span>(<span>self, validator: Type[<a title="cevast.validation.validator.CertValidator" href="../../validation/validator.html#cevast.validation.validator.CertValidator">CertValidator</a>], validator_cfg: dict) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Validate a dataset with given validor.
-<code>validator</code> is a validator callback function.
-<code>validator_cfg</code> is a validator config that will be passed to the function.</p>
-<p>Call to validator is performed like this: validator(cert_chain, validator_cfg)</p>
+<code>validator</code> is a CertValidator class,
+<code>validator_cfg</code> is a dictionary with validator paramaters that will be passed to the initializer.</p>
+<p>Call to validator is performed like this: validator(cert_chain, **validator_cfg).</p>
 <p>Return tuple of validated Datasets.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def validate(self, certdb: CertDB, validator: Callable, validator_cfg: dict) -&gt; Tuple[Dataset]:
+def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
     &#34;&#34;&#34;
     Validate a dataset with given validor.
-    `validator` is a validator callback function.
-    `validator_cfg` is a validator config that will be passed to the function.
+    `validator` is a CertValidator class,
+    `validator_cfg` is a dictionary with validator paramaters that will be passed to the initializer.
 
-    Call to validator is performed like this: validator(cert_chain, validator_cfg)
+    Call to validator is performed like this: validator(cert_chain, **validator_cfg).
 
     Return tuple of validated Datasets.
     &#34;&#34;&#34;</code></pre>

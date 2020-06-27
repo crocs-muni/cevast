@@ -4,8 +4,9 @@ import os
 import logging
 from collections import OrderedDict
 from datetime import datetime
-from typing import Tuple
+from typing import Tuple, Type
 from cevast.certdb import CertDB
+from cevast.validation import CertValidator
 from .manager import DatasetManager, DatasetManagerTask
 from ..parsers import RapidParser
 from ..collectors import RapidCollector
@@ -77,8 +78,8 @@ class RapidDatasetManager(DatasetManager):
         log.info('Collecting started')
         collector = RapidCollector(api_key)
         # Create dummy dataset only to get target dir
-        dummyDataset = Dataset(self._repository, self.dataset_type, self.__date_id, None)
-        download_dir = dummyDataset.path(DatasetState.COLLECTED)
+        dummy_dataset = Dataset(self._repository, self.dataset_type, self.__date_id, None)
+        download_dir = dummy_dataset.path(DatasetState.COLLECTED)
         # Collect datasets
         collected = collector.collect(
             download_dir=download_dir, date=self._date, filter_ports=self._ports, filter_types=('hosts', 'certs')
@@ -98,10 +99,10 @@ class RapidDatasetManager(DatasetManager):
         parsed = self.__parse(certdb=certdb, datasets=datasets)
         return parsed if parsed else None
 
-    def validate(self, certdb: CertDB, validator: object) -> Tuple[Dataset]:
+    def validate(self, validator: CertValidator, validator_cfg: dict) -> Tuple[Dataset]:
         datasets = self.__init_datasets()
         # Validate datasets
-        validated = self.__validate(certdb=certdb, datasets=datasets, validator=validator)
+        validated = self.__validate(datasets=datasets, validator=validator, validator_cfg=validator_cfg)
         return validated if validated else None
 
     def __init_datasets(self) -> Tuple[Dataset]:
@@ -155,7 +156,7 @@ class RapidDatasetManager(DatasetManager):
         log.info('Parsing finished')
         return tuple(parsable) if parsable else None
 
-    def __validate(self, datasets: Tuple[Dataset], certdb: CertDB, validator: object) -> Tuple[Dataset]:
+    def __validate(self, datasets: Tuple[Dataset], validator: Type[CertValidator], validator_cfg: dict) -> Tuple[Dataset]:
         log.info('Validation started')
         validatable = []
 
@@ -165,7 +166,7 @@ class RapidDatasetManager(DatasetManager):
                 validatable.append(dataset)
                 filename = os.path.join(dataset.path(DatasetState.VALIDATED), dataset.static_filename)
                 # Open validator as context manager
-                with validator(filename, certdb, self._cpu_cores) as validator_ctx:
+                with validator(output_file=filename, processes=self._cpu_cores, **validator_cfg) as validator_ctx:
                     log.info("Will validate dataset: %s", dataset.static_filename)
                     for host, chain in RapidParser.read_chains(chain_file):
                         validator_ctx.schedule(host, chain)

@@ -151,13 +151,13 @@ running separatelly). Running a series might also be more optimized.</p>
         &#34;&#34;&#34;
 
     @abstractmethod
-    def validate(self, certdb: CertDB, validator: Callable, validator_cfg: dict) -&gt; Tuple[Dataset]:
+    def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
         Validate a dataset with given validor.
-        `validator` is a validator callback function.
-        `validator_cfg` is a validator config that will be passed to the function.
+        `validator` is a CertValidator class,
+        `validator_cfg` is a dictionary with validator paramaters that will be passed to the initializer.
 
-        Call to validator is performed like this: validator(cert_chain, validator_cfg)
+        Call to validator is performed like this: validator(cert_chain, **validator_cfg).
 
         Return tuple of validated Datasets.
         &#34;&#34;&#34;</code></pre>
@@ -272,26 +272,26 @@ def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -&gt; None:
 </details>
 </dd>
 <dt id="cevast.dataset.managers.DatasetManager.validate"><code class="name flex">
-<span>def <span class="ident">validate</span></span>(<span>self, certdb: <a title="cevast.certdb.cert_db.CertDB" href="../../certdb/cert_db.html#cevast.certdb.cert_db.CertDB">CertDB</a>, validator: Callable, validator_cfg: dict) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
+<span>def <span class="ident">validate</span></span>(<span>self, validator: Type[<a title="cevast.validation.validator.CertValidator" href="../../validation/validator.html#cevast.validation.validator.CertValidator">CertValidator</a>], validator_cfg: dict) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Validate a dataset with given validor.
-<code>validator</code> is a validator callback function.
-<code>validator_cfg</code> is a validator config that will be passed to the function.</p>
-<p>Call to validator is performed like this: validator(cert_chain, validator_cfg)</p>
+<code>validator</code> is a CertValidator class,
+<code>validator_cfg</code> is a dictionary with validator paramaters that will be passed to the initializer.</p>
+<p>Call to validator is performed like this: validator(cert_chain, **validator_cfg).</p>
 <p>Return tuple of validated Datasets.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def validate(self, certdb: CertDB, validator: Callable, validator_cfg: dict) -&gt; Tuple[Dataset]:
+def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
     &#34;&#34;&#34;
     Validate a dataset with given validor.
-    `validator` is a validator callback function.
-    `validator_cfg` is a validator config that will be passed to the function.
+    `validator` is a CertValidator class,
+    `validator_cfg` is a dictionary with validator paramaters that will be passed to the initializer.
 
-    Call to validator is performed like this: validator(cert_chain, validator_cfg)
+    Call to validator is performed like this: validator(cert_chain, **validator_cfg).
 
     Return tuple of validated Datasets.
     &#34;&#34;&#34;</code></pre>
@@ -431,8 +431,8 @@ def validate(self, certdb: CertDB, validator: Callable, validator_cfg: dict) -&g
         log.info(&#39;Collecting started&#39;)
         collector = RapidCollector(api_key)
         # Create dummy dataset only to get target dir
-        dummyDataset = Dataset(self._repository, self.dataset_type, self.__date_id, None)
-        download_dir = dummyDataset.path(DatasetState.COLLECTED)
+        dummy_dataset = Dataset(self._repository, self.dataset_type, self.__date_id, None)
+        download_dir = dummy_dataset.path(DatasetState.COLLECTED)
         # Collect datasets
         collected = collector.collect(
             download_dir=download_dir, date=self._date, filter_ports=self._ports, filter_types=(&#39;hosts&#39;, &#39;certs&#39;)
@@ -452,10 +452,10 @@ def validate(self, certdb: CertDB, validator: Callable, validator_cfg: dict) -&g
         parsed = self.__parse(certdb=certdb, datasets=datasets)
         return parsed if parsed else None
 
-    def validate(self, certdb: CertDB, validator: object) -&gt; Tuple[Dataset]:
+    def validate(self, validator: CertValidator, validator_cfg: dict) -&gt; Tuple[Dataset]:
         datasets = self.__init_datasets()
         # Validate datasets
-        validated = self.__validate(certdb=certdb, datasets=datasets, validator=validator)
+        validated = self.__validate(datasets=datasets, validator=validator, validator_cfg=validator_cfg)
         return validated if validated else None
 
     def __init_datasets(self) -&gt; Tuple[Dataset]:
@@ -509,7 +509,7 @@ def validate(self, certdb: CertDB, validator: Callable, validator_cfg: dict) -&g
         log.info(&#39;Parsing finished&#39;)
         return tuple(parsable) if parsable else None
 
-    def __validate(self, datasets: Tuple[Dataset], certdb: CertDB, validator: object) -&gt; Tuple[Dataset]:
+    def __validate(self, datasets: Tuple[Dataset], validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
         log.info(&#39;Validation started&#39;)
         validatable = []
 
@@ -519,7 +519,7 @@ def validate(self, certdb: CertDB, validator: Callable, validator_cfg: dict) -&g
                 validatable.append(dataset)
                 filename = os.path.join(dataset.path(DatasetState.VALIDATED), dataset.static_filename)
                 # Open validator as context manager
-                with validator(filename, certdb, self._cpu_cores) as validator_ctx:
+                with validator(output_file=filename, processes=self._cpu_cores, **validator_cfg) as validator_ctx:
                     log.info(&#34;Will validate dataset: %s&#34;, dataset.static_filename)
                     for host, chain in RapidParser.read_chains(chain_file):
                         validator_ctx.schedule(host, chain)

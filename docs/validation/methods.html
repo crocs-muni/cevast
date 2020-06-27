@@ -30,9 +30,14 @@
 import re
 import subprocess
 import logging
+from OpenSSL import crypto
 
 
 log = logging.getLogger(__name__)
+
+
+OK = &#34;0&#34;
+UNKNOWN = &#34;XX&#34;
 
 
 def cl_open_ssl(chain: list) -&gt; str:
@@ -43,18 +48,52 @@ def cl_open_ssl(chain: list) -&gt; str:
         if len(chain) &gt; 1:
             inter = [v for elt in chain[1:] for v in (&#39;-untrusted&#39;, elt)]
         # openssl verify -show_chain -untrusted int.pem server.pem
-        out = subprocess.check_output([&#34;openssl&#34;, &#34;verify&#34;, &#34;-show_chain&#34;, *inter, server], stderr=subprocess.STDOUT)
-        log.info(&#39;OK: %s&#39;, out)
-        return &#34;0&#34;
-    except subprocess.CalledProcessError as e:
+        subprocess.check_output([&#34;openssl&#34;, &#34;verify&#34;, &#34;-show_chain&#34;, *inter, server], stderr=subprocess.STDOUT)
+        return OK
+    except subprocess.CalledProcessError as err:
         # print(e.cmd)
-        match_object = re.search(r&#39;\nerror (\d+)&#39;, e.output.decode(encoding=&#39;utf-8&#39;))
+        match_object = re.search(r&#39;\nerror (\d+)&#39;, err.output.decode(encoding=&#39;utf-8&#39;))
         if match_object:
-            log.info(&#39;ERROR: %s&#39;, match_object.group(1))
             return match_object.group(1)
-        else:
-            log.warning(&#34;FULL_ERROR: %s&#34;, e.output.decode(encoding=&#39;utf-8&#39;))
-            return &#34;XX&#34;</code></pre>
+        log.warning(&#34;FULL_ERROR: %s&#34;, err.output.decode(encoding=&#39;utf-8&#39;))
+        return UNKNOWN
+
+
+def python_OpenSSL(chain: list) -&gt; str:
+    &#34;&#34;&#34;Validate SSL Certificate chain using python OpenSSL library. Return result code.&#34;&#34;&#34;
+    inter = []
+    server = chain[0]
+    if len(chain) &gt; 1:
+        inter = chain[1:]
+    try:
+        # Load the server certificate
+        with open(server) as cert_file:
+            certificate = crypto.load_certificate(crypto.FILETYPE_PEM, cert_file.read())
+        #Create a certificate store and add trusted certs
+        store = crypto.X509Store()
+        # Assuming the certificates are in PEM format in a trusted_certs list
+        for _cert in inter:
+            with open(server) as cert_file:
+                int_certificate = crypto.load_certificate(crypto.FILETYPE_PEM, cert_file.read())
+                store.add_cert(int_certificate)
+        # Create a certificate context using the store and the downloaded certificate
+        store_ctx = crypto.X509StoreContext(store, certificate)
+        # Verify the certificate, returns None if it can validate the certificate
+        store_ctx.verify_certificate()
+
+        return OK
+    except crypto.X509StoreContextError as err:
+        return str(err.args[0][0])
+    except crypto.Error as err:
+        log.warning(&#34;FULL_ERROR: %s&#34;, err)
+        return UNKNOWN
+
+
+if __name__ == &#34;__main__&#34;:
+    print(python_OpenSSL((
+    &#39;/var/tmp/xpodola/tmp_chain_validator/555005e815c13b993bc29a453cda3ae37aa42781.pem&#39;,
+    &#39;/var/tmp/xpodola/tmp_chain_validator/0b2c7db5f2dbce8a6367be442ab898d965d5c567.pem&#39;,
+                       )))</code></pre>
 </details>
 </section>
 <section>
@@ -81,18 +120,54 @@ def cl_open_ssl(chain: list) -&gt; str:
         if len(chain) &gt; 1:
             inter = [v for elt in chain[1:] for v in (&#39;-untrusted&#39;, elt)]
         # openssl verify -show_chain -untrusted int.pem server.pem
-        out = subprocess.check_output([&#34;openssl&#34;, &#34;verify&#34;, &#34;-show_chain&#34;, *inter, server], stderr=subprocess.STDOUT)
-        log.info(&#39;OK: %s&#39;, out)
-        return &#34;0&#34;
-    except subprocess.CalledProcessError as e:
+        subprocess.check_output([&#34;openssl&#34;, &#34;verify&#34;, &#34;-show_chain&#34;, *inter, server], stderr=subprocess.STDOUT)
+        return OK
+    except subprocess.CalledProcessError as err:
         # print(e.cmd)
-        match_object = re.search(r&#39;\nerror (\d+)&#39;, e.output.decode(encoding=&#39;utf-8&#39;))
+        match_object = re.search(r&#39;\nerror (\d+)&#39;, err.output.decode(encoding=&#39;utf-8&#39;))
         if match_object:
-            log.info(&#39;ERROR: %s&#39;, match_object.group(1))
             return match_object.group(1)
-        else:
-            log.warning(&#34;FULL_ERROR: %s&#34;, e.output.decode(encoding=&#39;utf-8&#39;))
-            return &#34;XX&#34;</code></pre>
+        log.warning(&#34;FULL_ERROR: %s&#34;, err.output.decode(encoding=&#39;utf-8&#39;))
+        return UNKNOWN</code></pre>
+</details>
+</dd>
+<dt id="cevast.validation.methods.python_OpenSSL"><code class="name flex">
+<span>def <span class="ident">python_OpenSSL</span></span>(<span>chain: list) -> str</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Validate SSL Certificate chain using python OpenSSL library. Return result code.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def python_OpenSSL(chain: list) -&gt; str:
+    &#34;&#34;&#34;Validate SSL Certificate chain using python OpenSSL library. Return result code.&#34;&#34;&#34;
+    inter = []
+    server = chain[0]
+    if len(chain) &gt; 1:
+        inter = chain[1:]
+    try:
+        # Load the server certificate
+        with open(server) as cert_file:
+            certificate = crypto.load_certificate(crypto.FILETYPE_PEM, cert_file.read())
+        #Create a certificate store and add trusted certs
+        store = crypto.X509Store()
+        # Assuming the certificates are in PEM format in a trusted_certs list
+        for _cert in inter:
+            with open(server) as cert_file:
+                int_certificate = crypto.load_certificate(crypto.FILETYPE_PEM, cert_file.read())
+                store.add_cert(int_certificate)
+        # Create a certificate context using the store and the downloaded certificate
+        store_ctx = crypto.X509StoreContext(store, certificate)
+        # Verify the certificate, returns None if it can validate the certificate
+        store_ctx.verify_certificate()
+
+        return OK
+    except crypto.X509StoreContextError as err:
+        return str(err.args[0][0])
+    except crypto.Error as err:
+        log.warning(&#34;FULL_ERROR: %s&#34;, err)
+        return UNKNOWN</code></pre>
 </details>
 </dd>
 </dl>
@@ -114,6 +189,7 @@ def cl_open_ssl(chain: list) -&gt; str:
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="cevast.validation.methods.cl_open_ssl" href="#cevast.validation.methods.cl_open_ssl">cl_open_ssl</a></code></li>
+<li><code><a title="cevast.validation.methods.python_OpenSSL" href="#cevast.validation.methods.python_OpenSSL">python_OpenSSL</a></code></li>
 </ul>
 </li>
 </ul>

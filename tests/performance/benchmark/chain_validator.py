@@ -1,6 +1,6 @@
 """This modul contains benchmark script testing performance of ChainValidator
 
-Run as:> python3 -m cProfile -s calls chain_validator.py {CertDB} {chain_file} > profiles/{commit}_chain_validator.txt
+Run as:> python3 -m cProfile -s calls chain_validator.py {CertDB} {chain_file} {CPUs} > profiles/{commit}_{CPUs}_cpu_chain_validator.txt
 """
 
 import os

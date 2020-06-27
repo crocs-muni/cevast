@@ -16,15 +16,12 @@ def cl_open_ssl(chain: list) -> str:
         if len(chain) > 1:
             inter = [v for elt in chain[1:] for v in ('-untrusted', elt)]
         # openssl verify -show_chain -untrusted int.pem server.pem
-        out = subprocess.check_output(["openssl", "verify", "-show_chain", *inter, server], stderr=subprocess.STDOUT)
-        log.info('OK: %s', out)
+        subprocess.check_output(["openssl", "verify", "-show_chain", *inter, server], stderr=subprocess.STDOUT)
         return "0"
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as err:
         # print(e.cmd)
-        match_object = re.search(r'\nerror (\d+)', e.output.decode(encoding='utf-8'))
+        match_object = re.search(r'\nerror (\d+)', err.output.decode(encoding='utf-8'))
         if match_object:
-            log.info('ERROR: %s', match_object.group(1))
             return match_object.group(1)
-        else:
-            log.warning("FULL_ERROR: %s", e.output.decode(encoding='utf-8'))
-            return "XX"
+        log.warning("FULL_ERROR: %s", err.output.decode(encoding='utf-8'))
+        return "XX"

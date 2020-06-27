@@ -21,6 +21,13 @@ class ChainValidator(CertValidator):
     accepts host name and list of certificate IDs (fingerprints). Those certificates are
     searched in provided CertDB.
 
+    Result is stored as CSV file in following format:
+    {host, validation method 1, validation method 2, validation method N, chain}
+    Such format can be easily analyzed. E.g. to count number of each error code one could use:
+    .. code::
+
+      awk -F "\"*,\"*" '{print $2}' cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c
+
     Special key arguments:
     [mandatory] `certdb` is an instance of CertDB, where the certificates will be taken from,
     [optional] `export_dir` is a directory that will be used for temporary operations
@@ -59,7 +66,9 @@ class ChainValidator(CertValidator):
                     path = self.__certdb.export(cert, self.__export_dir, False)
                 except CertNotAvailableError:
                     log.info("HOST <%s> has broken chain", host)
-                    return ""
+                    return
+            else:
+                log.info("path <%s> exists", path)
             pems.append(path)
         # Validate
         if self.__single:
