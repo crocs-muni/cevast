@@ -1,9 +1,10 @@
 """
 This module provides various certificate validation methods.
+
 .. important::
-Each method accepts a single argument -- list with cetificates file paths.
-List should start with server certificate, followed by intermediates certificates
-and end with trusted CA certificate.
+   Each method accepts a single argument -- list with cetificates file paths.
+   List should start with server certificate, followed by intermediates certificates
+   and end with trusted CA certificate.
 
 To add an additional validation method, register the method under its name to global
 variable METHODS in 'MODULE INITIALIZATION' section.

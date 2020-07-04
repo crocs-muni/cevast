@@ -23,9 +23,9 @@ class ChainValidator(CertValidator):
 
     Result is stored as CSV file in following format:
     {host, validation method 1, validation method 2, validation method N, chain}
-    Such format can be easily analyzed. E.g. to count number of each error code one could use:
-    .. code::
-      awk -F "\"*,\"*" '{print $2}' cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c
+    .. hint::
+       Such format can be easily analyzed. E.g. to count number of each error code one could use:
+       awk -F "\"*,\"*" '{print $2}' cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c
 
     Special key arguments:
     [mandatory] `certdb` is an instance of CertDB, where the certificates will be taken from,

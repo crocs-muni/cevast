@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.8.1" />
 <title>cevast.validation.methods API documentation</title>
-<meta name="description" content="This module provides various certificate validation methods.
-.. important::
-Each method accepts a single argument -- list with cetificates file
-…" />
+<meta name="description" content="This module provides various certificate validation methods …" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
@@ -23,12 +20,13 @@ Each method accepts a single argument -- list with cetificates file
 <h1 class="title">Module <code>cevast.validation.methods</code></h1>
 </header>
 <section id="section-intro">
+<p>This module provides various certificate validation methods.</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
-</div>
 <p>Each method accepts a single argument &ndash; list with cetificates file paths.
 List should start with server certificate, followed by intermediates certificates
 and end with trusted CA certificate.</p>
+</div>
 <p>To add an additional validation method, register the method under its name to global
 variable METHODS in 'MODULE INITIALIZATION' section.</p>
 <p>Module can be imported and used as a library. Import-safe functions should be used
@@ -57,10 +55,11 @@ and intermediates (validation would be better then)</p>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 This module provides various certificate validation methods.
+
 .. important::
-Each method accepts a single argument -- list with cetificates file paths.
-List should start with server certificate, followed by intermediates certificates
-and end with trusted CA certificate.
+   Each method accepts a single argument -- list with cetificates file paths.
+   List should start with server certificate, followed by intermediates certificates
+   and end with trusted CA certificate.
 
 To add an additional validation method, register the method under its name to global
 variable METHODS in &#39;MODULE INITIALIZATION&#39; section.
