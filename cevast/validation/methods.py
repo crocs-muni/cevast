@@ -1,5 +1,6 @@
 """
 This module provides various certificate validation methods.
+.. important::
 Each method accepts a single argument -- list with cetificates file paths.
 List should start with server certificate, followed by intermediates certificates
 and end with trusted CA certificate.
@@ -18,6 +19,10 @@ Module can also be run as a standalone script with following usage:
     python3 ./methods c1 c2 cN  - prints validation results from all available methods,
                                   args c1-cN are provided to validation method as a chain that
                                   starts with server certificate and ends with CA
+
+.. todo::
+   Maybe would be better to analyse the certs before validation to identify CAs
+   and intermediates (validation would be better then)
 """
 
 import sys
@@ -81,7 +86,7 @@ def _cl_open_ssl(chain: list) -> str:
         match_object = re.search(r'\nerror (\d+)', err.output.decode(encoding='utf-8'))
         if match_object:
             return match_object.group(1)
-        log.warning("FULL_ERROR: %s", err.output.decode(encoding='utf-8'))
+        log.exception("Validation failed")
         return UNKNOWN
 
 
@@ -109,8 +114,36 @@ def _PyOpenSSL(chain: list) -> str:
         return OK
     except crypto.X509StoreContextError as err:
         return str(err.args[0][0])
-    except crypto.Error as err:
-        log.warning("FULL_ERROR: %s", err)
+    except crypto.Error:
+        log.exception("Validation failed")
+        return UNKNOWN
+
+
+def _botan(chain: list) -> str:
+    """Validate SSL Certificate chain using Botan library. Return result code."""
+    inter = []
+    cacert = None
+    server = chain[0]
+    if len(chain) == 2:
+        cacert = chain[-1]
+    elif len(chain) > 2:
+        cacert = chain[-1]
+        inter = chain[1:-1]
+    try:
+        # Load the server certificate
+        server = botan.X509Cert(server)
+        # Load untrusted subauthorities or set to None
+        inter = [botan.X509Cert(i) for i in inter] if inter else None
+        # Load CA cert or set to None
+        cacert = [botan.X509Cert(cacert)] if cacert else None
+        # Verify the certificate
+        # Returns 0 if validation was successful, returns a positive error code if the validation was unsuccesful
+        code = server.verify(intermediates=inter, trusted=cacert)
+        if code != 0:
+            log.debug(botan.X509Cert.validation_status(code))
+        return code
+    except botan.BotanException:
+        log.exception("Validation failed")
         return UNKNOWN
 
 
@@ -123,10 +156,22 @@ if is_tool_available("openssl"):
 # try to load PyOpenSSL
 log.info("Loading PyOpenSSL")
 try:
-    from OpenSSL import crypto
+    from OpenSSL import crypto  # pylint: disable=E0401
+
     METHODS['pyopenssl'] = _PyOpenSSL
 except ModuleNotFoundError:
     log.exception("PyOpenSSL failed to import - check if installed")
+
+# try to load Botan
+log.info("Loading Botan")
+try:
+    import botan2 as botan  # pylint: disable=E0401
+
+    METHODS['botan'] = _botan
+except ModuleNotFoundError:
+    log.exception("Botan failed to import - check if installed")
+except Exception:
+    log.exception("Botan failed to initialized - check if library is installed properly")
 
 
 if __name__ == "__main__":

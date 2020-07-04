@@ -50,9 +50,9 @@ class ChainValidator(CertValidator):
 
     Result is stored as CSV file in following format:
     {host, validation method 1, validation method 2, validation method N, chain}
-    Such format can be easily analyzed. E.g. to count number of each error code one could use:
-    .. code::
-      awk -F &#34;\&#34;*,\&#34;*&#34; &#39;{print $2}&#39; cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c
+    .. hint::
+       Such format can be easily analyzed. E.g. to count number of each error code one could use:
+       awk -F &#34;\&#34;*,\&#34;*&#34; &#39;{print $2}&#39; cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c
 
     Special key arguments:
     [mandatory] `certdb` is an instance of CertDB, where the certificates will be taken from,
@@ -173,9 +173,10 @@ class ChainValidator(CertValidator):
 <div class="desc"><p>CertValidator implementation that validates certificate chains. Validate function
 accepts host name and list of certificate IDs (fingerprints). Those certificates are
 searched in provided CertDB.</p>
-<div class="admonition code">
-<p class="admonition-title">Code</p>
-<p>awk -F ""<em>,"</em>" '{print $2}' cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>Such format can be easily analyzed. E.g. to count number of each error code one could use:
+awk -F ""<em>,"</em>" '{print $2}' cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c</p>
 </div>
 <p>Special key arguments:
 [mandatory] <code>certdb</code> is an instance of CertDB, where the certificates will be taken from,
@@ -194,9 +195,9 @@ with certificates. Directory will be clean-up upon calling <code>done</code>.</p
 
     Result is stored as CSV file in following format:
     {host, validation method 1, validation method 2, validation method N, chain}
-    Such format can be easily analyzed. E.g. to count number of each error code one could use:
-    .. code::
-      awk -F &#34;\&#34;*,\&#34;*&#34; &#39;{print $2}&#39; cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c
+    .. hint::
+       Such format can be easily analyzed. E.g. to count number of each error code one could use:
+       awk -F &#34;\&#34;*,\&#34;*&#34; &#39;{print $2}&#39; cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c
 
     Special key arguments:
     [mandatory] `certdb` is an instance of CertDB, where the certificates will be taken from,
