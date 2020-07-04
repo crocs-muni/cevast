@@ -52,6 +52,34 @@ def __rotator(source, dest):
     os.remove(source)
 
 
+def cli_logger() -&gt; logging.Logger:
+    return logging.getLogger(&#39;CEVAST_CLI&#39;)
+
+
+# TODO setup separate logger to log some info to the console with use of CLI
+# or use click-log ???
+def setup_cli_logger() -&gt; logging.Logger:
+    &#34;&#34;&#34;
+    Setup the CLI project logger &#39;CEVAST_CLI&#39;.
+
+    Logger has configured a standard console_handler.
+
+    TODO: add support for colours
+    &#34;&#34;&#34;
+    # Setup formatter
+    # TODO is it needed?
+    formatter = logging.Formatter(&#39;%(message)s&#39;)
+    cli_logger = logging.getLogger(&#39;CEVAST_CLI&#39;)
+
+    # Setup handler writing error-like logs to console
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+
+    cli_logger.addHandler(console_handler)
+    return cli_logger
+
+
 # TODO fix problem with mp logging https://medium.com/@rui.jorge.rei/semi-correct-handling-of-log-rotation-in-multiprocess-python-applications-75c56eca6780
 def setup_cevast_logger(debug: bool = False, process_id: bool = False) -&gt; logging.Logger:
     &#34;&#34;&#34;
@@ -64,7 +92,6 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -&gt; log
     Each module-level logger must start with &#39;cevast.&#39; to inherit the setup.
 
     TODO: add support for config file
-    TODO: add filter for console outputs
     &#34;&#34;&#34;
     if not os.path.exists(LOG_DIR):
         os.mkdir(LOG_DIR)
@@ -110,6 +137,19 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -&gt; log
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="cevast.utils.logging.cli_logger"><code class="name flex">
+<span>def <span class="ident">cli_logger</span></span>(<span>) -> logging.Logger</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cli_logger() -&gt; logging.Logger:
+    return logging.getLogger(&#39;CEVAST_CLI&#39;)</code></pre>
+</details>
+</dd>
 <dt id="cevast.utils.logging.setup_cevast_logger"><code class="name flex">
 <span>def <span class="ident">setup_cevast_logger</span></span>(<span>debug: bool = False, process_id: bool = False) -> logging.Logger</span>
 </code></dt>
@@ -119,8 +159,7 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -&gt; log
 - console_handler to write error-like logs to stdout (&gt;= WARNING)
 - file_handler to write logs into rotating file with compression of rotated files</p>
 <p>Each module-level logger must start with 'cevast.' to inherit the setup.</p>
-<p>TODO: add support for config file
-TODO: add filter for console outputs</p></div>
+<p>TODO: add support for config file</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -136,7 +175,6 @@ TODO: add filter for console outputs</p></div>
     Each module-level logger must start with &#39;cevast.&#39; to inherit the setup.
 
     TODO: add support for config file
-    TODO: add filter for console outputs
     &#34;&#34;&#34;
     if not os.path.exists(LOG_DIR):
         os.mkdir(LOG_DIR)
@@ -175,6 +213,39 @@ TODO: add filter for console outputs</p></div>
     return logger</code></pre>
 </details>
 </dd>
+<dt id="cevast.utils.logging.setup_cli_logger"><code class="name flex">
+<span>def <span class="ident">setup_cli_logger</span></span>(<span>) -> logging.Logger</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Setup the CLI project logger 'CEVAST_CLI'.</p>
+<p>Logger has configured a standard console_handler.</p>
+<p>TODO: add support for colours</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def setup_cli_logger() -&gt; logging.Logger:
+    &#34;&#34;&#34;
+    Setup the CLI project logger &#39;CEVAST_CLI&#39;.
+
+    Logger has configured a standard console_handler.
+
+    TODO: add support for colours
+    &#34;&#34;&#34;
+    # Setup formatter
+    # TODO is it needed?
+    formatter = logging.Formatter(&#39;%(message)s&#39;)
+    cli_logger = logging.getLogger(&#39;CEVAST_CLI&#39;)
+
+    # Setup handler writing error-like logs to console
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+
+    cli_logger.addHandler(console_handler)
+    return cli_logger</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -193,7 +264,9 @@ TODO: add filter for console outputs</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="cevast.utils.logging.cli_logger" href="#cevast.utils.logging.cli_logger">cli_logger</a></code></li>
 <li><code><a title="cevast.utils.logging.setup_cevast_logger" href="#cevast.utils.logging.setup_cevast_logger">setup_cevast_logger</a></code></li>
+<li><code><a title="cevast.utils.logging.setup_cli_logger" href="#cevast.utils.logging.setup_cli_logger">setup_cli_logger</a></code></li>
 </ul>
 </li>
 </ul>

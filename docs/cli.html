@@ -86,6 +86,7 @@ def cli():
         return None
 
     tasks = []
+    validator_cfg = {&#39;certdb&#39;: db}
     for args_task in args.task:
         if DatasetManagerTask.validate(args_task):
             task = DatasetManagerTask[args_task]
@@ -95,7 +96,7 @@ def cli():
             elif task == DatasetManagerTask.PARSE:
                 params[&#39;certdb&#39;] = db
             elif task == DatasetManagerTask.VALIDATE:
-                params[&#39;certdb&#39;] = db
+                params[&#39;validator_cfg&#39;] = validator_cfg
                 params[&#39;validator&#39;] = ChainValidator
 
             tasks.append((task, params))
@@ -145,6 +146,7 @@ if __name__ == &#34;__main__&#34;:
         return None
 
     tasks = []
+    validator_cfg = {&#39;certdb&#39;: db}
     for args_task in args.task:
         if DatasetManagerTask.validate(args_task):
             task = DatasetManagerTask[args_task]
@@ -154,7 +156,7 @@ if __name__ == &#34;__main__&#34;:
             elif task == DatasetManagerTask.PARSE:
                 params[&#39;certdb&#39;] = db
             elif task == DatasetManagerTask.VALIDATE:
-                params[&#39;certdb&#39;] = db
+                params[&#39;validator_cfg&#39;] = validator_cfg
                 params[&#39;validator&#39;] = ChainValidator
 
             tasks.append((task, params))

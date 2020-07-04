@@ -280,16 +280,14 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         cert_file = block + cert_id
         if os.path.exists(cert_file):
             log.info('Certificate %s already exists', cert_file)
-            return
-
-        try:
-            with open(cert_file, 'w') as w_file:
-                w_file.write(cert)
-        except FileNotFoundError:
-            os.makedirs(block, exist_ok=True)
-            with open(cert_file, 'w') as w_file:
-                w_file.write(cert)
-
+        else:
+            try:
+                with open(cert_file, 'w') as w_file:
+                    w_file.write(cert)
+            except FileNotFoundError:
+                os.makedirs(block, exist_ok=True)
+                with open(cert_file, 'w') as w_file:
+                    w_file.write(cert)
         # Add certificate to transaction for insert upon commit
         self._add_to_transaction(cert_id, self._to_insert)
         log.debug('Certificate %s inserted to block %s', cert_id, block)

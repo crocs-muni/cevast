@@ -480,16 +480,14 @@ and a file system properties as a storage mechanism.</p>
         cert_file = block + cert_id
         if os.path.exists(cert_file):
             log.info(&#39;Certificate %s already exists&#39;, cert_file)
-            return
-
-        try:
-            with open(cert_file, &#39;w&#39;) as w_file:
-                w_file.write(cert)
-        except FileNotFoundError:
-            os.makedirs(block, exist_ok=True)
-            with open(cert_file, &#39;w&#39;) as w_file:
-                w_file.write(cert)
-
+        else:
+            try:
+                with open(cert_file, &#39;w&#39;) as w_file:
+                    w_file.write(cert)
+            except FileNotFoundError:
+                os.makedirs(block, exist_ok=True)
+                with open(cert_file, &#39;w&#39;) as w_file:
+                    w_file.write(cert)
         # Add certificate to transaction for insert upon commit
         self._add_to_transaction(cert_id, self._to_insert)
         log.debug(&#39;Certificate %s inserted to block %s&#39;, cert_id, block)
