@@ -60,6 +60,7 @@ def cli():
         return None
 
     tasks = []
+    validator_cfg = {'certdb': db}
     for args_task in args.task:
         if DatasetManagerTask.validate(args_task):
             task = DatasetManagerTask[args_task]
@@ -69,7 +70,7 @@ def cli():
             elif task == DatasetManagerTask.PARSE:
                 params['certdb'] = db
             elif task == DatasetManagerTask.VALIDATE:
-                params['certdb'] = db
+                params['validator_cfg'] = validator_cfg
                 params['validator'] = ChainValidator
 
             tasks.append((task, params))

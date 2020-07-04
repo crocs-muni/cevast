@@ -44,34 +44,37 @@ class RapidDatasetManager(DatasetManager):
         # Sort just to ensure valid sequence
         task_pipline = sorted(task_pipline, key=lambda x: x[0])
         log.info('Started with task pipeline %s', task_pipline)
-        # Run tasks
-        for task_item in task_pipline:
-            task, params = task_item
-            log.info('Run task %s with parameters: %s', task, params)
-            # Runs collection TASK, collected datasets might be used in next task
-            if task == DatasetManagerTask.COLLECT:
-                collected_datasets = self.collect(**params)
-                log.info("Collected datasets: %s", collected_datasets)
+        try:
+            # Run tasks
+            for task_item in task_pipline:
+                task, params = task_item
+                log.info('Run task %s with parameters: %s', task, params)
+                # Runs collection TASK, collected datasets might be used in next task
+                if task == DatasetManagerTask.COLLECT:
+                    collected_datasets = self.collect(**params)
+                    log.info("Collected datasets: %s", collected_datasets)
 
-            # Runs analyzing TASK
-            elif task == DatasetManagerTask.ANALYSE:
-                raise NotImplementedError  # Not implemented yet
+                # Runs analyzing TASK
+                elif task == DatasetManagerTask.ANALYSE:
+                    raise NotImplementedError  # Not implemented yet
 
-            # Runs parsing TASK, parsed datasets might be used in next task
-            elif task == DatasetManagerTask.PARSE:
-                if collected_datasets:  # If some datasets were just collected in pipeline, use these
-                    parsed_datasets = self.__parse(datasets=collected_datasets, **params)
-                else:
-                    parsed_datasets = self.parse(**params)
-                log.info("Parsed datasets: %s", parsed_datasets)
+                # Runs parsing TASK, parsed datasets might be used in next task
+                elif task == DatasetManagerTask.PARSE:
+                    if collected_datasets:  # If some datasets were just collected in pipeline, use these
+                        parsed_datasets = self.__parse(datasets=collected_datasets, **params)
+                    else:
+                        parsed_datasets = self.parse(**params)
+                    log.info("Parsed datasets: %s", parsed_datasets)
 
-            # Runs validation TASK
-            elif task == DatasetManagerTask.VALIDATE:
-                if parsed_datasets:
-                    validated_datasets = self.__validate(datasets=parsed_datasets, **params)
-                else:  # If some datasets were just parsed in pipeline, use these
-                    validated_datasets = self.validate(**params)
-                log.info("Validated datasets: %s", validated_datasets)
+                # Runs validation TASK
+                elif task == DatasetManagerTask.VALIDATE:
+                    if parsed_datasets:
+                        validated_datasets = self.__validate(datasets=parsed_datasets, **params)
+                    else:  # If some datasets were just parsed in pipeline, use these
+                        validated_datasets = self.validate(**params)
+                    log.info("Validated datasets: %s", validated_datasets)
+        except TypeError:
+            log.exception("Error when running task pipeline, are the arguments set correctly?")
         log.info("Finished")
 
     def collect(self, api_key: str = None) -> Tuple[Dataset]:
