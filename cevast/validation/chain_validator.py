@@ -8,7 +8,7 @@ from typing import List
 from cevast.certdb import CertDB, CertNotAvailableError
 from cevast.utils import make_PEM_filename
 from .validator import CertValidator
-from .methods import cl_open_ssl
+from .methods import get_all, show
 
 
 log = logging.getLogger(__name__)
@@ -25,7 +25,6 @@ class ChainValidator(CertValidator):
     {host, validation method 1, validation method 2, validation method N, chain}
     Such format can be easily analyzed. E.g. to count number of each error code one could use:
     .. code::
-
       awk -F "\"*,\"*" '{print $2}' cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c
 
     Special key arguments:
@@ -38,6 +37,12 @@ class ChainValidator(CertValidator):
         # Init common arguments
         self.__single = processes == 0
         self.__out = open(output_file + '.csv', 'w')
+        # Init validation methods
+        methods = get_all()
+        if not methods:
+            raise ValueError("No validation methods are available -> nothing to do")
+        # write validation header
+        self.__out.write("{}, {}, {}\n".format('HOST', ", ".join(show()), "CHAIN"))
         # Init special arguments
         self.__certdb: CertDB = kwargs.get('certdb', None)
         if self.__certdb is None:
@@ -52,22 +57,24 @@ class ChainValidator(CertValidator):
         # Initialize pool and workers
         if not self.__single:
             self.__pool = multiprocessing.Pool(
-                processes, initializer=ChainValidator.__init_worker, initargs=(self.__certdb, self.__export_dir)
+                processes, initializer=ChainValidator.__init_worker, initargs=(self.__certdb, self.__export_dir, methods)
             )
         else:
-            ChainValidator.__init_worker(self.__certdb, self.__export_dir)
+            ChainValidator.__init_worker(self.__certdb, self.__export_dir, methods)
 
         log.info("ChainValidator created: output_file=%s, processes=%d", output_file, processes)
 
     @staticmethod
-    def __init_worker(certdb: CertDB, tmp_dir: str):
+    def __init_worker(certdb: CertDB, tmp_dir: str, methods: list):
         """Create and initialize global variables used in validate method. {Not nice, but working well
         with multiprocessing pool -> sharing instance of CertDB - object is not copied because of copy-on-write fork()}
         """
         global WORKER_CERTDB
         global WORKER_TMP_DIR
+        global VALIDATION_METHODS
         WORKER_CERTDB = certdb
         WORKER_TMP_DIR = tmp_dir
+        VALIDATION_METHODS = methods
 
     def schedule(self, host: str, chain: List[str]) -> None:
         if self.__single:
@@ -107,11 +114,11 @@ class ChainValidator(CertValidator):
                     return ""
             pems.append(path)
 
-        # Call cl_open_ssl validation
-        result.append(cl_open_ssl(pems))
-        # Call other validations here....
+        # Call validation methods
+        for method in VALIDATION_METHODS:
+            result.append(method(pems))
 
-        return "{}, {}, {}\n".format(host.rjust(15), ",".join(result), " -> ".join(chain))
+        return "{}, {}, {}\n".format(host.rjust(15), ", ".join(result), " -> ".join(chain))
 
     def __enter__(self):
         return self
