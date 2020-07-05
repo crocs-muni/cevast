@@ -62,7 +62,7 @@ from .rapid import RapidDatasetManager</code></pre>
 <dl>
 <dt id="cevast.dataset.managers.DatasetManager"><code class="flex name class">
 <span>class <span class="ident">DatasetManager</span></span>
-<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 4), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
+<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 5), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>An abstract DatasetManager class representing an interface that can be used to perform
@@ -357,7 +357,7 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
 </dd>
 <dt id="cevast.dataset.managers.RapidDatasetManager"><code class="flex name class">
 <span>class <span class="ident">RapidDatasetManager</span></span>
-<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 4), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
+<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 5), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>DatasetManager interface implementation of RAPID dataset type.</p>
@@ -507,8 +507,8 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
                 certdb.commit()
                 raise DatasetParsingError(&#34;Error during hosts dataset parsing&#34;)
         # Remove parsed datasets
-        for dataset in parsable:
-            dataset.delete(DatasetState.COLLECTED)
+        #for dataset in parsable:
+        #    dataset.delete(DatasetState.COLLECTED)
         log.info(&#39;Parsing finished&#39;)
         return tuple(parsable) if parsable else None
 

@@ -86,6 +86,7 @@ def cli():
         return None
 
     tasks = []
+    #validator_cfg = {&#39;certdb&#39;: db, &#39;methods&#39;: [&#39;botan&#39;]}
     validator_cfg = {&#39;certdb&#39;: db}
     for args_task in args.task:
         if DatasetManagerTask.validate(args_task):
@@ -146,6 +147,7 @@ if __name__ == &#34;__main__&#34;:
         return None
 
     tasks = []
+    #validator_cfg = {&#39;certdb&#39;: db, &#39;methods&#39;: [&#39;botan&#39;]}
     validator_cfg = {&#39;certdb&#39;: db}
     for args_task in args.task:
         if DatasetManagerTask.validate(args_task):

@@ -184,9 +184,10 @@ searched in provided CertDB.</p>
 awk -F ""<em>,"</em>" '{print $2}' cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c</p>
 </div>
 <p>Special key arguments:
-[mandatory] <code>certdb</code> is an instance of CertDB, where the certificates will be taken from,
+[mandatory] <code>certdb</code> is an instance of CertDB, where the certificates will be taken from.
 [optional] <code>export_dir</code> is a directory that will be used for temporary operations
-with certificates. Directory will be clean-up upon calling <code>done</code>.</p>
+with certificates. Directory will be clean-up upon calling <code>done</code>.
+[optional] <code><a title="cevast.validation.methods" href="methods.html">cevast.validation.methods</a></code> is a list with validation methods to use.</p>
 <p>Initialize CertValidator.</p></div>
 <details class="source">
 <summary>
@@ -205,21 +206,28 @@ with certificates. Directory will be clean-up upon calling <code>done</code>.</p
        awk -F &#34;\&#34;*,\&#34;*&#34; &#39;{print $2}&#39; cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c
 
     Special key arguments:
-    [mandatory] `certdb` is an instance of CertDB, where the certificates will be taken from,
+    [mandatory] `certdb` is an instance of CertDB, where the certificates will be taken from.
     [optional] `export_dir` is a directory that will be used for temporary operations
         with certificates. Directory will be clean-up upon calling `done`.
+    [optional] `methods` is a list with validation methods to use.
     &#34;&#34;&#34;
 
     def __init__(self, output_file: str, processes: int, **kwargs):
         # Init common arguments
         self.__single = processes == 0
         self.__out = open(output_file + &#39;.csv&#39;, &#39;w&#39;)
+
         # Init validation methods
-        methods = get_all()
+        self.__methods = kwargs.get(&#39;methods&#39;, None)
+        if self.__methods is None:
+            methods = get_all()
+        else:
+            methods = [get(name) for name in self.__methods]
         if not methods:
             raise ValueError(&#34;No validation methods are available -&gt; nothing to do&#34;)
         # write validation header
         self.__out.write(&#34;{}, {}, {}\n&#34;.format(&#39;HOST&#39;, &#34;, &#34;.join(show()), &#34;CHAIN&#34;))
+
         # Init special arguments
         self.__certdb: CertDB = kwargs.get(&#39;certdb&#39;, None)
         if self.__certdb is None:
@@ -231,10 +239,11 @@ with certificates. Directory will be clean-up upon calling <code>done</code>.</p
             self.__cleanup_export_dir = True
         else:
             self.__cleanup_export_dir = False
+
         # Initialize pool and workers
         if not self.__single:
             self.__pool = multiprocessing.Pool(
-                processes, initializer=ChainValidator.__init_worker, initargs=(self.__certdb, self.__export_dir, methods)
+                processes, initializer=ChainValidator.__init_worker, initargs=(self.__certdb, self.__export_dir, methods, True)
             )
         else:
             ChainValidator.__init_worker(self.__certdb, self.__export_dir, methods)
@@ -242,7 +251,7 @@ with certificates. Directory will be clean-up upon calling <code>done</code>.</p
         log.info(&#34;ChainValidator created: output_file=%s, processes=%d&#34;, output_file, processes)
 
     @staticmethod
-    def __init_worker(certdb: CertDB, tmp_dir: str, methods: list):
+    def __init_worker(certdb: CertDB, tmp_dir: str, methods: list, ignore_sigint: bool = False):
         &#34;&#34;&#34;Create and initialize global variables used in validate method. {Not nice, but working well
         with multiprocessing pool -&gt; sharing instance of CertDB - object is not copied because of copy-on-write fork()}
         &#34;&#34;&#34;
@@ -252,6 +261,9 @@ with certificates. Directory will be clean-up upon calling <code>done</code>.</p
         WORKER_CERTDB = certdb
         WORKER_TMP_DIR = tmp_dir
         VALIDATION_METHODS = methods
+        if ignore_sigint:
+            # let worker processes ignore SIGINT, parent will cleanup pool via teminate()
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     def schedule(self, host: str, chain: List[str]) -&gt; None:
         if self.__single:
@@ -282,6 +294,7 @@ with certificates. Directory will be clean-up upon calling <code>done</code>.</p
         pems = []
         # check if already exported first
         for cert in chain:
+            # TODO make some structure to not overload single directory
             path = WORKER_TMP_DIR + make_PEM_filename(cert)
             if not os.path.exists(path):
                 try:
@@ -290,10 +303,14 @@ with certificates. Directory will be clean-up upon calling <code>done</code>.</p
                     log.info(&#34;HOST &lt;%s&gt; has broken chain&#34;, host)
                     return &#34;&#34;
             pems.append(path)
-
         # Call validation methods
         for method in VALIDATION_METHODS:
             result.append(method(pems))
+
+        # Clean up server cerificate
+        server = pems[0]
+        if server.startswith(WORKER_TMP_DIR):
+            os.remove(server)
 
         return &#34;{}, {}, {}\n&#34;.format(host.rjust(15), &#34;, &#34;.join(result), &#34; -&gt; &#34;.join(chain))
 

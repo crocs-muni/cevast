@@ -142,7 +142,7 @@ def _cl_open_ssl(chain: list) -&gt; str:
         match_object = re.search(r&#39;\nerror (\d+)&#39;, err.output.decode(encoding=&#39;utf-8&#39;))
         if match_object:
             return match_object.group(1)
-        log.exception(&#34;Validation failed&#34;)
+        log.info(&#34;Validation failed&#34;)
         return UNKNOWN
 
 
@@ -171,7 +171,7 @@ def _PyOpenSSL(chain: list) -&gt; str:
     except crypto.X509StoreContextError as err:
         return str(err.args[0][0])
     except crypto.Error:
-        log.exception(&#34;Validation failed&#34;)
+        log.info(&#34;Validation failed&#34;)
         return UNKNOWN
 
 
@@ -195,11 +195,10 @@ def _botan(chain: list) -&gt; str:
         # Verify the certificate
         # Returns 0 if validation was successful, returns a positive error code if the validation was unsuccesful
         code = server.verify(intermediates=inter, trusted=cacert)
-        if code != 0:
-            log.debug(botan.X509Cert.validation_status(code))
-        return code
+
+        return str(code)
     except botan.BotanException:
-        log.exception(&#34;Validation failed&#34;)
+        log.exception(&#34;Validation failed: %s&#34;, &#34;, &#34;.join(chain))
         return UNKNOWN
 
 
