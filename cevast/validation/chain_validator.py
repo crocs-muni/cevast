@@ -4,11 +4,12 @@ import os
 import logging
 import multiprocessing
 import shutil
+import signal
 from typing import List
 from cevast.certdb import CertDB, CertNotAvailableError
 from cevast.utils import make_PEM_filename
 from .validator import CertValidator
-from .methods import get_all, show
+from .methods import get_all, get, show
 
 
 log = logging.getLogger(__name__)
@@ -28,21 +29,28 @@ class ChainValidator(CertValidator):
        awk -F "\"*,\"*" '{print $2}' cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c
 
     Special key arguments:
-    [mandatory] `certdb` is an instance of CertDB, where the certificates will be taken from,
+    [mandatory] `certdb` is an instance of CertDB, where the certificates will be taken from.
     [optional] `export_dir` is a directory that will be used for temporary operations
         with certificates. Directory will be clean-up upon calling `done`.
+    [optional] `methods` is a list with validation methods to use.
     """
 
     def __init__(self, output_file: str, processes: int, **kwargs):
         # Init common arguments
         self.__single = processes == 0
         self.__out = open(output_file + '.csv', 'w')
+
         # Init validation methods
-        methods = get_all()
+        self.__methods = kwargs.get('methods', None)
+        if self.__methods is None:
+            methods = get_all()
+        else:
+            methods = [get(name) for name in self.__methods]
         if not methods:
             raise ValueError("No validation methods are available -> nothing to do")
         # write validation header
         self.__out.write("{}, {}, {}\n".format('HOST', ", ".join(show()), "CHAIN"))
+
         # Init special arguments
         self.__certdb: CertDB = kwargs.get('certdb', None)
         if self.__certdb is None:
@@ -54,10 +62,11 @@ class ChainValidator(CertValidator):
             self.__cleanup_export_dir = True
         else:
             self.__cleanup_export_dir = False
+
         # Initialize pool and workers
         if not self.__single:
             self.__pool = multiprocessing.Pool(
-                processes, initializer=ChainValidator.__init_worker, initargs=(self.__certdb, self.__export_dir, methods)
+                processes, initializer=ChainValidator.__init_worker, initargs=(self.__certdb, self.__export_dir, methods, True)
             )
         else:
             ChainValidator.__init_worker(self.__certdb, self.__export_dir, methods)
@@ -65,7 +74,7 @@ class ChainValidator(CertValidator):
         log.info("ChainValidator created: output_file=%s, processes=%d", output_file, processes)
 
     @staticmethod
-    def __init_worker(certdb: CertDB, tmp_dir: str, methods: list):
+    def __init_worker(certdb: CertDB, tmp_dir: str, methods: list, ignore_sigint: bool = False):
         """Create and initialize global variables used in validate method. {Not nice, but working well
         with multiprocessing pool -> sharing instance of CertDB - object is not copied because of copy-on-write fork()}
         """
@@ -75,6 +84,9 @@ class ChainValidator(CertValidator):
         WORKER_CERTDB = certdb
         WORKER_TMP_DIR = tmp_dir
         VALIDATION_METHODS = methods
+        if ignore_sigint:
+            # let worker processes ignore SIGINT, parent will cleanup pool via teminate()
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     def schedule(self, host: str, chain: List[str]) -> None:
         if self.__single:
@@ -105,6 +117,7 @@ class ChainValidator(CertValidator):
         pems = []
         # check if already exported first
         for cert in chain:
+            # TODO make some structure to not overload single directory
             path = WORKER_TMP_DIR + make_PEM_filename(cert)
             if not os.path.exists(path):
                 try:
@@ -113,10 +126,14 @@ class ChainValidator(CertValidator):
                     log.info("HOST <%s> has broken chain", host)
                     return ""
             pems.append(path)
-
         # Call validation methods
         for method in VALIDATION_METHODS:
             result.append(method(pems))
+
+        # Clean up server cerificate
+        server = pems[0]
+        if server.startswith(WORKER_TMP_DIR):
+            os.remove(server)
 
         return "{}, {}, {}\n".format(host.rjust(15), ", ".join(result), " -> ".join(chain))
 
