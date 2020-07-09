@@ -41,7 +41,7 @@ class DatasetManagerTask(IntEnum):
 
     COLLECT = 1
     FILTER = 2
-    PARSE = 3
+    UNIFY = 3
     ANALYSE = 4
 
     @classmethod
@@ -117,11 +117,11 @@ class DatasetManager(ABC):
         &#34;&#34;&#34;
 
     @abstractmethod
-    def parse(self, certdb: CertDB) -&gt; Tuple[Dataset]:
+    def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
-        Parse a dataset.
+        Unify a dataset.
         `certdb` is CertDB instance to work with (to insert parsed certificates to).
-        Return tuple of parsed Datasets.
+        Return tuple of unified Datasets.
         &#34;&#34;&#34;
 
     @abstractmethod
@@ -148,7 +148,7 @@ class DatasetManager(ABC):
 <dl>
 <dt id="cevast.dataset.managers.manager.DatasetManager"><code class="flex name class">
 <span>class <span class="ident">DatasetManager</span></span>
-<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 9), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
+<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 10), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>An abstract DatasetManager class representing an interface that can be used to perform
@@ -229,11 +229,11 @@ running separatelly). Running a series might also be more optimized.</p>
         &#34;&#34;&#34;
 
     @abstractmethod
-    def parse(self, certdb: CertDB) -&gt; Tuple[Dataset]:
+    def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
-        Parse a dataset.
+        Unify a dataset.
         `certdb` is CertDB instance to work with (to insert parsed certificates to).
-        Return tuple of parsed Datasets.
+        Return tuple of unified Datasets.
         &#34;&#34;&#34;
 
     @abstractmethod
@@ -337,26 +337,6 @@ def filter(self, methods: list = None) -&gt; Tuple[Dataset]:
     &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
-<dt id="cevast.dataset.managers.manager.DatasetManager.parse"><code class="name flex">
-<span>def <span class="ident">parse</span></span>(<span>self, certdb: <a title="cevast.certdb.cert_db.CertDB" href="../../certdb/cert_db.html#cevast.certdb.cert_db.CertDB">CertDB</a>) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Parse a dataset.
-<code>certdb</code> is CertDB instance to work with (to insert parsed certificates to).
-Return tuple of parsed Datasets.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@abstractmethod
-def parse(self, certdb: CertDB) -&gt; Tuple[Dataset]:
-    &#34;&#34;&#34;
-    Parse a dataset.
-    `certdb` is CertDB instance to work with (to insert parsed certificates to).
-    Return tuple of parsed Datasets.
-    &#34;&#34;&#34;</code></pre>
-</details>
-</dd>
 <dt id="cevast.dataset.managers.manager.DatasetManager.run"><code class="name flex">
 <span>def <span class="ident">run</span></span>(<span>self, task_pipline: Tuple[Tuple[cevast.dataset.managers.manager.DatasetManagerTask, dict]]) -> NoneType</span>
 </code></dt>
@@ -383,6 +363,26 @@ def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -&gt; None:
     &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
+<dt id="cevast.dataset.managers.manager.DatasetManager.unify"><code class="name flex">
+<span>def <span class="ident">unify</span></span>(<span>self, certdb: <a title="cevast.certdb.cert_db.CertDB" href="../../certdb/cert_db.html#cevast.certdb.cert_db.CertDB">CertDB</a>) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Unify a dataset.
+<code>certdb</code> is CertDB instance to work with (to insert parsed certificates to).
+Return tuple of unified Datasets.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
+    &#34;&#34;&#34;
+    Unify a dataset.
+    `certdb` is CertDB instance to work with (to insert parsed certificates to).
+    Return tuple of unified Datasets.
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
 </dl>
 </dd>
 <dt id="cevast.dataset.managers.manager.DatasetManagerTask"><code class="flex name class">
@@ -400,7 +400,7 @@ def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -&gt; None:
 
     COLLECT = 1
     FILTER = 2
-    PARSE = 3
+    UNIFY = 3
     ANALYSE = 4
 
     @classmethod
@@ -435,7 +435,7 @@ def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -&gt; None:
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="cevast.dataset.managers.manager.DatasetManagerTask.PARSE"><code class="name">var <span class="ident">PARSE</span></code></dt>
+<dt id="cevast.dataset.managers.manager.DatasetManagerTask.UNIFY"><code class="name">var <span class="ident">UNIFY</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -464,8 +464,8 @@ def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -&gt; None:
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.collect" href="#cevast.dataset.managers.manager.DatasetManager.collect">collect</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.dataset_type" href="#cevast.dataset.managers.manager.DatasetManager.dataset_type">dataset_type</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.filter" href="#cevast.dataset.managers.manager.DatasetManager.filter">filter</a></code></li>
-<li><code><a title="cevast.dataset.managers.manager.DatasetManager.parse" href="#cevast.dataset.managers.manager.DatasetManager.parse">parse</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.run" href="#cevast.dataset.managers.manager.DatasetManager.run">run</a></code></li>
+<li><code><a title="cevast.dataset.managers.manager.DatasetManager.unify" href="#cevast.dataset.managers.manager.DatasetManager.unify">unify</a></code></li>
 </ul>
 </li>
 <li>
@@ -474,7 +474,7 @@ def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -&gt; None:
 <li><code><a title="cevast.dataset.managers.manager.DatasetManagerTask.ANALYSE" href="#cevast.dataset.managers.manager.DatasetManagerTask.ANALYSE">ANALYSE</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManagerTask.COLLECT" href="#cevast.dataset.managers.manager.DatasetManagerTask.COLLECT">COLLECT</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManagerTask.FILTER" href="#cevast.dataset.managers.manager.DatasetManagerTask.FILTER">FILTER</a></code></li>
-<li><code><a title="cevast.dataset.managers.manager.DatasetManagerTask.PARSE" href="#cevast.dataset.managers.manager.DatasetManagerTask.PARSE">PARSE</a></code></li>
+<li><code><a title="cevast.dataset.managers.manager.DatasetManagerTask.UNIFY" href="#cevast.dataset.managers.manager.DatasetManagerTask.UNIFY">UNIFY</a></code></li>
 </ul>
 </li>
 </ul>

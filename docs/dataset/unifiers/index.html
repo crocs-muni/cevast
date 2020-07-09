@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.8.1" />
-<title>cevast.dataset.parsers.rapid API documentation</title>
-<meta name="description" content="This module contains implementation of RAPID dataset type parser." />
+<title>cevast.dataset.unifiers API documentation</title>
+<meta name="description" content="This package provides tools for unification of certificate datasets." />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
@@ -17,168 +17,31 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>cevast.dataset.parsers.rapid</code></h1>
+<h1 class="title">Module <code>cevast.dataset.unifiers</code></h1>
 </header>
 <section id="section-intro">
-<p>This module contains implementation of RAPID dataset type parser.</p>
+<p>This package provides tools for unification of certificate datasets.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">&#34;&#34;&#34;This module contains implementation of RAPID dataset type parser.&#34;&#34;&#34;
+<pre><code class="python">&#34;&#34;&#34;This package provides tools for unification of certificate datasets.&#34;&#34;&#34;
 
-import os
-import gzip
-import logging
-import json
-from contextlib import ExitStack
-from cevast.certdb import CertDB
-from cevast.utils import BASE64_to_PEM
-from ..dataset import DatasetType
-
+__all__ = [&#39;RapidUnifier&#39;]
+__version__ = &#39;0.1&#39;
 __author__ = &#39;Radim Podola&#39;
 
-log = logging.getLogger(__name__)
-
-
-class RapidParser:
-    &#34;&#34;&#34;A parser class which parses RAPID dataset type.&#34;&#34;&#34;
-
-    dataset_type = DatasetType.RAPID
-
-    def __init__(self, certs_dataset: str, hosts_dataset: str, chain_file: str, broken_chain_file: str = None):
-        # Check dataset files
-        if not os.path.isfile(certs_dataset):
-            raise FileNotFoundError(certs_dataset)
-        if not os.path.isfile(hosts_dataset):
-            raise FileNotFoundError(hosts_dataset)
-        # Initialize parser
-        log.info(&#39;Initializing parser for dataset files (%s:%s)&#39;, certs_dataset, hosts_dataset)
-        self._certs_dataset = certs_dataset
-        self._hosts_dataset = hosts_dataset
-        self._chain_file = chain_file
-        self._broken_chain_file = broken_chain_file
-        # Initialize dataset parsing log
-        self.__parsing_log = {
-            &#39;total_certs&#39;: 0,
-            &#39;total_hosts&#39;: 0,
-            &#39;total_host_certs&#39;: 0,
-            &#39;broken_chains&#39;: 0,
-        }
-
-    @property
-    def certs_dataset(self) -&gt; str:
-        &#34;&#34;&#34;Getter property of certs dataset.&#34;&#34;&#34;
-        return self._certs_dataset
-
-    @property
-    def hosts_dataset(self) -&gt; str:
-        &#34;&#34;&#34;Getter property of hosts dataset.&#34;&#34;&#34;
-        return self._hosts_dataset
-
-    @property
-    def chain_file(self) -&gt; str:
-        &#34;&#34;&#34;Getter property of chain file.&#34;&#34;&#34;
-        return self._chain_file
-
-    @property
-    def parsing_log(self) -&gt; dict:
-        &#34;&#34;&#34;Getter property of parsing log.&#34;&#34;&#34;
-        return self.__parsing_log
-
-    @staticmethod
-    def parse_certs(dataset: str) -&gt; tuple:
-        &#34;&#34;&#34;
-        Generator parsing certificates from dataset one by one.
-        Tuple (&#39;cert_id&#39;, &#39;certificate&#39;) is returned for each parsed certificated.
-        &#34;&#34;&#34;
-        log.info(&#39;Start parsing certificates from dataset: %s&#39;, dataset)
-        with gzip.open(dataset, &#39;rt&#39;) as r_file:
-            for line in r_file:
-                yield [x.strip() for x in line.split(&#39;,&#39;)]
-
-    @staticmethod
-    def parse_chains(dataset: str) -&gt; tuple:
-        &#34;&#34;&#34;
-        Generator parsing host certificate chains from dataset one by one.
-        Tuple (&#39;host IP&#39;, [certificate chain]) is returned for each parsed certificated.
-        &#34;&#34;&#34;
-        log.info(&#39;Start parsing host chains from dataset: %s&#39;, dataset)
-        chain = []
-        last = None
-        with gzip.open(dataset, &#39;rt&#39;) as r_file:
-            for line in r_file:
-                curr, sha = [x.strip() for x in line.split(&#39;,&#39;)]
-
-                if last and curr != last:
-                    yield last, chain
-                    chain.clear()
-                # Building the chain
-                chain.append(sha)
-                last = curr
-            yield last, chain
-
-    @staticmethod
-    def read_chains(dataset: str) -&gt; tuple:
-        &#34;&#34;&#34;
-        Generator reading host certificate chains from parsed dataset one by one.
-        Tuple (&#39;host IP&#39;, [certificate chain]) is returned for each parsed certificated.
-        &#34;&#34;&#34;
-        log.info(&#39;Start reading host chains from dataset: %s&#39;, dataset)
-        with gzip.open(dataset, &#39;rt&#39;) as r_file:
-            for line in r_file:
-                read_line = line.strip().split(&#39;,&#39;)
-                yield read_line[0], read_line[1:]
-
-    def store_certs(self, certdb: CertDB) -&gt; None:
-        &#34;&#34;&#34;Parses certificates from dataset and stores them into DB.&#34;&#34;&#34;
-        for sha, cert in self.parse_certs(self._certs_dataset):
-            certdb.insert(sha, BASE64_to_PEM(cert))
-            self.__parsing_log[&#39;total_certs&#39;] += 1
-
-    def store_chains(self, certdb: CertDB) -&gt; None:
-        &#34;&#34;&#34;
-        Parses certificate chains from dataset and stores them into the `chain_file` file.
-
-        If `broken_chain_file` is provided, the chains that are not available (in the dataset nor the CertDB)
-        are stored into this separate file.
-        &#34;&#34;&#34;
-
-        def write_chain(host: str, chain: list):
-            self.__parsing_log[&#39;total_hosts&#39;] += 1
-            line = host + &#39;,&#39; + &#39;,&#39;.join(chain) + &#39;\n&#39;
-            if self._broken_chain_file:
-                # Try to find all the certificates in DB
-                if certdb.exists_all(chain):
-                    f_full_chains.write(line)
-                else:
-                    self.__parsing_log[&#39;broken_chains&#39;] += 1
-                    f_broken_chains.write(line)
-            else:
-                f_full_chains.write(line)
-
-        if not self._broken_chain_file:
-            self.__parsing_log[&#39;broken_chains&#39;] = -1
-
-        with ExitStack() as stack:
-            f_full_chains = stack.enter_context(gzip.open(self._chain_file, &#39;wt&#39;))
-            if self._broken_chain_file:
-                f_broken_chains = stack.enter_context(gzip.open(self._broken_chain_file, &#39;wt&#39;))
-
-            for host, chain in self.parse_chains(self._hosts_dataset):
-                self.__parsing_log[&#39;total_host_certs&#39;] += len(chain)
-                # Writing chain
-                write_chain(host, chain)
-
-    def save_parsing_log(self, filename: str) -&gt; None:
-        &#34;&#34;&#34;Save parsing log to filename.&#34;&#34;&#34;
-        log_str = json.dumps(self.parsing_log, sort_keys=True, indent=4)
-        log.info(&#39;Saving parsing log: %s&#39;, filename)
-        with open(filename, &#39;w&#39;) as outfile:
-            outfile.write(log_str)</code></pre>
+from .rapid import RapidUnifier</code></pre>
 </details>
 </section>
 <section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="cevast.dataset.unifiers.rapid" href="rapid.html">cevast.dataset.unifiers.rapid</a></code></dt>
+<dd>
+<div class="desc"><p>This module contains implementation of RAPID dataset type unifier.</p></div>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -187,18 +50,25 @@ class RapidParser:
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="cevast.dataset.parsers.rapid.RapidParser"><code class="flex name class">
-<span>class <span class="ident">RapidParser</span></span>
+<dt id="cevast.dataset.unifiers.RapidUnifier"><code class="flex name class">
+<span>class <span class="ident">RapidUnifier</span></span>
 <span>(</span><span>certs_dataset: str, hosts_dataset: str, chain_file: str, broken_chain_file: str = None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A parser class which parses RAPID dataset type.</p></div>
+<div class="desc"><p>A unifier class that unifies RAPID dataset.</p>
+<p>Class parses RAPID dataset, stores the parsed certificates into CertDB
+and builds certificate chains. Chains are written as unified dataset format.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class RapidParser:
-    &#34;&#34;&#34;A parser class which parses RAPID dataset type.&#34;&#34;&#34;
+<pre><code class="python">class RapidUnifier:
+    &#34;&#34;&#34;
+    A unifier class that unifies RAPID dataset.
+
+    Class parses RAPID dataset, stores the parsed certificates into CertDB
+    and builds certificate chains. Chains are written as unified dataset format.
+    &#34;&#34;&#34;
 
     dataset_type = DatasetType.RAPID
 
@@ -208,14 +78,14 @@ class RapidParser:
             raise FileNotFoundError(certs_dataset)
         if not os.path.isfile(hosts_dataset):
             raise FileNotFoundError(hosts_dataset)
-        # Initialize parser
-        log.info(&#39;Initializing parser for dataset files (%s:%s)&#39;, certs_dataset, hosts_dataset)
+        # Initialize unifier
+        log.info(&#39;Initializing unifier for dataset files (%s:%s)&#39;, certs_dataset, hosts_dataset)
         self._certs_dataset = certs_dataset
         self._hosts_dataset = hosts_dataset
         self._chain_file = chain_file
         self._broken_chain_file = broken_chain_file
-        # Initialize dataset parsing log
-        self.__parsing_log = {
+        # Initialize dataset unification log
+        self.__unification_log = {
             &#39;total_certs&#39;: 0,
             &#39;total_hosts&#39;: 0,
             &#39;total_host_certs&#39;: 0,
@@ -238,9 +108,9 @@ class RapidParser:
         return self._chain_file
 
     @property
-    def parsing_log(self) -&gt; dict:
-        &#34;&#34;&#34;Getter property of parsing log.&#34;&#34;&#34;
-        return self.__parsing_log
+    def unification_log(self) -&gt; dict:
+        &#34;&#34;&#34;Getter property of unification log.&#34;&#34;&#34;
+        return self.__unification_log
 
     @staticmethod
     def parse_certs(dataset: str) -&gt; tuple:
@@ -256,10 +126,10 @@ class RapidParser:
     @staticmethod
     def parse_chains(dataset: str) -&gt; tuple:
         &#34;&#34;&#34;
-        Generator parsing host certificate chains from dataset one by one.
-        Tuple (&#39;host IP&#39;, [certificate chain]) is returned for each parsed certificated.
+        Generator parsing host certificate records and building chains from dataset one by one.
+        Tuple (&#39;host IP&#39;, [certificate chain]) is returned for each parsed host IP.
         &#34;&#34;&#34;
-        log.info(&#39;Start parsing host chains from dataset: %s&#39;, dataset)
+        log.info(&#39;Start parsing and building host chains from dataset: %s&#39;, dataset)
         chain = []
         last = None
         with gzip.open(dataset, &#39;rt&#39;) as r_file:
@@ -274,47 +144,48 @@ class RapidParser:
                 last = curr
             yield last, chain
 
+    # TODO this one might be generic
     @staticmethod
     def read_chains(dataset: str) -&gt; tuple:
         &#34;&#34;&#34;
-        Generator reading host certificate chains from parsed dataset one by one.
-        Tuple (&#39;host IP&#39;, [certificate chain]) is returned for each parsed certificated.
+        Generator reading certificate chains from unified dataset one by one.
+        Tuple (&#39;host IP&#39;, [certificate chain]) is returned for each host.
         &#34;&#34;&#34;
-        log.info(&#39;Start reading host chains from dataset: %s&#39;, dataset)
+        log.info(&#39;Start reading certificate chains from dataset: %s&#39;, dataset)
         with gzip.open(dataset, &#39;rt&#39;) as r_file:
             for line in r_file:
                 read_line = line.strip().split(&#39;,&#39;)
                 yield read_line[0], read_line[1:]
 
     def store_certs(self, certdb: CertDB) -&gt; None:
-        &#34;&#34;&#34;Parses certificates from dataset and stores them into DB.&#34;&#34;&#34;
+        &#34;&#34;&#34;Parses certificates from dataset and stores them into CertDB.&#34;&#34;&#34;
         for sha, cert in self.parse_certs(self._certs_dataset):
             certdb.insert(sha, BASE64_to_PEM(cert))
-            self.__parsing_log[&#39;total_certs&#39;] += 1
+            self.__unification_log[&#39;total_certs&#39;] += 1
 
     def store_chains(self, certdb: CertDB) -&gt; None:
         &#34;&#34;&#34;
-        Parses certificate chains from dataset and stores them into the `chain_file` file.
+        Parses and builds certificate chains from dataset and stores them into the unified `chain_file` file.
 
         If `broken_chain_file` is provided, the chains that are not available (in the dataset nor the CertDB)
         are stored into this separate file.
         &#34;&#34;&#34;
 
         def write_chain(host: str, chain: list):
-            self.__parsing_log[&#39;total_hosts&#39;] += 1
+            self.__unification_log[&#39;total_hosts&#39;] += 1
             line = host + &#39;,&#39; + &#39;,&#39;.join(chain) + &#39;\n&#39;
             if self._broken_chain_file:
                 # Try to find all the certificates in DB
                 if certdb.exists_all(chain):
                     f_full_chains.write(line)
                 else:
-                    self.__parsing_log[&#39;broken_chains&#39;] += 1
+                    self.__unification_log[&#39;broken_chains&#39;] += 1
                     f_broken_chains.write(line)
             else:
                 f_full_chains.write(line)
 
         if not self._broken_chain_file:
-            self.__parsing_log[&#39;broken_chains&#39;] = -1
+            self.__unification_log[&#39;broken_chains&#39;] = -1
 
         with ExitStack() as stack:
             f_full_chains = stack.enter_context(gzip.open(self._chain_file, &#39;wt&#39;))
@@ -322,27 +193,27 @@ class RapidParser:
                 f_broken_chains = stack.enter_context(gzip.open(self._broken_chain_file, &#39;wt&#39;))
 
             for host, chain in self.parse_chains(self._hosts_dataset):
-                self.__parsing_log[&#39;total_host_certs&#39;] += len(chain)
+                self.__unification_log[&#39;total_host_certs&#39;] += len(chain)
                 # Writing chain
                 write_chain(host, chain)
 
-    def save_parsing_log(self, filename: str) -&gt; None:
-        &#34;&#34;&#34;Save parsing log to filename.&#34;&#34;&#34;
-        log_str = json.dumps(self.parsing_log, sort_keys=True, indent=4)
-        log.info(&#39;Saving parsing log: %s&#39;, filename)
+    def save_unification_log(self, filename: str) -&gt; None:
+        &#34;&#34;&#34;Save unification log to filename.&#34;&#34;&#34;
+        log_str = json.dumps(self.unification_log, sort_keys=True, indent=4)
+        log.info(&#39;Saving unification log: %s&#39;, filename)
         with open(filename, &#39;w&#39;) as outfile:
             outfile.write(log_str)</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="cevast.dataset.parsers.rapid.RapidParser.dataset_type"><code class="name">var <span class="ident">dataset_type</span></code></dt>
+<dt id="cevast.dataset.unifiers.RapidUnifier.dataset_type"><code class="name">var <span class="ident">dataset_type</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Static methods</h3>
 <dl>
-<dt id="cevast.dataset.parsers.rapid.RapidParser.parse_certs"><code class="name flex">
+<dt id="cevast.dataset.unifiers.RapidUnifier.parse_certs"><code class="name flex">
 <span>def <span class="ident">parse_certs</span></span>(<span>dataset: str) -> tuple</span>
 </code></dt>
 <dd>
@@ -364,12 +235,12 @@ def parse_certs(dataset: str) -&gt; tuple:
             yield [x.strip() for x in line.split(&#39;,&#39;)]</code></pre>
 </details>
 </dd>
-<dt id="cevast.dataset.parsers.rapid.RapidParser.parse_chains"><code class="name flex">
+<dt id="cevast.dataset.unifiers.RapidUnifier.parse_chains"><code class="name flex">
 <span>def <span class="ident">parse_chains</span></span>(<span>dataset: str) -> tuple</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Generator parsing host certificate chains from dataset one by one.
-Tuple ('host IP', [certificate chain]) is returned for each parsed certificated.</p></div>
+<div class="desc"><p>Generator parsing host certificate records and building chains from dataset one by one.
+Tuple ('host IP', [certificate chain]) is returned for each parsed host IP.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -377,10 +248,10 @@ Tuple ('host IP', [certificate chain]) is returned for each parsed certificated.
 <pre><code class="python">@staticmethod
 def parse_chains(dataset: str) -&gt; tuple:
     &#34;&#34;&#34;
-    Generator parsing host certificate chains from dataset one by one.
-    Tuple (&#39;host IP&#39;, [certificate chain]) is returned for each parsed certificated.
+    Generator parsing host certificate records and building chains from dataset one by one.
+    Tuple (&#39;host IP&#39;, [certificate chain]) is returned for each parsed host IP.
     &#34;&#34;&#34;
-    log.info(&#39;Start parsing host chains from dataset: %s&#39;, dataset)
+    log.info(&#39;Start parsing and building host chains from dataset: %s&#39;, dataset)
     chain = []
     last = None
     with gzip.open(dataset, &#39;rt&#39;) as r_file:
@@ -396,12 +267,12 @@ def parse_chains(dataset: str) -&gt; tuple:
         yield last, chain</code></pre>
 </details>
 </dd>
-<dt id="cevast.dataset.parsers.rapid.RapidParser.read_chains"><code class="name flex">
+<dt id="cevast.dataset.unifiers.RapidUnifier.read_chains"><code class="name flex">
 <span>def <span class="ident">read_chains</span></span>(<span>dataset: str) -> tuple</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Generator reading host certificate chains from parsed dataset one by one.
-Tuple ('host IP', [certificate chain]) is returned for each parsed certificated.</p></div>
+<div class="desc"><p>Generator reading certificate chains from unified dataset one by one.
+Tuple ('host IP', [certificate chain]) is returned for each host.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -409,10 +280,10 @@ Tuple ('host IP', [certificate chain]) is returned for each parsed certificated.
 <pre><code class="python">@staticmethod
 def read_chains(dataset: str) -&gt; tuple:
     &#34;&#34;&#34;
-    Generator reading host certificate chains from parsed dataset one by one.
-    Tuple (&#39;host IP&#39;, [certificate chain]) is returned for each parsed certificated.
+    Generator reading certificate chains from unified dataset one by one.
+    Tuple (&#39;host IP&#39;, [certificate chain]) is returned for each host.
     &#34;&#34;&#34;
-    log.info(&#39;Start reading host chains from dataset: %s&#39;, dataset)
+    log.info(&#39;Start reading certificate chains from dataset: %s&#39;, dataset)
     with gzip.open(dataset, &#39;rt&#39;) as r_file:
         for line in r_file:
             read_line = line.strip().split(&#39;,&#39;)
@@ -422,7 +293,7 @@ def read_chains(dataset: str) -&gt; tuple:
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="cevast.dataset.parsers.rapid.RapidParser.certs_dataset"><code class="name">var <span class="ident">certs_dataset</span> : str</code></dt>
+<dt id="cevast.dataset.unifiers.RapidUnifier.certs_dataset"><code class="name">var <span class="ident">certs_dataset</span> : str</code></dt>
 <dd>
 <div class="desc"><p>Getter property of certs dataset.</p></div>
 <details class="source">
@@ -435,7 +306,7 @@ def certs_dataset(self) -&gt; str:
     return self._certs_dataset</code></pre>
 </details>
 </dd>
-<dt id="cevast.dataset.parsers.rapid.RapidParser.chain_file"><code class="name">var <span class="ident">chain_file</span> : str</code></dt>
+<dt id="cevast.dataset.unifiers.RapidUnifier.chain_file"><code class="name">var <span class="ident">chain_file</span> : str</code></dt>
 <dd>
 <div class="desc"><p>Getter property of chain file.</p></div>
 <details class="source">
@@ -448,7 +319,7 @@ def chain_file(self) -&gt; str:
     return self._chain_file</code></pre>
 </details>
 </dd>
-<dt id="cevast.dataset.parsers.rapid.RapidParser.hosts_dataset"><code class="name">var <span class="ident">hosts_dataset</span> : str</code></dt>
+<dt id="cevast.dataset.unifiers.RapidUnifier.hosts_dataset"><code class="name">var <span class="ident">hosts_dataset</span> : str</code></dt>
 <dd>
 <div class="desc"><p>Getter property of hosts dataset.</p></div>
 <details class="source">
@@ -461,60 +332,60 @@ def hosts_dataset(self) -&gt; str:
     return self._hosts_dataset</code></pre>
 </details>
 </dd>
-<dt id="cevast.dataset.parsers.rapid.RapidParser.parsing_log"><code class="name">var <span class="ident">parsing_log</span> : dict</code></dt>
+<dt id="cevast.dataset.unifiers.RapidUnifier.unification_log"><code class="name">var <span class="ident">unification_log</span> : dict</code></dt>
 <dd>
-<div class="desc"><p>Getter property of parsing log.</p></div>
+<div class="desc"><p>Getter property of unification log.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def parsing_log(self) -&gt; dict:
-    &#34;&#34;&#34;Getter property of parsing log.&#34;&#34;&#34;
-    return self.__parsing_log</code></pre>
+def unification_log(self) -&gt; dict:
+    &#34;&#34;&#34;Getter property of unification log.&#34;&#34;&#34;
+    return self.__unification_log</code></pre>
 </details>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="cevast.dataset.parsers.rapid.RapidParser.save_parsing_log"><code class="name flex">
-<span>def <span class="ident">save_parsing_log</span></span>(<span>self, filename: str) -> NoneType</span>
+<dt id="cevast.dataset.unifiers.RapidUnifier.save_unification_log"><code class="name flex">
+<span>def <span class="ident">save_unification_log</span></span>(<span>self, filename: str) -> NoneType</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Save parsing log to filename.</p></div>
+<div class="desc"><p>Save unification log to filename.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def save_parsing_log(self, filename: str) -&gt; None:
-    &#34;&#34;&#34;Save parsing log to filename.&#34;&#34;&#34;
-    log_str = json.dumps(self.parsing_log, sort_keys=True, indent=4)
-    log.info(&#39;Saving parsing log: %s&#39;, filename)
+<pre><code class="python">def save_unification_log(self, filename: str) -&gt; None:
+    &#34;&#34;&#34;Save unification log to filename.&#34;&#34;&#34;
+    log_str = json.dumps(self.unification_log, sort_keys=True, indent=4)
+    log.info(&#39;Saving unification log: %s&#39;, filename)
     with open(filename, &#39;w&#39;) as outfile:
         outfile.write(log_str)</code></pre>
 </details>
 </dd>
-<dt id="cevast.dataset.parsers.rapid.RapidParser.store_certs"><code class="name flex">
+<dt id="cevast.dataset.unifiers.RapidUnifier.store_certs"><code class="name flex">
 <span>def <span class="ident">store_certs</span></span>(<span>self, certdb: <a title="cevast.certdb.cert_db.CertDB" href="../../certdb/cert_db.html#cevast.certdb.cert_db.CertDB">CertDB</a>) -> NoneType</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Parses certificates from dataset and stores them into DB.</p></div>
+<div class="desc"><p>Parses certificates from dataset and stores them into CertDB.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def store_certs(self, certdb: CertDB) -&gt; None:
-    &#34;&#34;&#34;Parses certificates from dataset and stores them into DB.&#34;&#34;&#34;
+    &#34;&#34;&#34;Parses certificates from dataset and stores them into CertDB.&#34;&#34;&#34;
     for sha, cert in self.parse_certs(self._certs_dataset):
         certdb.insert(sha, BASE64_to_PEM(cert))
-        self.__parsing_log[&#39;total_certs&#39;] += 1</code></pre>
+        self.__unification_log[&#39;total_certs&#39;] += 1</code></pre>
 </details>
 </dd>
-<dt id="cevast.dataset.parsers.rapid.RapidParser.store_chains"><code class="name flex">
+<dt id="cevast.dataset.unifiers.RapidUnifier.store_chains"><code class="name flex">
 <span>def <span class="ident">store_chains</span></span>(<span>self, certdb: <a title="cevast.certdb.cert_db.CertDB" href="../../certdb/cert_db.html#cevast.certdb.cert_db.CertDB">CertDB</a>) -> NoneType</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Parses certificate chains from dataset and stores them into the <code>chain_file</code> file.</p>
+<div class="desc"><p>Parses and builds certificate chains from dataset and stores them into the unified <code>chain_file</code> file.</p>
 <p>If <code>broken_chain_file</code> is provided, the chains that are not available (in the dataset nor the CertDB)
 are stored into this separate file.</p></div>
 <details class="source">
@@ -523,27 +394,27 @@ are stored into this separate file.</p></div>
 </summary>
 <pre><code class="python">def store_chains(self, certdb: CertDB) -&gt; None:
     &#34;&#34;&#34;
-    Parses certificate chains from dataset and stores them into the `chain_file` file.
+    Parses and builds certificate chains from dataset and stores them into the unified `chain_file` file.
 
     If `broken_chain_file` is provided, the chains that are not available (in the dataset nor the CertDB)
     are stored into this separate file.
     &#34;&#34;&#34;
 
     def write_chain(host: str, chain: list):
-        self.__parsing_log[&#39;total_hosts&#39;] += 1
+        self.__unification_log[&#39;total_hosts&#39;] += 1
         line = host + &#39;,&#39; + &#39;,&#39;.join(chain) + &#39;\n&#39;
         if self._broken_chain_file:
             # Try to find all the certificates in DB
             if certdb.exists_all(chain):
                 f_full_chains.write(line)
             else:
-                self.__parsing_log[&#39;broken_chains&#39;] += 1
+                self.__unification_log[&#39;broken_chains&#39;] += 1
                 f_broken_chains.write(line)
         else:
             f_full_chains.write(line)
 
     if not self._broken_chain_file:
-        self.__parsing_log[&#39;broken_chains&#39;] = -1
+        self.__unification_log[&#39;broken_chains&#39;] = -1
 
     with ExitStack() as stack:
         f_full_chains = stack.enter_context(gzip.open(self._chain_file, &#39;wt&#39;))
@@ -551,7 +422,7 @@ are stored into this separate file.</p></div>
             f_broken_chains = stack.enter_context(gzip.open(self._broken_chain_file, &#39;wt&#39;))
 
         for host, chain in self.parse_chains(self._hosts_dataset):
-            self.__parsing_log[&#39;total_host_certs&#39;] += len(chain)
+            self.__unification_log[&#39;total_host_certs&#39;] += len(chain)
             # Writing chain
             write_chain(host, chain)</code></pre>
 </details>
@@ -569,25 +440,30 @@ are stored into this separate file.</p></div>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="cevast.dataset.parsers" href="index.html">cevast.dataset.parsers</a></code></li>
+<li><code><a title="cevast.dataset" href="../index.html">cevast.dataset</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="cevast.dataset.unifiers.rapid" href="rapid.html">cevast.dataset.unifiers.rapid</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="cevast.dataset.parsers.rapid.RapidParser" href="#cevast.dataset.parsers.rapid.RapidParser">RapidParser</a></code></h4>
-<ul class="two-column">
-<li><code><a title="cevast.dataset.parsers.rapid.RapidParser.certs_dataset" href="#cevast.dataset.parsers.rapid.RapidParser.certs_dataset">certs_dataset</a></code></li>
-<li><code><a title="cevast.dataset.parsers.rapid.RapidParser.chain_file" href="#cevast.dataset.parsers.rapid.RapidParser.chain_file">chain_file</a></code></li>
-<li><code><a title="cevast.dataset.parsers.rapid.RapidParser.dataset_type" href="#cevast.dataset.parsers.rapid.RapidParser.dataset_type">dataset_type</a></code></li>
-<li><code><a title="cevast.dataset.parsers.rapid.RapidParser.hosts_dataset" href="#cevast.dataset.parsers.rapid.RapidParser.hosts_dataset">hosts_dataset</a></code></li>
-<li><code><a title="cevast.dataset.parsers.rapid.RapidParser.parse_certs" href="#cevast.dataset.parsers.rapid.RapidParser.parse_certs">parse_certs</a></code></li>
-<li><code><a title="cevast.dataset.parsers.rapid.RapidParser.parse_chains" href="#cevast.dataset.parsers.rapid.RapidParser.parse_chains">parse_chains</a></code></li>
-<li><code><a title="cevast.dataset.parsers.rapid.RapidParser.parsing_log" href="#cevast.dataset.parsers.rapid.RapidParser.parsing_log">parsing_log</a></code></li>
-<li><code><a title="cevast.dataset.parsers.rapid.RapidParser.read_chains" href="#cevast.dataset.parsers.rapid.RapidParser.read_chains">read_chains</a></code></li>
-<li><code><a title="cevast.dataset.parsers.rapid.RapidParser.save_parsing_log" href="#cevast.dataset.parsers.rapid.RapidParser.save_parsing_log">save_parsing_log</a></code></li>
-<li><code><a title="cevast.dataset.parsers.rapid.RapidParser.store_certs" href="#cevast.dataset.parsers.rapid.RapidParser.store_certs">store_certs</a></code></li>
-<li><code><a title="cevast.dataset.parsers.rapid.RapidParser.store_chains" href="#cevast.dataset.parsers.rapid.RapidParser.store_chains">store_chains</a></code></li>
+<h4><code><a title="cevast.dataset.unifiers.RapidUnifier" href="#cevast.dataset.unifiers.RapidUnifier">RapidUnifier</a></code></h4>
+<ul class="">
+<li><code><a title="cevast.dataset.unifiers.RapidUnifier.certs_dataset" href="#cevast.dataset.unifiers.RapidUnifier.certs_dataset">certs_dataset</a></code></li>
+<li><code><a title="cevast.dataset.unifiers.RapidUnifier.chain_file" href="#cevast.dataset.unifiers.RapidUnifier.chain_file">chain_file</a></code></li>
+<li><code><a title="cevast.dataset.unifiers.RapidUnifier.dataset_type" href="#cevast.dataset.unifiers.RapidUnifier.dataset_type">dataset_type</a></code></li>
+<li><code><a title="cevast.dataset.unifiers.RapidUnifier.hosts_dataset" href="#cevast.dataset.unifiers.RapidUnifier.hosts_dataset">hosts_dataset</a></code></li>
+<li><code><a title="cevast.dataset.unifiers.RapidUnifier.parse_certs" href="#cevast.dataset.unifiers.RapidUnifier.parse_certs">parse_certs</a></code></li>
+<li><code><a title="cevast.dataset.unifiers.RapidUnifier.parse_chains" href="#cevast.dataset.unifiers.RapidUnifier.parse_chains">parse_chains</a></code></li>
+<li><code><a title="cevast.dataset.unifiers.RapidUnifier.read_chains" href="#cevast.dataset.unifiers.RapidUnifier.read_chains">read_chains</a></code></li>
+<li><code><a title="cevast.dataset.unifiers.RapidUnifier.save_unification_log" href="#cevast.dataset.unifiers.RapidUnifier.save_unification_log">save_unification_log</a></code></li>
+<li><code><a title="cevast.dataset.unifiers.RapidUnifier.store_certs" href="#cevast.dataset.unifiers.RapidUnifier.store_certs">store_certs</a></code></li>
+<li><code><a title="cevast.dataset.unifiers.RapidUnifier.store_chains" href="#cevast.dataset.unifiers.RapidUnifier.store_chains">store_chains</a></code></li>
+<li><code><a title="cevast.dataset.unifiers.RapidUnifier.unification_log" href="#cevast.dataset.unifiers.RapidUnifier.unification_log">unification_log</a></code></li>
 </ul>
 </li>
 </ul>

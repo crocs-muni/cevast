@@ -63,12 +63,12 @@ def cli():
     #analyser_cfg = {'certdb': db, 'methods': ['botan']}
     analyser_cfg = {'certdb': db}
     for args_task in args.task:
-        if DatasetManagerTask.analyse(args_task):
+        if DatasetManagerTask.validate(args_task):
             task = DatasetManagerTask[args_task]
             params = {}
             if task == DatasetManagerTask.COLLECT:
                 pass
-            elif task == DatasetManagerTask.PARSE:
+            elif task == DatasetManagerTask.UNIFY:
                 params['certdb'] = db
             elif task == DatasetManagerTask.ANALYSE:
                 params['analyser_cfg'] = analyser_cfg

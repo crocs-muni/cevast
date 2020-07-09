@@ -7,7 +7,7 @@ __all__ = [
     'DatasetRepository',
     'DatasetCollectionError',
     'DatasetInvalidError',
-    'DatasetParsingError',
+    'DatasetUnificationError',
     'DatasetManagerFactory',
     'DatasetManager',
     'DatasetManagerTask',
@@ -22,7 +22,7 @@ from .dataset import (
     DatasetRepository,
     DatasetCollectionError,
     DatasetInvalidError,
-    DatasetParsingError,
+    DatasetUnificationError,
 )
 from .manager_factory import DatasetManagerFactory
 from .managers import DatasetManagerTask, DatasetManager

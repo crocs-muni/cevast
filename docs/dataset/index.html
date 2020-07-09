@@ -34,7 +34,7 @@ __all__ = [
     &#39;DatasetRepository&#39;,
     &#39;DatasetCollectionError&#39;,
     &#39;DatasetInvalidError&#39;,
-    &#39;DatasetParsingError&#39;,
+    &#39;DatasetUnificationError&#39;,
     &#39;DatasetManagerFactory&#39;,
     &#39;DatasetManager&#39;,
     &#39;DatasetManagerTask&#39;,
@@ -49,7 +49,7 @@ from .dataset import (
     DatasetRepository,
     DatasetCollectionError,
     DatasetInvalidError,
-    DatasetParsingError,
+    DatasetUnificationError,
 )
 from .manager_factory import DatasetManagerFactory
 from .managers import DatasetManagerTask, DatasetManager</code></pre>
@@ -58,10 +58,6 @@ from .managers import DatasetManagerTask, DatasetManager</code></pre>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
-<dt><code class="name"><a title="cevast.dataset.analyses" href="analyses/index.html">cevast.dataset.analyses</a></code></dt>
-<dd>
-<div class="desc"><p>This package provides tools for certificate datasets analysis.</p></div>
-</dd>
 <dt><code class="name"><a title="cevast.dataset.collectors" href="collectors/index.html">cevast.dataset.collectors</a></code></dt>
 <dd>
 <div class="desc"><p>This package provides tools for collecting certificate datasets.</p></div>
@@ -69,6 +65,10 @@ from .managers import DatasetManagerTask, DatasetManager</code></pre>
 <dt><code class="name"><a title="cevast.dataset.dataset" href="dataset.html">cevast.dataset.dataset</a></code></dt>
 <dd>
 <div class="desc"><p>This module contains structures and classes logically related to a certificate datasets.</p></div>
+</dd>
+<dt><code class="name"><a title="cevast.dataset.filters" href="filters/index.html">cevast.dataset.filters</a></code></dt>
+<dd>
+<div class="desc"><p>This package provides tools for certificate datasets filtering.</p></div>
 </dd>
 <dt><code class="name"><a title="cevast.dataset.manager_factory" href="manager_factory.html">cevast.dataset.manager_factory</a></code></dt>
 <dd>
@@ -78,9 +78,9 @@ from .managers import DatasetManagerTask, DatasetManager</code></pre>
 <dd>
 <div class="desc"><p>This package provides certificate dataset managers …</p></div>
 </dd>
-<dt><code class="name"><a title="cevast.dataset.parsers" href="parsers/index.html">cevast.dataset.parsers</a></code></dt>
+<dt><code class="name"><a title="cevast.dataset.unifiers" href="unifiers/index.html">cevast.dataset.unifiers</a></code></dt>
 <dd>
-<div class="desc"><p>This package provides tools for parsing certificate datasets.</p></div>
+<div class="desc"><p>This package provides tools for unification of certificate datasets.</p></div>
 </dd>
 </dl>
 </section>
@@ -107,7 +107,7 @@ upon object initialization.</p>
 Each dataset can be found at 1-N of the following generalized states:
 - COLLECTED
 - ANALYZED
-- PARSED
+- UNIFIED
 - ANALYSED</p>
 <p>Full Dataset path template: {repository}/{type}/{state}/{date_id}[_{port}][_suffix].{extension}</p>
 <p>Initialize the static identifiers</p></div>
@@ -130,7 +130,7 @@ Each dataset can be found at 1-N of the following generalized states:
     Each dataset can be found at 1-N of the following generalized states:
         - COLLECTED
         - ANALYZED
-        - PARSED
+        - UNIFIED
         - ANALYSED
 
     Full Dataset path template: {repository}/{type}/{state}/{date_id}[_{port}][_suffix].{extension}
@@ -631,7 +631,7 @@ If <code>physically</code> flag is set and and path does not exist, create it.</
 </dd>
 <dt id="cevast.dataset.DatasetManager"><code class="flex name class">
 <span>class <span class="ident">DatasetManager</span></span>
-<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 9), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
+<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 10), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>An abstract DatasetManager class representing an interface that can be used to perform
@@ -712,11 +712,11 @@ running separatelly). Running a series might also be more optimized.</p>
         &#34;&#34;&#34;
 
     @abstractmethod
-    def parse(self, certdb: CertDB) -&gt; Tuple[Dataset]:
+    def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
-        Parse a dataset.
+        Unify a dataset.
         `certdb` is CertDB instance to work with (to insert parsed certificates to).
-        Return tuple of parsed Datasets.
+        Return tuple of unified Datasets.
         &#34;&#34;&#34;
 
     @abstractmethod
@@ -820,26 +820,6 @@ def filter(self, methods: list = None) -&gt; Tuple[Dataset]:
     &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
-<dt id="cevast.dataset.DatasetManager.parse"><code class="name flex">
-<span>def <span class="ident">parse</span></span>(<span>self, certdb: <a title="cevast.certdb.cert_db.CertDB" href="../certdb/cert_db.html#cevast.certdb.cert_db.CertDB">CertDB</a>) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Parse a dataset.
-<code>certdb</code> is CertDB instance to work with (to insert parsed certificates to).
-Return tuple of parsed Datasets.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@abstractmethod
-def parse(self, certdb: CertDB) -&gt; Tuple[Dataset]:
-    &#34;&#34;&#34;
-    Parse a dataset.
-    `certdb` is CertDB instance to work with (to insert parsed certificates to).
-    Return tuple of parsed Datasets.
-    &#34;&#34;&#34;</code></pre>
-</details>
-</dd>
 <dt id="cevast.dataset.DatasetManager.run"><code class="name flex">
 <span>def <span class="ident">run</span></span>(<span>self, task_pipline: Tuple[Tuple[cevast.dataset.managers.manager.DatasetManagerTask, dict]]) -> NoneType</span>
 </code></dt>
@@ -863,6 +843,26 @@ def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -&gt; None:
         - &#39;cfg&#39; is dictionary filled of parameters that will be passed to individual task methods.
     Caller function must ensure that &#39;cfg&#39; parameters match task method&#39;s declaration.
     TODO make cfg dict optional
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="cevast.dataset.DatasetManager.unify"><code class="name flex">
+<span>def <span class="ident">unify</span></span>(<span>self, certdb: <a title="cevast.certdb.cert_db.CertDB" href="../certdb/cert_db.html#cevast.certdb.cert_db.CertDB">CertDB</a>) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Unify a dataset.
+<code>certdb</code> is CertDB instance to work with (to insert parsed certificates to).
+Return tuple of unified Datasets.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
+    &#34;&#34;&#34;
+    Unify a dataset.
+    `certdb` is CertDB instance to work with (to insert parsed certificates to).
+    Return tuple of unified Datasets.
     &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
@@ -960,7 +960,7 @@ def get_manager(cls, dataset_type: Union[DatasetType, str]) -&gt; Type[managers.
 
     COLLECT = 1
     FILTER = 2
-    PARSE = 3
+    UNIFY = 3
     ANALYSE = 4
 
     @classmethod
@@ -995,31 +995,11 @@ def get_manager(cls, dataset_type: Union[DatasetType, str]) -&gt; Type[managers.
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="cevast.dataset.DatasetManagerTask.PARSE"><code class="name">var <span class="ident">PARSE</span></code></dt>
+<dt id="cevast.dataset.DatasetManagerTask.UNIFY"><code class="name">var <span class="ident">UNIFY</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
-</dd>
-<dt id="cevast.dataset.DatasetParsingError"><code class="flex name class">
-<span>class <span class="ident">DatasetParsingError</span></span>
-<span>(</span><span>...)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Raised when dataset parsing fails.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class DatasetParsingError(ValueError):
-    &#34;&#34;&#34;Raised when dataset parsing fails.&#34;&#34;&#34;</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>builtins.ValueError</li>
-<li>builtins.Exception</li>
-<li>builtins.BaseException</li>
-</ul>
 </dd>
 <dt id="cevast.dataset.DatasetRepository"><code class="flex name class">
 <span>class <span class="ident">DatasetRepository</span></span>
@@ -1211,7 +1191,7 @@ The parameters represent the output filter options.</p></div>
 
     COLLECTED = 1  # Dataset was collected and is available in a raw format
     FILTERED = 2  # Dataset was fitered
-    PARSED = 3  # Dataset was parsed to internal format, certificates were stored to CertDB
+    UNIFIED = 3  # Dataset was unified to internal format, certificates were stored to CertDB
     ANALYSED = 4  # Dataset was already run through analysis, result might be available
 
     @classmethod
@@ -1246,7 +1226,7 @@ The parameters represent the output filter options.</p></div>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="cevast.dataset.DatasetState.PARSED"><code class="name">var <span class="ident">PARSED</span></code></dt>
+<dt id="cevast.dataset.DatasetState.UNIFIED"><code class="name">var <span class="ident">UNIFIED</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1298,6 +1278,26 @@ The parameters represent the output filter options.</p></div>
 </dd>
 </dl>
 </dd>
+<dt id="cevast.dataset.DatasetUnificationError"><code class="flex name class">
+<span>class <span class="ident">DatasetUnificationError</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Raised when dataset unification fails.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DatasetUnificationError(ValueError):
+    &#34;&#34;&#34;Raised when dataset unification fails.&#34;&#34;&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.ValueError</li>
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
 </dl>
 </section>
 </article>
@@ -1314,12 +1314,12 @@ The parameters represent the output filter options.</p></div>
 </li>
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
-<li><code><a title="cevast.dataset.analyses" href="analyses/index.html">cevast.dataset.analyses</a></code></li>
 <li><code><a title="cevast.dataset.collectors" href="collectors/index.html">cevast.dataset.collectors</a></code></li>
 <li><code><a title="cevast.dataset.dataset" href="dataset.html">cevast.dataset.dataset</a></code></li>
+<li><code><a title="cevast.dataset.filters" href="filters/index.html">cevast.dataset.filters</a></code></li>
 <li><code><a title="cevast.dataset.manager_factory" href="manager_factory.html">cevast.dataset.manager_factory</a></code></li>
 <li><code><a title="cevast.dataset.managers" href="managers/index.html">cevast.dataset.managers</a></code></li>
-<li><code><a title="cevast.dataset.parsers" href="parsers/index.html">cevast.dataset.parsers</a></code></li>
+<li><code><a title="cevast.dataset.unifiers" href="unifiers/index.html">cevast.dataset.unifiers</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
@@ -1357,8 +1357,8 @@ The parameters represent the output filter options.</p></div>
 <li><code><a title="cevast.dataset.DatasetManager.collect" href="#cevast.dataset.DatasetManager.collect">collect</a></code></li>
 <li><code><a title="cevast.dataset.DatasetManager.dataset_type" href="#cevast.dataset.DatasetManager.dataset_type">dataset_type</a></code></li>
 <li><code><a title="cevast.dataset.DatasetManager.filter" href="#cevast.dataset.DatasetManager.filter">filter</a></code></li>
-<li><code><a title="cevast.dataset.DatasetManager.parse" href="#cevast.dataset.DatasetManager.parse">parse</a></code></li>
 <li><code><a title="cevast.dataset.DatasetManager.run" href="#cevast.dataset.DatasetManager.run">run</a></code></li>
+<li><code><a title="cevast.dataset.DatasetManager.unify" href="#cevast.dataset.DatasetManager.unify">unify</a></code></li>
 </ul>
 </li>
 <li>
@@ -1373,11 +1373,8 @@ The parameters represent the output filter options.</p></div>
 <li><code><a title="cevast.dataset.DatasetManagerTask.ANALYSE" href="#cevast.dataset.DatasetManagerTask.ANALYSE">ANALYSE</a></code></li>
 <li><code><a title="cevast.dataset.DatasetManagerTask.COLLECT" href="#cevast.dataset.DatasetManagerTask.COLLECT">COLLECT</a></code></li>
 <li><code><a title="cevast.dataset.DatasetManagerTask.FILTER" href="#cevast.dataset.DatasetManagerTask.FILTER">FILTER</a></code></li>
-<li><code><a title="cevast.dataset.DatasetManagerTask.PARSE" href="#cevast.dataset.DatasetManagerTask.PARSE">PARSE</a></code></li>
+<li><code><a title="cevast.dataset.DatasetManagerTask.UNIFY" href="#cevast.dataset.DatasetManagerTask.UNIFY">UNIFY</a></code></li>
 </ul>
-</li>
-<li>
-<h4><code><a title="cevast.dataset.DatasetParsingError" href="#cevast.dataset.DatasetParsingError">DatasetParsingError</a></code></h4>
 </li>
 <li>
 <h4><code><a title="cevast.dataset.DatasetRepository" href="#cevast.dataset.DatasetRepository">DatasetRepository</a></code></h4>
@@ -1393,7 +1390,7 @@ The parameters represent the output filter options.</p></div>
 <li><code><a title="cevast.dataset.DatasetState.ANALYSED" href="#cevast.dataset.DatasetState.ANALYSED">ANALYSED</a></code></li>
 <li><code><a title="cevast.dataset.DatasetState.COLLECTED" href="#cevast.dataset.DatasetState.COLLECTED">COLLECTED</a></code></li>
 <li><code><a title="cevast.dataset.DatasetState.FILTERED" href="#cevast.dataset.DatasetState.FILTERED">FILTERED</a></code></li>
-<li><code><a title="cevast.dataset.DatasetState.PARSED" href="#cevast.dataset.DatasetState.PARSED">PARSED</a></code></li>
+<li><code><a title="cevast.dataset.DatasetState.UNIFIED" href="#cevast.dataset.DatasetState.UNIFIED">UNIFIED</a></code></li>
 </ul>
 </li>
 <li>
@@ -1402,6 +1399,9 @@ The parameters represent the output filter options.</p></div>
 <li><code><a title="cevast.dataset.DatasetType.CENSYS" href="#cevast.dataset.DatasetType.CENSYS">CENSYS</a></code></li>
 <li><code><a title="cevast.dataset.DatasetType.RAPID" href="#cevast.dataset.DatasetType.RAPID">RAPID</a></code></li>
 </ul>
+</li>
+<li>
+<h4><code><a title="cevast.dataset.DatasetUnificationError" href="#cevast.dataset.DatasetUnificationError">DatasetUnificationError</a></code></h4>
 </li>
 </ul>
 </li>

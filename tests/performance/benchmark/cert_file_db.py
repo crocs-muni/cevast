@@ -7,7 +7,7 @@ Run as:> python3 -m cProfile -s calls benchmark_CertFileDB.py perf_st 10000-cert
 import sys
 import time
 import shutil
-import cevast.dataset.parsers as parser
+import cevast.dataset.unifiers as unifier
 from cevast.certdb import CertFileDB, CertFileDBReadOnly
 from cevast.utils.cert_utils import BASE64_to_PEM
 from cevast.utils.logging import setup_cevast_logger
@@ -36,7 +36,7 @@ print("CPUs used: %s" % cpus)
 print()
 print("Started insert:")
 t0 = time.time()
-for sha, cert in parser.RapidParser.read_certs(dataset):
+for sha, cert in unifier.RapidUnifier.read_certs(dataset):
     certdb.insert(sha, BASE64_to_PEM(cert))
     certs.append(sha)
 print("Finished: %r" % (time.time() - t0))
@@ -53,7 +53,7 @@ print("Finished: %r" % (time.time() - t0))
 print()
 print("Started 2nd insert:")
 t0 = time.time()
-for sha, cert in parser.RapidParser.read_certs(dataset):
+for sha, cert in unifier.RapidUnifier.read_certs(dataset):
     certdb.insert(sha, BASE64_to_PEM(cert))
 print("Finished: %r" % (time.time() - t0))
 print()

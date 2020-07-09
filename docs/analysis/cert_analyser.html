@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.8.1" />
-<title>cevast.validation.validator API documentation</title>
-<meta name="description" content="This module contains CertValidator interface." />
+<title>cevast.analysis.cert_analyser API documentation</title>
+<meta name="description" content="This module contains CertAnalyser interface." />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
@@ -17,26 +17,26 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>cevast.validation.validator</code></h1>
+<h1 class="title">Module <code>cevast.analysis.cert_analyser</code></h1>
 </header>
 <section id="section-intro">
-<p>This module contains CertValidator interface.</p>
+<p>This module contains CertAnalyser interface.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">&#34;&#34;&#34;This module contains CertValidator interface.&#34;&#34;&#34;
+<pre><code class="python">&#34;&#34;&#34;This module contains CertAnalyser interface.&#34;&#34;&#34;
 
 from typing import List
 from abc import ABC, abstractmethod
 
 
-class CertValidator(ABC):
+class CertAnalyser(ABC):
     &#34;&#34;&#34;
-    An abstract CertValidator class an interface design that provides possibility to perform
-    various validation tasks with certificates. Design aims for using parallelism but can also be
+    An abstract CertAnalyser class an interface design that provides possibility to perform
+    various analytical tasks with certificates. Design aims for using parallelism but can also be
     used as a single thread process. With such design one can use either multithreading or
-    multiprocessing to run validation tasks, depends what performance insufficiency is targeted
+    multiprocessing to run analytical tasks, depends what performance insufficiency is targeted
     (I/O vs CPU operating costs).
 
     Class implements mandatory methods of context manager interface so can be (and is recommended)
@@ -46,20 +46,20 @@ class CertValidator(ABC):
     `processes` is maximum number of additional workers (threads or processes) [0=single thread],
     `kwargs` are optional key arguments special to concrete implementation.
 
-    TODO pass list of actual validation methods that should be run?
+    TODO pass list of actual analytical methods that should be run?
     &#34;&#34;&#34;
 
     def __init__(self, output_file: str, processes: int, **kwargs):
-        &#34;&#34;&#34;Initialize CertValidator.&#34;&#34;&#34;
+        &#34;&#34;&#34;Initialize CertAnalyser.&#34;&#34;&#34;
 
     @abstractmethod
     def schedule(self, host: str, chain: List[str]) -&gt; None:
-        &#34;&#34;&#34;Enqueue host and certificate chain for validation.&#34;&#34;&#34;
+        &#34;&#34;&#34;Enqueue host and certificate chain for analysis.&#34;&#34;&#34;
 
     @abstractmethod
     def done(self) -&gt; None:
         &#34;&#34;&#34;
-        Indicate that no more data will be scheduled to validate and clean up context.
+        Indicate that no more data will be scheduled to analyse and clean up context.
         If multithreading/multiprocessing is used, this function will close-up the pool and wait
         for all workers to finish.
         &#34;&#34;&#34;
@@ -82,33 +82,33 @@ class CertValidator(ABC):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="cevast.validation.validator.CertValidator"><code class="flex name class">
-<span>class <span class="ident">CertValidator</span></span>
+<dt id="cevast.analysis.cert_analyser.CertAnalyser"><code class="flex name class">
+<span>class <span class="ident">CertAnalyser</span></span>
 <span>(</span><span>output_file: str, processes: int, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>An abstract CertValidator class an interface design that provides possibility to perform
-various validation tasks with certificates. Design aims for using parallelism but can also be
+<div class="desc"><p>An abstract CertAnalyser class an interface design that provides possibility to perform
+various analytical tasks with certificates. Design aims for using parallelism but can also be
 used as a single thread process. With such design one can use either multithreading or
-multiprocessing to run validation tasks, depends what performance insufficiency is targeted
+multiprocessing to run analytical tasks, depends what performance insufficiency is targeted
 (I/O vs CPU operating costs).</p>
 <p>Class implements mandatory methods of context manager interface so can be (and is recommended)
 to use with <code>with</code> statement. This way one can be sure that pool is safely cleaned-up.</p>
 <p><code>output_file</code> is a file where results will be written,
 <code>processes</code> is maximum number of additional workers (threads or processes) [0=single thread],
 <code>kwargs</code> are optional key arguments special to concrete implementation.</p>
-<p>TODO pass list of actual validation methods that should be run?</p>
-<p>Initialize CertValidator.</p></div>
+<p>TODO pass list of actual analytical methods that should be run?</p>
+<p>Initialize CertAnalyser.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class CertValidator(ABC):
+<pre><code class="python">class CertAnalyser(ABC):
     &#34;&#34;&#34;
-    An abstract CertValidator class an interface design that provides possibility to perform
-    various validation tasks with certificates. Design aims for using parallelism but can also be
+    An abstract CertAnalyser class an interface design that provides possibility to perform
+    various analytical tasks with certificates. Design aims for using parallelism but can also be
     used as a single thread process. With such design one can use either multithreading or
-    multiprocessing to run validation tasks, depends what performance insufficiency is targeted
+    multiprocessing to run analytical tasks, depends what performance insufficiency is targeted
     (I/O vs CPU operating costs).
 
     Class implements mandatory methods of context manager interface so can be (and is recommended)
@@ -118,20 +118,20 @@ to use with <code>with</code> statement. This way one can be sure that pool is s
     `processes` is maximum number of additional workers (threads or processes) [0=single thread],
     `kwargs` are optional key arguments special to concrete implementation.
 
-    TODO pass list of actual validation methods that should be run?
+    TODO pass list of actual analytical methods that should be run?
     &#34;&#34;&#34;
 
     def __init__(self, output_file: str, processes: int, **kwargs):
-        &#34;&#34;&#34;Initialize CertValidator.&#34;&#34;&#34;
+        &#34;&#34;&#34;Initialize CertAnalyser.&#34;&#34;&#34;
 
     @abstractmethod
     def schedule(self, host: str, chain: List[str]) -&gt; None:
-        &#34;&#34;&#34;Enqueue host and certificate chain for validation.&#34;&#34;&#34;
+        &#34;&#34;&#34;Enqueue host and certificate chain for analysis.&#34;&#34;&#34;
 
     @abstractmethod
     def done(self) -&gt; None:
         &#34;&#34;&#34;
-        Indicate that no more data will be scheduled to validate and clean up context.
+        Indicate that no more data will be scheduled to analyse and clean up context.
         If multithreading/multiprocessing is used, this function will close-up the pool and wait
         for all workers to finish.
         &#34;&#34;&#34;
@@ -150,15 +150,15 @@ to use with <code>with</code> statement. This way one can be sure that pool is s
 </ul>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="cevast.validation.chain_validator.ChainValidator" href="chain_validator.html#cevast.validation.chain_validator.ChainValidator">ChainValidator</a></li>
+<li><a title="cevast.analysis.chain_validator.ChainValidator" href="chain_validator.html#cevast.analysis.chain_validator.ChainValidator">ChainValidator</a></li>
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="cevast.validation.validator.CertValidator.done"><code class="name flex">
+<dt id="cevast.analysis.cert_analyser.CertAnalyser.done"><code class="name flex">
 <span>def <span class="ident">done</span></span>(<span>self) -> NoneType</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Indicate that no more data will be scheduled to validate and clean up context.
+<div class="desc"><p>Indicate that no more data will be scheduled to analyse and clean up context.
 If multithreading/multiprocessing is used, this function will close-up the pool and wait
 for all workers to finish.</p></div>
 <details class="source">
@@ -168,24 +168,24 @@ for all workers to finish.</p></div>
 <pre><code class="python">@abstractmethod
 def done(self) -&gt; None:
     &#34;&#34;&#34;
-    Indicate that no more data will be scheduled to validate and clean up context.
+    Indicate that no more data will be scheduled to analyse and clean up context.
     If multithreading/multiprocessing is used, this function will close-up the pool and wait
     for all workers to finish.
     &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
-<dt id="cevast.validation.validator.CertValidator.schedule"><code class="name flex">
+<dt id="cevast.analysis.cert_analyser.CertAnalyser.schedule"><code class="name flex">
 <span>def <span class="ident">schedule</span></span>(<span>self, host: str, chain: List[str]) -> NoneType</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Enqueue host and certificate chain for validation.</p></div>
+<div class="desc"><p>Enqueue host and certificate chain for analysis.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
 def schedule(self, host: str, chain: List[str]) -&gt; None:
-    &#34;&#34;&#34;Enqueue host and certificate chain for validation.&#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;Enqueue host and certificate chain for analysis.&#34;&#34;&#34;</code></pre>
 </details>
 </dd>
 </dl>
@@ -201,16 +201,16 @@ def schedule(self, host: str, chain: List[str]) -&gt; None:
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="cevast.validation" href="index.html">cevast.validation</a></code></li>
+<li><code><a title="cevast.analysis" href="index.html">cevast.analysis</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="cevast.validation.validator.CertValidator" href="#cevast.validation.validator.CertValidator">CertValidator</a></code></h4>
+<h4><code><a title="cevast.analysis.cert_analyser.CertAnalyser" href="#cevast.analysis.cert_analyser.CertAnalyser">CertAnalyser</a></code></h4>
 <ul class="">
-<li><code><a title="cevast.validation.validator.CertValidator.done" href="#cevast.validation.validator.CertValidator.done">done</a></code></li>
-<li><code><a title="cevast.validation.validator.CertValidator.schedule" href="#cevast.validation.validator.CertValidator.schedule">schedule</a></code></li>
+<li><code><a title="cevast.analysis.cert_analyser.CertAnalyser.done" href="#cevast.analysis.cert_analyser.CertAnalyser.done">done</a></code></li>
+<li><code><a title="cevast.analysis.cert_analyser.CertAnalyser.schedule" href="#cevast.analysis.cert_analyser.CertAnalyser.schedule">schedule</a></code></li>
 </ul>
 </li>
 </ul>

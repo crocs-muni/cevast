@@ -14,7 +14,7 @@ class DatasetManagerTask(IntEnum):
 
     COLLECT = 1
     FILTER = 2
-    PARSE = 3
+    UNIFY = 3
     ANALYSE = 4
 
     @classmethod
@@ -90,11 +90,11 @@ class DatasetManager(ABC):
         """
 
     @abstractmethod
-    def parse(self, certdb: CertDB) -> Tuple[Dataset]:
+    def unify(self, certdb: CertDB) -> Tuple[Dataset]:
         """
-        Parse a dataset.
+        Unify a dataset.
         `certdb` is CertDB instance to work with (to insert parsed certificates to).
-        Return tuple of parsed Datasets.
+        Return tuple of unified Datasets.
         """
 
     @abstractmethod

@@ -18,8 +18,8 @@ class DatasetCollectionError(ValueError):
     """Raised when dataset collection fails."""
 
 
-class DatasetParsingError(ValueError):
-    """Raised when dataset parsing fails."""
+class DatasetUnificationError(ValueError):
+    """Raised when dataset unification fails."""
 
 
 class DatasetInvalidError(ValueError):
@@ -50,7 +50,7 @@ class DatasetState(IntEnum):
 
     COLLECTED = 1  # Dataset was collected and is available in a raw format
     FILTERED = 2  # Dataset was fitered
-    PARSED = 3  # Dataset was parsed to internal format, certificates were stored to CertDB
+    UNIFIED = 3  # Dataset was unified to internal format, certificates were stored to CertDB
     ANALYSED = 4  # Dataset was already run through analysis, result might be available
 
     @classmethod
@@ -81,7 +81,7 @@ class Dataset:
     Each dataset can be found at 1-N of the following generalized states:
         - COLLECTED
         - ANALYZED
-        - PARSED
+        - UNIFIED
         - ANALYSED
 
     Full Dataset path template: {repository}/{type}/{state}/{date_id}[_{port}][_suffix].{extension}

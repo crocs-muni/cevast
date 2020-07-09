@@ -6,8 +6,8 @@ Run as:> python3 -m cProfile -s calls chain_validator.py {CertDB} {chain_file} {
 import os
 import sys
 import time
-from cevast.dataset.parsers import RapidParser
-from cevast.validation import ChainValidator
+from cevast.dataset.unifiers import RapidUnifier
+from cevast.analysis import ChainValidator
 from cevast.certdb import CertFileDB
 from cevast.utils.logging import setup_cevast_logger
 
@@ -38,7 +38,7 @@ print("Started validation:")
 t0 = time.time()
 # Open validator as context manager
 with ChainValidator(filename, cpus, **{'certdb': certdb}) as validator_ctx:
-    for host, chain in RapidParser.read_chains(chain_file):
+    for host, chain in RapidUnifier.read_chains(chain_file):
         validator_ctx.schedule(host, chain)
     # Indicate that no more validation data will be scheduled
     validator_ctx.done()

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.8.1" />
-<title>cevast.validation.chain_validator API documentation</title>
-<meta name="description" content="This module contains ChainValidator implementation of CertValidator interface." />
+<title>cevast.analysis API documentation</title>
+<meta name="description" content="This package contains analytical functions and tools for quantitative analysis of certificate datasets." />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
@@ -17,163 +17,43 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>cevast.validation.chain_validator</code></h1>
+<h1 class="title">Module <code>cevast.analysis</code></h1>
 </header>
 <section id="section-intro">
-<p>This module contains ChainValidator implementation of CertValidator interface.</p>
+<p>This package contains analytical functions and tools for quantitative analysis of certificate datasets.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">&#34;&#34;&#34;This module contains ChainValidator implementation of CertValidator interface.&#34;&#34;&#34;
+<pre><code class="python">&#34;&#34;&#34;This package contains analytical functions and tools for quantitative analysis of certificate datasets.&#34;&#34;&#34;
 
-import os
-import logging
-import multiprocessing
-import shutil
-import signal
-from typing import List
-from cevast.certdb import CertDB, CertNotAvailableError
-from cevast.utils import make_PEM_filename
-from .validator import CertValidator
-from .methods import get_all, get, show
+__version__ = &#39;0.1&#39;
+__author__ = &#39;Radim Podola&#39;
+__all__ = (
+    &#39;CertAnalyser&#39;,
+    &#39;ChainValidator&#39;,
+)
 
-
-log = logging.getLogger(__name__)
-
-
-# TODO fix logging into rotatefilehandler within multiprocessing
-class ChainValidator(CertValidator):
-    &#34;&#34;&#34;
-    CertValidator implementation that validates certificate chains. Validate function
-    accepts host name and list of certificate IDs (fingerprints). Those certificates are
-    searched in provided CertDB.
-
-    Result is stored as CSV file in following format:
-    {host, validation method 1, validation method 2, validation method N, chain}
-    .. hint::
-       Such format can be easily analyzed. E.g. to count number of each error code one could use:
-       awk -F &#34;\&#34;*,\&#34;*&#34; &#39;{print $2}&#39; cevast_repo/RAPID/VALIDATED/20200616_12443.csv | sort | uniq -c
-
-    Special key arguments:
-    [mandatory] `certdb` is an instance of CertDB, where the certificates will be taken from.
-    [optional] `export_dir` is a directory that will be used for temporary operations
-        with certificates. Directory will be clean-up upon calling `done`.
-    [optional] `methods` is a list with validation methods to use.
-    &#34;&#34;&#34;
-
-    def __init__(self, output_file: str, processes: int, **kwargs):
-        # Init common arguments
-        self.__single = processes == 0
-        self.__out = open(output_file + &#39;.csv&#39;, &#39;w&#39;)
-
-        # Init validation methods
-        self.__methods = kwargs.get(&#39;methods&#39;, None)
-        if self.__methods is None:
-            methods = get_all()
-        else:
-            methods = [get(name) for name in self.__methods]
-        if not methods:
-            raise ValueError(&#34;No validation methods are available -&gt; nothing to do&#34;)
-        # write validation header
-        self.__out.write(&#34;{}, {}, {}\n&#34;.format(&#39;HOST&#39;, &#34;, &#34;.join(show()), &#34;CHAIN&#34;))
-
-        # Init special arguments
-        self.__certdb: CertDB = kwargs.get(&#39;certdb&#39;, None)
-        if self.__certdb is None:
-            raise ValueError(&#39;Mandatory certdb argument must be provided withing kwargs.&#39;)
-        self.__export_dir = kwargs.get(&#39;export_dir&#39;, None)
-        if self.__export_dir is None:
-            self.__export_dir = &#39;./tmp_chain_validator/&#39;
-            os.makedirs(self.__export_dir, exist_ok=True)
-            self.__cleanup_export_dir = True
-        else:
-            self.__cleanup_export_dir = False
-
-        # Initialize pool and workers
-        if not self.__single:
-            self.__pool = multiprocessing.Pool(
-                processes, initializer=ChainValidator.__init_worker, initargs=(self.__certdb, self.__export_dir, methods, True)
-            )
-        else:
-            ChainValidator.__init_worker(self.__certdb, self.__export_dir, methods)
-
-        log.info(&#34;ChainValidator created: output_file=%s, processes=%d&#34;, output_file, processes)
-
-    @staticmethod
-    def __init_worker(certdb: CertDB, tmp_dir: str, methods: list, ignore_sigint: bool = False):
-        &#34;&#34;&#34;Create and initialize global variables used in validate method. {Not nice, but working well
-        with multiprocessing pool -&gt; sharing instance of CertDB - object is not copied because of copy-on-write fork()}
-        &#34;&#34;&#34;
-        global WORKER_CERTDB
-        global WORKER_TMP_DIR
-        global VALIDATION_METHODS
-        WORKER_CERTDB = certdb
-        WORKER_TMP_DIR = tmp_dir
-        VALIDATION_METHODS = methods
-        if ignore_sigint:
-            # let worker processes ignore SIGINT, parent will cleanup pool via teminate()
-            signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-    def schedule(self, host: str, chain: List[str]) -&gt; None:
-        if self.__single:
-            self.__out.write(ChainValidator._validate(host, chain))
-        else:
-            self.__pool.apply_async(ChainValidator._validate, args=(host, chain), callback=self.__out.write)
-
-    def done(self) -&gt; None:
-        # Wait for workers to finish
-        if not self.__single:
-            self.__pool.close()
-            self.__pool.join()
-        # Close output file
-        self.__out.flush()
-        self.__out.close()
-        # Clean up own export dir
-        if self.__cleanup_export_dir:
-            shutil.rmtree(self.__export_dir)
-
-    @staticmethod
-    def _validate(host: str, chain: List[str]) -&gt; str:
-        &#34;&#34;&#34;
-        Validation function of single validation task. Return formatted result.
-        `host` is host name,
-        `chain` is list of certificate IDs forming SSL Certificate Chain (starting with server certificate).
-        &#34;&#34;&#34;
-        result = []
-        pems = []
-        # check if already exported first
-        for cert in chain:
-            # TODO make some structure to not overload single directory
-            path = WORKER_TMP_DIR + make_PEM_filename(cert)
-            if not os.path.exists(path):
-                try:
-                    path = WORKER_CERTDB.export(cert, WORKER_TMP_DIR, False)
-                except CertNotAvailableError:
-                    log.info(&#34;HOST &lt;%s&gt; has broken chain&#34;, host)
-                    return &#34;&#34;
-            pems.append(path)
-        # Call validation methods
-        for method in VALIDATION_METHODS:
-            result.append(method(pems))
-
-        # Clean up server cerificate
-        server = pems[0]
-        if server.startswith(WORKER_TMP_DIR):
-            os.remove(server)
-
-        return &#34;{}, {}, {}\n&#34;.format(host.rjust(15), &#34;, &#34;.join(result), &#34; -&gt; &#34;.join(chain))
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if not self.__single:
-            self.__pool.terminate()
-        self.__out.close()</code></pre>
+from .cert_analyser import CertAnalyser
+from .chain_validator import ChainValidator</code></pre>
 </details>
 </section>
 <section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="cevast.analysis.cert_analyser" href="cert_analyser.html">cevast.analysis.cert_analyser</a></code></dt>
+<dd>
+<div class="desc"><p>This module contains CertAnalyser interface.</p></div>
+</dd>
+<dt><code class="name"><a title="cevast.analysis.chain_validator" href="chain_validator.html">cevast.analysis.chain_validator</a></code></dt>
+<dd>
+<div class="desc"><p>This module contains ChainValidator implementation of CertAnalyser interface.</p></div>
+</dd>
+<dt><code class="name"><a title="cevast.analysis.methods" href="methods.html">cevast.analysis.methods</a></code></dt>
+<dd>
+<div class="desc"><p>This module provides various certificate validation methods …</p></div>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -182,12 +62,120 @@ class ChainValidator(CertValidator):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="cevast.validation.chain_validator.ChainValidator"><code class="flex name class">
+<dt id="cevast.analysis.CertAnalyser"><code class="flex name class">
+<span>class <span class="ident">CertAnalyser</span></span>
+<span>(</span><span>output_file: str, processes: int, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An abstract CertAnalyser class an interface design that provides possibility to perform
+various analytical tasks with certificates. Design aims for using parallelism but can also be
+used as a single thread process. With such design one can use either multithreading or
+multiprocessing to run analytical tasks, depends what performance insufficiency is targeted
+(I/O vs CPU operating costs).</p>
+<p>Class implements mandatory methods of context manager interface so can be (and is recommended)
+to use with <code>with</code> statement. This way one can be sure that pool is safely cleaned-up.</p>
+<p><code>output_file</code> is a file where results will be written,
+<code>processes</code> is maximum number of additional workers (threads or processes) [0=single thread],
+<code>kwargs</code> are optional key arguments special to concrete implementation.</p>
+<p>TODO pass list of actual analytical methods that should be run?</p>
+<p>Initialize CertAnalyser.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CertAnalyser(ABC):
+    &#34;&#34;&#34;
+    An abstract CertAnalyser class an interface design that provides possibility to perform
+    various analytical tasks with certificates. Design aims for using parallelism but can also be
+    used as a single thread process. With such design one can use either multithreading or
+    multiprocessing to run analytical tasks, depends what performance insufficiency is targeted
+    (I/O vs CPU operating costs).
+
+    Class implements mandatory methods of context manager interface so can be (and is recommended)
+    to use with `with` statement. This way one can be sure that pool is safely cleaned-up.
+
+    `output_file` is a file where results will be written,
+    `processes` is maximum number of additional workers (threads or processes) [0=single thread],
+    `kwargs` are optional key arguments special to concrete implementation.
+
+    TODO pass list of actual analytical methods that should be run?
+    &#34;&#34;&#34;
+
+    def __init__(self, output_file: str, processes: int, **kwargs):
+        &#34;&#34;&#34;Initialize CertAnalyser.&#34;&#34;&#34;
+
+    @abstractmethod
+    def schedule(self, host: str, chain: List[str]) -&gt; None:
+        &#34;&#34;&#34;Enqueue host and certificate chain for analysis.&#34;&#34;&#34;
+
+    @abstractmethod
+    def done(self) -&gt; None:
+        &#34;&#34;&#34;
+        Indicate that no more data will be scheduled to analyse and clean up context.
+        If multithreading/multiprocessing is used, this function will close-up the pool and wait
+        for all workers to finish.
+        &#34;&#34;&#34;
+
+    @abstractmethod
+    def __enter__(self):
+        &#34;&#34;&#34;Return self.&#34;&#34;&#34;
+
+    @abstractmethod
+    def __exit__(self, exc_type, exc_value, traceback):
+        &#34;&#34;&#34;Safely clean-up context.&#34;&#34;&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="cevast.analysis.chain_validator.ChainValidator" href="chain_validator.html#cevast.analysis.chain_validator.ChainValidator">ChainValidator</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="cevast.analysis.CertAnalyser.done"><code class="name flex">
+<span>def <span class="ident">done</span></span>(<span>self) -> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Indicate that no more data will be scheduled to analyse and clean up context.
+If multithreading/multiprocessing is used, this function will close-up the pool and wait
+for all workers to finish.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def done(self) -&gt; None:
+    &#34;&#34;&#34;
+    Indicate that no more data will be scheduled to analyse and clean up context.
+    If multithreading/multiprocessing is used, this function will close-up the pool and wait
+    for all workers to finish.
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="cevast.analysis.CertAnalyser.schedule"><code class="name flex">
+<span>def <span class="ident">schedule</span></span>(<span>self, host: str, chain: List[str]) -> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Enqueue host and certificate chain for analysis.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def schedule(self, host: str, chain: List[str]) -&gt; None:
+    &#34;&#34;&#34;Enqueue host and certificate chain for analysis.&#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="cevast.analysis.ChainValidator"><code class="flex name class">
 <span>class <span class="ident">ChainValidator</span></span>
 <span>(</span><span>output_file: str, processes: int, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>CertValidator implementation that validates certificate chains. Validate function
+<div class="desc"><p>CertAnalyser implementation that validates certificate chains. Validation function
 accepts host name and list of certificate IDs (fingerprints). Those certificates are
 searched in provided CertDB.</p>
 <div class="admonition hint">
@@ -199,15 +187,15 @@ awk -F ""<em>,"</em>" '{print $2}' cevast_repo/RAPID/VALIDATED/20200616_12443.cs
 [mandatory] <code>certdb</code> is an instance of CertDB, where the certificates will be taken from.
 [optional] <code>export_dir</code> is a directory that will be used for temporary operations
 with certificates. Directory will be clean-up upon calling <code>done</code>.
-[optional] <code>methods</code> is a list with validation methods to use.</p>
-<p>Initialize CertValidator.</p></div>
+[optional] <code><a title="cevast.analysis.methods" href="methods.html">cevast.analysis.methods</a></code> is a list with validation methods to use.</p>
+<p>Initialize CertAnalyser.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class ChainValidator(CertValidator):
+<pre><code class="python">class ChainValidator(CertAnalyser):
     &#34;&#34;&#34;
-    CertValidator implementation that validates certificate chains. Validate function
+    CertAnalyser implementation that validates certificate chains. Validation function
     accepts host name and list of certificate IDs (fingerprints). Those certificates are
     searched in provided CertDB.
 
@@ -336,15 +324,15 @@ with certificates. Directory will be clean-up upon calling <code>done</code>.
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="cevast.validation.validator.CertValidator" href="validator.html#cevast.validation.validator.CertValidator">CertValidator</a></li>
+<li><a title="cevast.analysis.cert_analyser.CertAnalyser" href="cert_analyser.html#cevast.analysis.cert_analyser.CertAnalyser">CertAnalyser</a></li>
 <li>abc.ABC</li>
 </ul>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="cevast.validation.validator.CertValidator" href="validator.html#cevast.validation.validator.CertValidator">CertValidator</a></b></code>:
+<li><code><b><a title="cevast.analysis.cert_analyser.CertAnalyser" href="cert_analyser.html#cevast.analysis.cert_analyser.CertAnalyser">CertAnalyser</a></b></code>:
 <ul class="hlist">
-<li><code><a title="cevast.validation.validator.CertValidator.done" href="validator.html#cevast.validation.validator.CertValidator.done">done</a></code></li>
-<li><code><a title="cevast.validation.validator.CertValidator.schedule" href="validator.html#cevast.validation.validator.CertValidator.schedule">schedule</a></code></li>
+<li><code><a title="cevast.analysis.cert_analyser.CertAnalyser.done" href="cert_analyser.html#cevast.analysis.cert_analyser.CertAnalyser.done">done</a></code></li>
+<li><code><a title="cevast.analysis.cert_analyser.CertAnalyser.schedule" href="cert_analyser.html#cevast.analysis.cert_analyser.CertAnalyser.schedule">schedule</a></code></li>
 </ul>
 </li>
 </ul>
@@ -360,13 +348,27 @@ with certificates. Directory will be clean-up upon calling <code>done</code>.
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="cevast.validation" href="index.html">cevast.validation</a></code></li>
+<li><code><a title="cevast" href="../index.html">cevast</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="cevast.analysis.cert_analyser" href="cert_analyser.html">cevast.analysis.cert_analyser</a></code></li>
+<li><code><a title="cevast.analysis.chain_validator" href="chain_validator.html">cevast.analysis.chain_validator</a></code></li>
+<li><code><a title="cevast.analysis.methods" href="methods.html">cevast.analysis.methods</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="cevast.validation.chain_validator.ChainValidator" href="#cevast.validation.chain_validator.ChainValidator">ChainValidator</a></code></h4>
+<h4><code><a title="cevast.analysis.CertAnalyser" href="#cevast.analysis.CertAnalyser">CertAnalyser</a></code></h4>
+<ul class="">
+<li><code><a title="cevast.analysis.CertAnalyser.done" href="#cevast.analysis.CertAnalyser.done">done</a></code></li>
+<li><code><a title="cevast.analysis.CertAnalyser.schedule" href="#cevast.analysis.CertAnalyser.schedule">schedule</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="cevast.analysis.ChainValidator" href="#cevast.analysis.ChainValidator">ChainValidator</a></code></h4>
 </li>
 </ul>
 </li>
