@@ -6,16 +6,16 @@ from abc import ABC, abstractmethod, abstractclassmethod
 from enum import IntEnum
 from cevast.dataset.dataset import DatasetType, Dataset
 from cevast.certdb import CertDB
-from cevast.validation import CertValidator
+from cevast.analysis import CertAnalyser
 
 
 class DatasetManagerTask(IntEnum):
     """Enumeration of DatasetManager Tasks"""
 
     COLLECT = 1
-    ANALYSE = 2
+    FILTER = 2
     PARSE = 3
-    VALIDATE = 4
+    ANALYSE = 4
 
     @classmethod
     def validate(cls, state: Union['DatasetManagerTask', str]) -> bool:
@@ -83,10 +83,10 @@ class DatasetManager(ABC):
         """
 
     @abstractmethod
-    def analyse(self, methods: list = None) -> Tuple[Dataset]:
+    def filter(self, methods: list = None) -> Tuple[Dataset]:
         """
-        Analyse a dataset with given methods.
-        Return tuple of analysed Datasets.
+        Filter a dataset with given methods.
+        Return tuple of filtered Datasets.
         """
 
     @abstractmethod
@@ -98,13 +98,13 @@ class DatasetManager(ABC):
         """
 
     @abstractmethod
-    def validate(self, validator: Type[CertValidator], validator_cfg: dict) -> Tuple[Dataset]:
+    def analyse(self, analyser: Type[CertAnalyser], analyser_cfg: dict) -> Tuple[Dataset]:
         """
-        Validate a dataset with given validor.
-        `validator` is a CertValidator class,
-        `validator_cfg` is a dictionary with validator paramaters that will be passed to the initializer.
+        Analyse a dataset with given analyser.
+        `analyser` is a CertAnalyser class,
+        `analyser_cfg` is a dictionary with analyser paramaters that will be passed to the initializer.
 
-        Call to validator is performed like this: validator(cert_chain, **validator_cfg).
+        Call to analyser is performed like this: analyser(cert_chain, **analyser_cfg).
 
-        Return tuple of validated Datasets.
+        Return tuple of analysed Datasets.
         """

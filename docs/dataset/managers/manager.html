@@ -33,16 +33,16 @@ from abc import ABC, abstractmethod, abstractclassmethod
 from enum import IntEnum
 from cevast.dataset.dataset import DatasetType, Dataset
 from cevast.certdb import CertDB
-from cevast.validation import CertValidator
+from cevast.analysis import CertAnalyser
 
 
 class DatasetManagerTask(IntEnum):
     &#34;&#34;&#34;Enumeration of DatasetManager Tasks&#34;&#34;&#34;
 
     COLLECT = 1
-    ANALYSE = 2
+    FILTER = 2
     PARSE = 3
-    VALIDATE = 4
+    ANALYSE = 4
 
     @classmethod
     def validate(cls, state: Union[&#39;DatasetManagerTask&#39;, str]) -&gt; bool:
@@ -110,10 +110,10 @@ class DatasetManager(ABC):
         &#34;&#34;&#34;
 
     @abstractmethod
-    def analyse(self, methods: list = None) -&gt; Tuple[Dataset]:
+    def filter(self, methods: list = None) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
-        Analyse a dataset with given methods.
-        Return tuple of analysed Datasets.
+        Filter a dataset with given methods.
+        Return tuple of filtered Datasets.
         &#34;&#34;&#34;
 
     @abstractmethod
@@ -125,15 +125,15 @@ class DatasetManager(ABC):
         &#34;&#34;&#34;
 
     @abstractmethod
-    def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
+    def analyse(self, analyser: Type[CertAnalyser], analyser_cfg: dict) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
-        Validate a dataset with given validor.
-        `validator` is a CertValidator class,
-        `validator_cfg` is a dictionary with validator paramaters that will be passed to the initializer.
+        Analyse a dataset with given analyser.
+        `analyser` is a CertAnalyser class,
+        `analyser_cfg` is a dictionary with analyser paramaters that will be passed to the initializer.
 
-        Call to validator is performed like this: validator(cert_chain, **validator_cfg).
+        Call to analyser is performed like this: analyser(cert_chain, **analyser_cfg).
 
-        Return tuple of validated Datasets.
+        Return tuple of analysed Datasets.
         &#34;&#34;&#34;</code></pre>
 </details>
 </section>
@@ -148,7 +148,7 @@ class DatasetManager(ABC):
 <dl>
 <dt id="cevast.dataset.managers.manager.DatasetManager"><code class="flex name class">
 <span>class <span class="ident">DatasetManager</span></span>
-<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 5), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
+<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 9), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>An abstract DatasetManager class representing an interface that can be used to perform
@@ -222,10 +222,10 @@ running separatelly). Running a series might also be more optimized.</p>
         &#34;&#34;&#34;
 
     @abstractmethod
-    def analyse(self, methods: list = None) -&gt; Tuple[Dataset]:
+    def filter(self, methods: list = None) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
-        Analyse a dataset with given methods.
-        Return tuple of analysed Datasets.
+        Filter a dataset with given methods.
+        Return tuple of filtered Datasets.
         &#34;&#34;&#34;
 
     @abstractmethod
@@ -237,15 +237,15 @@ running separatelly). Running a series might also be more optimized.</p>
         &#34;&#34;&#34;
 
     @abstractmethod
-    def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
+    def analyse(self, analyser: Type[CertAnalyser], analyser_cfg: dict) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
-        Validate a dataset with given validor.
-        `validator` is a CertValidator class,
-        `validator_cfg` is a dictionary with validator paramaters that will be passed to the initializer.
+        Analyse a dataset with given analyser.
+        `analyser` is a CertAnalyser class,
+        `analyser_cfg` is a dictionary with analyser paramaters that will be passed to the initializer.
 
-        Call to validator is performed like this: validator(cert_chain, **validator_cfg).
+        Call to analyser is performed like this: analyser(cert_chain, **analyser_cfg).
 
-        Return tuple of validated Datasets.
+        Return tuple of analysed Datasets.
         &#34;&#34;&#34;</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -274,19 +274,27 @@ def my_abstract_classmethod(cls, &hellip;):
 <h3>Methods</h3>
 <dl>
 <dt id="cevast.dataset.managers.manager.DatasetManager.analyse"><code class="name flex">
-<span>def <span class="ident">analyse</span></span>(<span>self, methods: list = None) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
+<span>def <span class="ident">analyse</span></span>(<span>self, analyser: Type[<a title="cevast.analysis.cert_analyser.CertAnalyser" href="../../analysis/cert_analyser.html#cevast.analysis.cert_analyser.CertAnalyser">CertAnalyser</a>], analyser_cfg: dict) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Analyse a dataset with given methods.
-Return tuple of analysed Datasets.</p></div>
+<div class="desc"><p>Analyse a dataset with given analyser.
+<code>analyser</code> is a CertAnalyser class,
+<code>analyser_cfg</code> is a dictionary with analyser paramaters that will be passed to the initializer.</p>
+<p>Call to analyser is performed like this: analyser(cert_chain, **analyser_cfg).</p>
+<p>Return tuple of analysed Datasets.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def analyse(self, methods: list = None) -&gt; Tuple[Dataset]:
+def analyse(self, analyser: Type[CertAnalyser], analyser_cfg: dict) -&gt; Tuple[Dataset]:
     &#34;&#34;&#34;
-    Analyse a dataset with given methods.
+    Analyse a dataset with given analyser.
+    `analyser` is a CertAnalyser class,
+    `analyser_cfg` is a dictionary with analyser paramaters that will be passed to the initializer.
+
+    Call to analyser is performed like this: analyser(cert_chain, **analyser_cfg).
+
     Return tuple of analysed Datasets.
     &#34;&#34;&#34;</code></pre>
 </details>
@@ -308,6 +316,24 @@ def collect(self, api_key: str = None) -&gt; Tuple[Dataset]:
     Collect a dataset.
     `api_key` is API access key that might be needed to retrieve datasets (depends on type implementation).
     Return tuple of collected Datasets.
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="cevast.dataset.managers.manager.DatasetManager.filter"><code class="name flex">
+<span>def <span class="ident">filter</span></span>(<span>self, methods: list = None) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Filter a dataset with given methods.
+Return tuple of filtered Datasets.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def filter(self, methods: list = None) -&gt; Tuple[Dataset]:
+    &#34;&#34;&#34;
+    Filter a dataset with given methods.
+    Return tuple of filtered Datasets.
     &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
@@ -357,32 +383,6 @@ def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -&gt; None:
     &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
-<dt id="cevast.dataset.managers.manager.DatasetManager.validate"><code class="name flex">
-<span>def <span class="ident">validate</span></span>(<span>self, validator: Type[<a title="cevast.validation.validator.CertValidator" href="../../validation/validator.html#cevast.validation.validator.CertValidator">CertValidator</a>], validator_cfg: dict) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Validate a dataset with given validor.
-<code>validator</code> is a CertValidator class,
-<code>validator_cfg</code> is a dictionary with validator paramaters that will be passed to the initializer.</p>
-<p>Call to validator is performed like this: validator(cert_chain, **validator_cfg).</p>
-<p>Return tuple of validated Datasets.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@abstractmethod
-def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
-    &#34;&#34;&#34;
-    Validate a dataset with given validor.
-    `validator` is a CertValidator class,
-    `validator_cfg` is a dictionary with validator paramaters that will be passed to the initializer.
-
-    Call to validator is performed like this: validator(cert_chain, **validator_cfg).
-
-    Return tuple of validated Datasets.
-    &#34;&#34;&#34;</code></pre>
-</details>
-</dd>
 </dl>
 </dd>
 <dt id="cevast.dataset.managers.manager.DatasetManagerTask"><code class="flex name class">
@@ -399,9 +399,9 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
     &#34;&#34;&#34;Enumeration of DatasetManager Tasks&#34;&#34;&#34;
 
     COLLECT = 1
-    ANALYSE = 2
+    FILTER = 2
     PARSE = 3
-    VALIDATE = 4
+    ANALYSE = 4
 
     @classmethod
     def validate(cls, state: Union[&#39;DatasetManagerTask&#39;, str]) -&gt; bool:
@@ -431,11 +431,11 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="cevast.dataset.managers.manager.DatasetManagerTask.PARSE"><code class="name">var <span class="ident">PARSE</span></code></dt>
+<dt id="cevast.dataset.managers.manager.DatasetManagerTask.FILTER"><code class="name">var <span class="ident">FILTER</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="cevast.dataset.managers.manager.DatasetManagerTask.VALIDATE"><code class="name">var <span class="ident">VALIDATE</span></code></dt>
+<dt id="cevast.dataset.managers.manager.DatasetManagerTask.PARSE"><code class="name">var <span class="ident">PARSE</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -463,9 +463,9 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.analyse" href="#cevast.dataset.managers.manager.DatasetManager.analyse">analyse</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.collect" href="#cevast.dataset.managers.manager.DatasetManager.collect">collect</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.dataset_type" href="#cevast.dataset.managers.manager.DatasetManager.dataset_type">dataset_type</a></code></li>
+<li><code><a title="cevast.dataset.managers.manager.DatasetManager.filter" href="#cevast.dataset.managers.manager.DatasetManager.filter">filter</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.parse" href="#cevast.dataset.managers.manager.DatasetManager.parse">parse</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.run" href="#cevast.dataset.managers.manager.DatasetManager.run">run</a></code></li>
-<li><code><a title="cevast.dataset.managers.manager.DatasetManager.validate" href="#cevast.dataset.managers.manager.DatasetManager.validate">validate</a></code></li>
 </ul>
 </li>
 <li>
@@ -473,8 +473,8 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
 <ul class="">
 <li><code><a title="cevast.dataset.managers.manager.DatasetManagerTask.ANALYSE" href="#cevast.dataset.managers.manager.DatasetManagerTask.ANALYSE">ANALYSE</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManagerTask.COLLECT" href="#cevast.dataset.managers.manager.DatasetManagerTask.COLLECT">COLLECT</a></code></li>
+<li><code><a title="cevast.dataset.managers.manager.DatasetManagerTask.FILTER" href="#cevast.dataset.managers.manager.DatasetManagerTask.FILTER">FILTER</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManagerTask.PARSE" href="#cevast.dataset.managers.manager.DatasetManagerTask.PARSE">PARSE</a></code></li>
-<li><code><a title="cevast.dataset.managers.manager.DatasetManagerTask.VALIDATE" href="#cevast.dataset.managers.manager.DatasetManagerTask.VALIDATE">VALIDATE</a></code></li>
 </ul>
 </li>
 </ul>

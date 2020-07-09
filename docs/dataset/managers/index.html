@@ -62,7 +62,7 @@ from .rapid import RapidDatasetManager</code></pre>
 <dl>
 <dt id="cevast.dataset.managers.DatasetManager"><code class="flex name class">
 <span>class <span class="ident">DatasetManager</span></span>
-<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 5), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
+<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 9), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>An abstract DatasetManager class representing an interface that can be used to perform
@@ -136,10 +136,10 @@ running separatelly). Running a series might also be more optimized.</p>
         &#34;&#34;&#34;
 
     @abstractmethod
-    def analyse(self, methods: list = None) -&gt; Tuple[Dataset]:
+    def filter(self, methods: list = None) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
-        Analyse a dataset with given methods.
-        Return tuple of analysed Datasets.
+        Filter a dataset with given methods.
+        Return tuple of filtered Datasets.
         &#34;&#34;&#34;
 
     @abstractmethod
@@ -151,15 +151,15 @@ running separatelly). Running a series might also be more optimized.</p>
         &#34;&#34;&#34;
 
     @abstractmethod
-    def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
+    def analyse(self, analyser: Type[CertAnalyser], analyser_cfg: dict) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
-        Validate a dataset with given validor.
-        `validator` is a CertValidator class,
-        `validator_cfg` is a dictionary with validator paramaters that will be passed to the initializer.
+        Analyse a dataset with given analyser.
+        `analyser` is a CertAnalyser class,
+        `analyser_cfg` is a dictionary with analyser paramaters that will be passed to the initializer.
 
-        Call to validator is performed like this: validator(cert_chain, **validator_cfg).
+        Call to analyser is performed like this: analyser(cert_chain, **analyser_cfg).
 
-        Return tuple of validated Datasets.
+        Return tuple of analysed Datasets.
         &#34;&#34;&#34;</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -188,19 +188,27 @@ def my_abstract_classmethod(cls, &hellip;):
 <h3>Methods</h3>
 <dl>
 <dt id="cevast.dataset.managers.DatasetManager.analyse"><code class="name flex">
-<span>def <span class="ident">analyse</span></span>(<span>self, methods: list = None) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
+<span>def <span class="ident">analyse</span></span>(<span>self, analyser: Type[<a title="cevast.analysis.cert_analyser.CertAnalyser" href="../../analysis/cert_analyser.html#cevast.analysis.cert_analyser.CertAnalyser">CertAnalyser</a>], analyser_cfg: dict) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Analyse a dataset with given methods.
-Return tuple of analysed Datasets.</p></div>
+<div class="desc"><p>Analyse a dataset with given analyser.
+<code>analyser</code> is a CertAnalyser class,
+<code>analyser_cfg</code> is a dictionary with analyser paramaters that will be passed to the initializer.</p>
+<p>Call to analyser is performed like this: analyser(cert_chain, **analyser_cfg).</p>
+<p>Return tuple of analysed Datasets.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def analyse(self, methods: list = None) -&gt; Tuple[Dataset]:
+def analyse(self, analyser: Type[CertAnalyser], analyser_cfg: dict) -&gt; Tuple[Dataset]:
     &#34;&#34;&#34;
-    Analyse a dataset with given methods.
+    Analyse a dataset with given analyser.
+    `analyser` is a CertAnalyser class,
+    `analyser_cfg` is a dictionary with analyser paramaters that will be passed to the initializer.
+
+    Call to analyser is performed like this: analyser(cert_chain, **analyser_cfg).
+
     Return tuple of analysed Datasets.
     &#34;&#34;&#34;</code></pre>
 </details>
@@ -222,6 +230,24 @@ def collect(self, api_key: str = None) -&gt; Tuple[Dataset]:
     Collect a dataset.
     `api_key` is API access key that might be needed to retrieve datasets (depends on type implementation).
     Return tuple of collected Datasets.
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="cevast.dataset.managers.DatasetManager.filter"><code class="name flex">
+<span>def <span class="ident">filter</span></span>(<span>self, methods: list = None) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Filter a dataset with given methods.
+Return tuple of filtered Datasets.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def filter(self, methods: list = None) -&gt; Tuple[Dataset]:
+    &#34;&#34;&#34;
+    Filter a dataset with given methods.
+    Return tuple of filtered Datasets.
     &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
@@ -271,32 +297,6 @@ def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -&gt; None:
     &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
-<dt id="cevast.dataset.managers.DatasetManager.validate"><code class="name flex">
-<span>def <span class="ident">validate</span></span>(<span>self, validator: Type[<a title="cevast.validation.validator.CertValidator" href="../../validation/validator.html#cevast.validation.validator.CertValidator">CertValidator</a>], validator_cfg: dict) -> Tuple[<a title="cevast.dataset.dataset.Dataset" href="../dataset.html#cevast.dataset.dataset.Dataset">Dataset</a>]</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Validate a dataset with given validor.
-<code>validator</code> is a CertValidator class,
-<code>validator_cfg</code> is a dictionary with validator paramaters that will be passed to the initializer.</p>
-<p>Call to validator is performed like this: validator(cert_chain, **validator_cfg).</p>
-<p>Return tuple of validated Datasets.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@abstractmethod
-def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
-    &#34;&#34;&#34;
-    Validate a dataset with given validor.
-    `validator` is a CertValidator class,
-    `validator_cfg` is a dictionary with validator paramaters that will be passed to the initializer.
-
-    Call to validator is performed like this: validator(cert_chain, **validator_cfg).
-
-    Return tuple of validated Datasets.
-    &#34;&#34;&#34;</code></pre>
-</details>
-</dd>
 </dl>
 </dd>
 <dt id="cevast.dataset.managers.DatasetManagerTask"><code class="flex name class">
@@ -313,9 +313,9 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
     &#34;&#34;&#34;Enumeration of DatasetManager Tasks&#34;&#34;&#34;
 
     COLLECT = 1
-    ANALYSE = 2
+    FILTER = 2
     PARSE = 3
-    VALIDATE = 4
+    ANALYSE = 4
 
     @classmethod
     def validate(cls, state: Union[&#39;DatasetManagerTask&#39;, str]) -&gt; bool:
@@ -345,11 +345,11 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="cevast.dataset.managers.DatasetManagerTask.PARSE"><code class="name">var <span class="ident">PARSE</span></code></dt>
+<dt id="cevast.dataset.managers.DatasetManagerTask.FILTER"><code class="name">var <span class="ident">FILTER</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="cevast.dataset.managers.DatasetManagerTask.VALIDATE"><code class="name">var <span class="ident">VALIDATE</span></code></dt>
+<dt id="cevast.dataset.managers.DatasetManagerTask.PARSE"><code class="name">var <span class="ident">PARSE</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -357,7 +357,7 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
 </dd>
 <dt id="cevast.dataset.managers.RapidDatasetManager"><code class="flex name class">
 <span>class <span class="ident">RapidDatasetManager</span></span>
-<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 5), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
+<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 9), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>DatasetManager interface implementation of RAPID dataset type.</p>
@@ -382,7 +382,7 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
 
     # TODO add date range
     # TODO make ports optional
-    # TODO support port range in signle validate or parse tasks
+    # TODO support port range in single validate or parse tasks
     def __init__(self, repository: str, date: datetime.date = datetime.today().date(),
                  ports: Tuple[str] = (&#39;443&#39;,), cpu_cores: int = 1):
         self._repository = repository
@@ -407,8 +407,8 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
                     collected_datasets = self.collect(**params)
                     log.info(&#34;Collected datasets: %s&#34;, collected_datasets)
 
-                # Runs analyzing TASK
-                elif task == DatasetManagerTask.ANALYSE:
+                # Runs filtering TASK
+                elif task == DatasetManagerTask.FILTER:
                     raise NotImplementedError  # Not implemented yet
 
                 # Runs parsing TASK, parsed datasets might be used in next task
@@ -419,13 +419,13 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
                         parsed_datasets = self.parse(**params)
                     log.info(&#34;Parsed datasets: %s&#34;, parsed_datasets)
 
-                # Runs validation TASK
-                elif task == DatasetManagerTask.VALIDATE:
+                # Runs analytical TASK
+                elif task == DatasetManagerTask.ANALYSE:
                     if parsed_datasets:
-                        validated_datasets = self.__validate(datasets=parsed_datasets, **params)
+                        analysed_datasets = self.__analyse(datasets=parsed_datasets, **params)
                     else:  # If some datasets were just parsed in pipeline, use these
-                        validated_datasets = self.validate(**params)
-                    log.info(&#34;Validated datasets: %s&#34;, validated_datasets)
+                        analysed_datasets = self.analyse(**params)
+                    log.info(&#34;Analysed datasets: %s&#34;, analysed_datasets)
         except TypeError:
             log.exception(&#34;Error when running task pipeline, are the arguments set correctly?&#34;)
         log.info(&#34;Finished&#34;)
@@ -455,11 +455,11 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
         parsed = self.__parse(certdb=certdb, datasets=datasets)
         return parsed if parsed else None
 
-    def validate(self, validator: CertValidator, validator_cfg: dict) -&gt; Tuple[Dataset]:
+    def analyse(self, analyser: CertAnalyser, analyser_cfg: dict) -&gt; Tuple[Dataset]:
         datasets = self.__init_datasets()
-        # Validate datasets
-        validated = self.__validate(datasets=datasets, validator=validator, validator_cfg=validator_cfg)
-        return validated if validated else None
+        # Analyse datasets
+        analysed = self.__analyse(datasets=datasets, analyser=analyser, analyser_cfg=analyser_cfg)
+        return analysed if analysed else None
 
     def __init_datasets(self) -&gt; Tuple[Dataset]:
         return tuple(Dataset(self._repository, self.dataset_type, self.__date_id, port) for port in self._ports)
@@ -512,26 +512,26 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
         log.info(&#39;Parsing finished&#39;)
         return tuple(parsable) if parsable else None
 
-    def __validate(self, datasets: Tuple[Dataset], validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
-        log.info(&#39;Validation started&#39;)
-        validatable = []
+    def __analyse(self, datasets: Tuple[Dataset], analyser: Type[CertAnalyser], analyser_cfg: dict) -&gt; Tuple[Dataset]:
+        log.info(&#39;Analysis started&#39;)
+        analysable = []
 
         for dataset in datasets:
             chain_file = dataset.full_path(DatasetState.PARSED, self._CHAINS_NAME_SUFFIX, True)
             if chain_file:
-                validatable.append(dataset)
-                filename = os.path.join(dataset.path(DatasetState.VALIDATED), dataset.static_filename)
-                # Open validator as context manager
-                with validator(output_file=filename, processes=self._cpu_cores, **validator_cfg) as validator_ctx:
-                    log.info(&#34;Will validate dataset: %s&#34;, dataset.static_filename)
+                analysable.append(dataset)
+                filename = os.path.join(dataset.path(DatasetState.ANALYSED), dataset.static_filename)
+                # Open CertAnalyser as context manager
+                with analyser(output_file=filename, processes=self._cpu_cores, **analyser_cfg) as analyser_ctx:
+                    log.info(&#34;Will analyse dataset: %s&#34;, dataset.static_filename)
                     for host, chain in RapidParser.read_chains(chain_file):
-                        validator_ctx.schedule(host, chain)
-                    # Indicate that no more validation data will be scheduled
-                    validator_ctx.done()
-                    log.info(&#34;Dataset validation finished&#34;)
+                        analyser_ctx.schedule(host, chain)
+                    # Indicate that no more data for analysis will be scheduled
+                    analyser_ctx.done()
+                    log.info(&#34;Dataset analysis finished&#34;)
 
-        log.info(&#39;Validation finished&#39;)
-        return tuple(validatable) if validatable else None</code></pre>
+        log.info(&#39;Analysis finished&#39;)
+        return tuple(analysable) if analysable else None</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -545,9 +545,9 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.analyse" href="manager.html#cevast.dataset.managers.manager.DatasetManager.analyse">analyse</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.collect" href="manager.html#cevast.dataset.managers.manager.DatasetManager.collect">collect</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.dataset_type" href="manager.html#cevast.dataset.managers.manager.DatasetManager.dataset_type">dataset_type</a></code></li>
+<li><code><a title="cevast.dataset.managers.manager.DatasetManager.filter" href="manager.html#cevast.dataset.managers.manager.DatasetManager.filter">filter</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.parse" href="manager.html#cevast.dataset.managers.manager.DatasetManager.parse">parse</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.run" href="manager.html#cevast.dataset.managers.manager.DatasetManager.run">run</a></code></li>
-<li><code><a title="cevast.dataset.managers.manager.DatasetManager.validate" href="manager.html#cevast.dataset.managers.manager.DatasetManager.validate">validate</a></code></li>
 </ul>
 </li>
 </ul>
@@ -580,9 +580,9 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
 <li><code><a title="cevast.dataset.managers.DatasetManager.analyse" href="#cevast.dataset.managers.DatasetManager.analyse">analyse</a></code></li>
 <li><code><a title="cevast.dataset.managers.DatasetManager.collect" href="#cevast.dataset.managers.DatasetManager.collect">collect</a></code></li>
 <li><code><a title="cevast.dataset.managers.DatasetManager.dataset_type" href="#cevast.dataset.managers.DatasetManager.dataset_type">dataset_type</a></code></li>
+<li><code><a title="cevast.dataset.managers.DatasetManager.filter" href="#cevast.dataset.managers.DatasetManager.filter">filter</a></code></li>
 <li><code><a title="cevast.dataset.managers.DatasetManager.parse" href="#cevast.dataset.managers.DatasetManager.parse">parse</a></code></li>
 <li><code><a title="cevast.dataset.managers.DatasetManager.run" href="#cevast.dataset.managers.DatasetManager.run">run</a></code></li>
-<li><code><a title="cevast.dataset.managers.DatasetManager.validate" href="#cevast.dataset.managers.DatasetManager.validate">validate</a></code></li>
 </ul>
 </li>
 <li>
@@ -590,8 +590,8 @@ def validate(self, validator: Type[CertValidator], validator_cfg: dict) -&gt; Tu
 <ul class="">
 <li><code><a title="cevast.dataset.managers.DatasetManagerTask.ANALYSE" href="#cevast.dataset.managers.DatasetManagerTask.ANALYSE">ANALYSE</a></code></li>
 <li><code><a title="cevast.dataset.managers.DatasetManagerTask.COLLECT" href="#cevast.dataset.managers.DatasetManagerTask.COLLECT">COLLECT</a></code></li>
+<li><code><a title="cevast.dataset.managers.DatasetManagerTask.FILTER" href="#cevast.dataset.managers.DatasetManagerTask.FILTER">FILTER</a></code></li>
 <li><code><a title="cevast.dataset.managers.DatasetManagerTask.PARSE" href="#cevast.dataset.managers.DatasetManagerTask.PARSE">PARSE</a></code></li>
-<li><code><a title="cevast.dataset.managers.DatasetManagerTask.VALIDATE" href="#cevast.dataset.managers.DatasetManagerTask.VALIDATE">VALIDATE</a></code></li>
 </ul>
 </li>
 <li>

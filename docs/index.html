@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.8.1" />
 <title>cevast API documentation</title>
-<meta name="description" content="CEVAST is a set of tools for collection and validation of X.509 certificate datasets …" />
+<meta name="description" content="CEVAST is a set of tools for collection and analysis of X.509 certificate datasets …" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
@@ -20,7 +20,7 @@
 <h1 class="title">Package <code>cevast</code></h1>
 </header>
 <section id="section-intro">
-<p>CEVAST is a set of tools for collection and validation of X.509 certificate datasets.</p>
+<p>CEVAST is a set of tools for collection and analysis of X.509 certificate datasets.</p>
 <h1 id="cevast-certificate-validation-statistics-tool">Cevast: Certificate Validation Statistics Tool</h1>
 <p><img alt="Python application" src="https://github.com/crocs-muni/cert-validation-stats/workflows/Python%20application/badge.svg?branch=master"></p>
 <h2 id="installation">Installation</h2>
@@ -37,7 +37,7 @@ python3.6 setup.py install &ndash;user</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
-CEVAST is a set of tools for collection and validation of X.509 certificate datasets.
+CEVAST is a set of tools for collection and analysis of X.509 certificate datasets.
 
 .. include:: ../README.md
 &#34;&#34;&#34;
@@ -49,6 +49,10 @@ __author__ = &#39;Radim Podola&#39;</code></pre>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
+<dt><code class="name"><a title="cevast.analysis" href="analysis/index.html">cevast.analysis</a></code></dt>
+<dd>
+<div class="desc"><p>This package contains analytical functions and tools for quantitative analysis of certificate datasets.</p></div>
+</dd>
 <dt><code class="name"><a title="cevast.certdb" href="certdb/index.html">cevast.certdb</a></code></dt>
 <dd>
 <div class="desc"><p>CertDB is a database managing X.509 certificates.</p></div>
@@ -64,10 +68,6 @@ __author__ = &#39;Radim Podola&#39;</code></pre>
 <dt><code class="name"><a title="cevast.utils" href="utils/index.html">cevast.utils</a></code></dt>
 <dd>
 <div class="desc"><p>Utils is a collection providing various functions for Cevast needs.</p></div>
-</dd>
-<dt><code class="name"><a title="cevast.validation" href="validation/index.html">cevast.validation</a></code></dt>
-<dd>
-<div class="desc"><p>This package contains tools for certificate datasets validation.</p></div>
 </dd>
 </dl>
 </section>
@@ -91,11 +91,11 @@ __author__ = &#39;Radim Podola&#39;</code></pre>
 <ul id="index">
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
+<li><code><a title="cevast.analysis" href="analysis/index.html">cevast.analysis</a></code></li>
 <li><code><a title="cevast.certdb" href="certdb/index.html">cevast.certdb</a></code></li>
 <li><code><a title="cevast.cli" href="cli.html">cevast.cli</a></code></li>
 <li><code><a title="cevast.dataset" href="dataset/index.html">cevast.dataset</a></code></li>
 <li><code><a title="cevast.utils" href="utils/index.html">cevast.utils</a></code></li>
-<li><code><a title="cevast.validation" href="validation/index.html">cevast.validation</a></code></li>
 </ul>
 </li>
 </ul>

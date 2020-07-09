@@ -91,7 +91,7 @@ class CertDB(CertDBReadOnly):
         """
 
     @abstractmethod
-    def delete(self, cert_id: str):
+    def delete(self, cert_id: str) -> None:
         """
         Delete the certificate from the database.
 

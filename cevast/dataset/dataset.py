@@ -49,9 +49,9 @@ class DatasetState(IntEnum):
     """Enumaration class of all supported Dataset states."""
 
     COLLECTED = 1  # Dataset was collected and is available in a raw format
-    ANALYZED = 2  # Dataset was analyzed
+    FILTERED = 2  # Dataset was fitered
     PARSED = 3  # Dataset was parsed to internal format, certificates were stored to CertDB
-    VALIDATED = 4  # Dataset was already run through validation, result might be available
+    ANALYSED = 4  # Dataset was already run through analysis, result might be available
 
     @classmethod
     def validate(cls, state: Union['DatasetState', str]) -> bool:
@@ -82,7 +82,7 @@ class Dataset:
         - COLLECTED
         - ANALYZED
         - PARSED
-        - VALIDATED
+        - ANALYSED
 
     Full Dataset path template: {repository}/{type}/{state}/{date_id}[_{port}][_suffix].{extension}
     """

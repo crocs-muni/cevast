@@ -1,5 +1,5 @@
 """
-CEVAST is a set of tools for collection and validation of X.509 certificate datasets.
+CEVAST is a set of tools for collection and analysis of X.509 certificate datasets.
 
 .. include:: ../README.md
 """

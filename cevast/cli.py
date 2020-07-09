@@ -5,7 +5,7 @@ from datetime import datetime
 from cevast.certdb import CertFileDB
 from cevast.dataset import DatasetManagerFactory, DatasetManagerTask, DatasetType
 from cevast.utils.logging import setup_cevast_logger
-from cevast.validation import ChainValidator
+from cevast.analysis import ChainValidator
 
 
 # based on cpus set process_id
@@ -60,18 +60,19 @@ def cli():
         return None
 
     tasks = []
-    validator_cfg = {'certdb': db}
+    #analyser_cfg = {'certdb': db, 'methods': ['botan']}
+    analyser_cfg = {'certdb': db}
     for args_task in args.task:
-        if DatasetManagerTask.validate(args_task):
+        if DatasetManagerTask.analyse(args_task):
             task = DatasetManagerTask[args_task]
             params = {}
             if task == DatasetManagerTask.COLLECT:
                 pass
             elif task == DatasetManagerTask.PARSE:
                 params['certdb'] = db
-            elif task == DatasetManagerTask.VALIDATE:
-                params['validator_cfg'] = validator_cfg
-                params['validator'] = ChainValidator
+            elif task == DatasetManagerTask.ANALYSE:
+                params['analyser_cfg'] = analyser_cfg
+                params['analyser'] = ChainValidator
 
             tasks.append((task, params))
     print(tasks)

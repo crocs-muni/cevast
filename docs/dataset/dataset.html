@@ -76,9 +76,9 @@ class DatasetState(IntEnum):
     &#34;&#34;&#34;Enumaration class of all supported Dataset states.&#34;&#34;&#34;
 
     COLLECTED = 1  # Dataset was collected and is available in a raw format
-    ANALYZED = 2  # Dataset was analyzed
+    FILTERED = 2  # Dataset was fitered
     PARSED = 3  # Dataset was parsed to internal format, certificates were stored to CertDB
-    VALIDATED = 4  # Dataset was already run through validation, result might be available
+    ANALYSED = 4  # Dataset was already run through analysis, result might be available
 
     @classmethod
     def validate(cls, state: Union[&#39;DatasetState&#39;, str]) -&gt; bool:
@@ -109,7 +109,7 @@ class Dataset:
         - COLLECTED
         - ANALYZED
         - PARSED
-        - VALIDATED
+        - ANALYSED
 
     Full Dataset path template: {repository}/{type}/{state}/{date_id}[_{port}][_suffix].{extension}
     &#34;&#34;&#34;
@@ -381,7 +381,7 @@ Each dataset can be found at 1-N of the following generalized states:
 - COLLECTED
 - ANALYZED
 - PARSED
-- VALIDATED</p>
+- ANALYSED</p>
 <p>Full Dataset path template: {repository}/{type}/{state}/{date_id}[_{port}][_suffix].{extension}</p>
 <p>Initialize the static identifiers</p></div>
 <details class="source">
@@ -404,7 +404,7 @@ Each dataset can be found at 1-N of the following generalized states:
         - COLLECTED
         - ANALYZED
         - PARSED
-        - VALIDATED
+        - ANALYSED
 
     Full Dataset path template: {repository}/{type}/{state}/{date_id}[_{port}][_suffix].{extension}
     &#34;&#34;&#34;
@@ -1111,9 +1111,9 @@ The parameters represent the output filter options.</p></div>
     &#34;&#34;&#34;Enumaration class of all supported Dataset states.&#34;&#34;&#34;
 
     COLLECTED = 1  # Dataset was collected and is available in a raw format
-    ANALYZED = 2  # Dataset was analyzed
+    FILTERED = 2  # Dataset was fitered
     PARSED = 3  # Dataset was parsed to internal format, certificates were stored to CertDB
-    VALIDATED = 4  # Dataset was already run through validation, result might be available
+    ANALYSED = 4  # Dataset was already run through analysis, result might be available
 
     @classmethod
     def validate(cls, state: Union[&#39;DatasetState&#39;, str]) -&gt; bool:
@@ -1135,7 +1135,7 @@ The parameters represent the output filter options.</p></div>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="cevast.dataset.dataset.DatasetState.ANALYZED"><code class="name">var <span class="ident">ANALYZED</span></code></dt>
+<dt id="cevast.dataset.dataset.DatasetState.ANALYSED"><code class="name">var <span class="ident">ANALYSED</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1143,11 +1143,11 @@ The parameters represent the output filter options.</p></div>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="cevast.dataset.dataset.DatasetState.PARSED"><code class="name">var <span class="ident">PARSED</span></code></dt>
+<dt id="cevast.dataset.dataset.DatasetState.FILTERED"><code class="name">var <span class="ident">FILTERED</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="cevast.dataset.dataset.DatasetState.VALIDATED"><code class="name">var <span class="ident">VALIDATED</span></code></dt>
+<dt id="cevast.dataset.dataset.DatasetState.PARSED"><code class="name">var <span class="ident">PARSED</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1255,10 +1255,10 @@ The parameters represent the output filter options.</p></div>
 <li>
 <h4><code><a title="cevast.dataset.dataset.DatasetState" href="#cevast.dataset.dataset.DatasetState">DatasetState</a></code></h4>
 <ul class="">
-<li><code><a title="cevast.dataset.dataset.DatasetState.ANALYZED" href="#cevast.dataset.dataset.DatasetState.ANALYZED">ANALYZED</a></code></li>
+<li><code><a title="cevast.dataset.dataset.DatasetState.ANALYSED" href="#cevast.dataset.dataset.DatasetState.ANALYSED">ANALYSED</a></code></li>
 <li><code><a title="cevast.dataset.dataset.DatasetState.COLLECTED" href="#cevast.dataset.dataset.DatasetState.COLLECTED">COLLECTED</a></code></li>
+<li><code><a title="cevast.dataset.dataset.DatasetState.FILTERED" href="#cevast.dataset.dataset.DatasetState.FILTERED">FILTERED</a></code></li>
 <li><code><a title="cevast.dataset.dataset.DatasetState.PARSED" href="#cevast.dataset.dataset.DatasetState.PARSED">PARSED</a></code></li>
-<li><code><a title="cevast.dataset.dataset.DatasetState.VALIDATED" href="#cevast.dataset.dataset.DatasetState.VALIDATED">VALIDATED</a></code></li>
 </ul>
 </li>
 <li>

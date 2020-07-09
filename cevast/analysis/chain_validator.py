@@ -1,4 +1,4 @@
-"""This module contains ChainValidator implementation of CertValidator interface."""
+"""This module contains ChainValidator implementation of CertAnalyser interface."""
 
 import os
 import logging
@@ -8,7 +8,7 @@ import signal
 from typing import List
 from cevast.certdb import CertDB, CertNotAvailableError
 from cevast.utils import make_PEM_filename
-from .validator import CertValidator
+from .cert_analyser import CertAnalyser
 from .methods import get_all, get, show
 
 
@@ -16,9 +16,9 @@ log = logging.getLogger(__name__)
 
 
 # TODO fix logging into rotatefilehandler within multiprocessing
-class ChainValidator(CertValidator):
+class ChainValidator(CertAnalyser):
     """
-    CertValidator implementation that validates certificate chains. Validate function
+    CertAnalyser implementation that validates certificate chains. Validation function
     accepts host name and list of certificate IDs (fingerprints). Those certificates are
     searched in provided CertDB.
 

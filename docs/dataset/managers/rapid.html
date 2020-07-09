@@ -33,7 +33,7 @@ from collections import OrderedDict
 from datetime import datetime
 from typing import Tuple, Type
 from cevast.certdb import CertDB
-from cevast.validation import CertValidator
+from cevast.analysis import CertAnalyser
 from .manager import DatasetManager, DatasetManagerTask
 from ..parsers import RapidParser
 from ..collectors import RapidCollector
@@ -56,7 +56,7 @@ class RapidDatasetManager(DatasetManager):
 
     # TODO add date range
     # TODO make ports optional
-    # TODO support port range in signle validate or parse tasks
+    # TODO support port range in single validate or parse tasks
     def __init__(self, repository: str, date: datetime.date = datetime.today().date(),
                  ports: Tuple[str] = (&#39;443&#39;,), cpu_cores: int = 1):
         self._repository = repository
@@ -81,8 +81,8 @@ class RapidDatasetManager(DatasetManager):
                     collected_datasets = self.collect(**params)
                     log.info(&#34;Collected datasets: %s&#34;, collected_datasets)
 
-                # Runs analyzing TASK
-                elif task == DatasetManagerTask.ANALYSE:
+                # Runs filtering TASK
+                elif task == DatasetManagerTask.FILTER:
                     raise NotImplementedError  # Not implemented yet
 
                 # Runs parsing TASK, parsed datasets might be used in next task
@@ -93,13 +93,13 @@ class RapidDatasetManager(DatasetManager):
                         parsed_datasets = self.parse(**params)
                     log.info(&#34;Parsed datasets: %s&#34;, parsed_datasets)
 
-                # Runs validation TASK
-                elif task == DatasetManagerTask.VALIDATE:
+                # Runs analytical TASK
+                elif task == DatasetManagerTask.ANALYSE:
                     if parsed_datasets:
-                        validated_datasets = self.__validate(datasets=parsed_datasets, **params)
+                        analysed_datasets = self.__analyse(datasets=parsed_datasets, **params)
                     else:  # If some datasets were just parsed in pipeline, use these
-                        validated_datasets = self.validate(**params)
-                    log.info(&#34;Validated datasets: %s&#34;, validated_datasets)
+                        analysed_datasets = self.analyse(**params)
+                    log.info(&#34;Analysed datasets: %s&#34;, analysed_datasets)
         except TypeError:
             log.exception(&#34;Error when running task pipeline, are the arguments set correctly?&#34;)
         log.info(&#34;Finished&#34;)
@@ -129,11 +129,11 @@ class RapidDatasetManager(DatasetManager):
         parsed = self.__parse(certdb=certdb, datasets=datasets)
         return parsed if parsed else None
 
-    def validate(self, validator: CertValidator, validator_cfg: dict) -&gt; Tuple[Dataset]:
+    def analyse(self, analyser: CertAnalyser, analyser_cfg: dict) -&gt; Tuple[Dataset]:
         datasets = self.__init_datasets()
-        # Validate datasets
-        validated = self.__validate(datasets=datasets, validator=validator, validator_cfg=validator_cfg)
-        return validated if validated else None
+        # Analyse datasets
+        analysed = self.__analyse(datasets=datasets, analyser=analyser, analyser_cfg=analyser_cfg)
+        return analysed if analysed else None
 
     def __init_datasets(self) -&gt; Tuple[Dataset]:
         return tuple(Dataset(self._repository, self.dataset_type, self.__date_id, port) for port in self._ports)
@@ -186,26 +186,26 @@ class RapidDatasetManager(DatasetManager):
         log.info(&#39;Parsing finished&#39;)
         return tuple(parsable) if parsable else None
 
-    def __validate(self, datasets: Tuple[Dataset], validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
-        log.info(&#39;Validation started&#39;)
-        validatable = []
+    def __analyse(self, datasets: Tuple[Dataset], analyser: Type[CertAnalyser], analyser_cfg: dict) -&gt; Tuple[Dataset]:
+        log.info(&#39;Analysis started&#39;)
+        analysable = []
 
         for dataset in datasets:
             chain_file = dataset.full_path(DatasetState.PARSED, self._CHAINS_NAME_SUFFIX, True)
             if chain_file:
-                validatable.append(dataset)
-                filename = os.path.join(dataset.path(DatasetState.VALIDATED), dataset.static_filename)
-                # Open validator as context manager
-                with validator(output_file=filename, processes=self._cpu_cores, **validator_cfg) as validator_ctx:
-                    log.info(&#34;Will validate dataset: %s&#34;, dataset.static_filename)
+                analysable.append(dataset)
+                filename = os.path.join(dataset.path(DatasetState.ANALYSED), dataset.static_filename)
+                # Open CertAnalyser as context manager
+                with analyser(output_file=filename, processes=self._cpu_cores, **analyser_cfg) as analyser_ctx:
+                    log.info(&#34;Will analyse dataset: %s&#34;, dataset.static_filename)
                     for host, chain in RapidParser.read_chains(chain_file):
-                        validator_ctx.schedule(host, chain)
-                    # Indicate that no more validation data will be scheduled
-                    validator_ctx.done()
-                    log.info(&#34;Dataset validation finished&#34;)
+                        analyser_ctx.schedule(host, chain)
+                    # Indicate that no more data for analysis will be scheduled
+                    analyser_ctx.done()
+                    log.info(&#34;Dataset analysis finished&#34;)
 
-        log.info(&#39;Validation finished&#39;)
-        return tuple(validatable) if validatable else None</code></pre>
+        log.info(&#39;Analysis finished&#39;)
+        return tuple(analysable) if analysable else None</code></pre>
 </details>
 </section>
 <section>
@@ -219,7 +219,7 @@ class RapidDatasetManager(DatasetManager):
 <dl>
 <dt id="cevast.dataset.managers.rapid.RapidDatasetManager"><code class="flex name class">
 <span>class <span class="ident">RapidDatasetManager</span></span>
-<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 5), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
+<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 9), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>DatasetManager interface implementation of RAPID dataset type.</p>
@@ -244,7 +244,7 @@ class RapidDatasetManager(DatasetManager):
 
     # TODO add date range
     # TODO make ports optional
-    # TODO support port range in signle validate or parse tasks
+    # TODO support port range in single validate or parse tasks
     def __init__(self, repository: str, date: datetime.date = datetime.today().date(),
                  ports: Tuple[str] = (&#39;443&#39;,), cpu_cores: int = 1):
         self._repository = repository
@@ -269,8 +269,8 @@ class RapidDatasetManager(DatasetManager):
                     collected_datasets = self.collect(**params)
                     log.info(&#34;Collected datasets: %s&#34;, collected_datasets)
 
-                # Runs analyzing TASK
-                elif task == DatasetManagerTask.ANALYSE:
+                # Runs filtering TASK
+                elif task == DatasetManagerTask.FILTER:
                     raise NotImplementedError  # Not implemented yet
 
                 # Runs parsing TASK, parsed datasets might be used in next task
@@ -281,13 +281,13 @@ class RapidDatasetManager(DatasetManager):
                         parsed_datasets = self.parse(**params)
                     log.info(&#34;Parsed datasets: %s&#34;, parsed_datasets)
 
-                # Runs validation TASK
-                elif task == DatasetManagerTask.VALIDATE:
+                # Runs analytical TASK
+                elif task == DatasetManagerTask.ANALYSE:
                     if parsed_datasets:
-                        validated_datasets = self.__validate(datasets=parsed_datasets, **params)
+                        analysed_datasets = self.__analyse(datasets=parsed_datasets, **params)
                     else:  # If some datasets were just parsed in pipeline, use these
-                        validated_datasets = self.validate(**params)
-                    log.info(&#34;Validated datasets: %s&#34;, validated_datasets)
+                        analysed_datasets = self.analyse(**params)
+                    log.info(&#34;Analysed datasets: %s&#34;, analysed_datasets)
         except TypeError:
             log.exception(&#34;Error when running task pipeline, are the arguments set correctly?&#34;)
         log.info(&#34;Finished&#34;)
@@ -317,11 +317,11 @@ class RapidDatasetManager(DatasetManager):
         parsed = self.__parse(certdb=certdb, datasets=datasets)
         return parsed if parsed else None
 
-    def validate(self, validator: CertValidator, validator_cfg: dict) -&gt; Tuple[Dataset]:
+    def analyse(self, analyser: CertAnalyser, analyser_cfg: dict) -&gt; Tuple[Dataset]:
         datasets = self.__init_datasets()
-        # Validate datasets
-        validated = self.__validate(datasets=datasets, validator=validator, validator_cfg=validator_cfg)
-        return validated if validated else None
+        # Analyse datasets
+        analysed = self.__analyse(datasets=datasets, analyser=analyser, analyser_cfg=analyser_cfg)
+        return analysed if analysed else None
 
     def __init_datasets(self) -&gt; Tuple[Dataset]:
         return tuple(Dataset(self._repository, self.dataset_type, self.__date_id, port) for port in self._ports)
@@ -374,26 +374,26 @@ class RapidDatasetManager(DatasetManager):
         log.info(&#39;Parsing finished&#39;)
         return tuple(parsable) if parsable else None
 
-    def __validate(self, datasets: Tuple[Dataset], validator: Type[CertValidator], validator_cfg: dict) -&gt; Tuple[Dataset]:
-        log.info(&#39;Validation started&#39;)
-        validatable = []
+    def __analyse(self, datasets: Tuple[Dataset], analyser: Type[CertAnalyser], analyser_cfg: dict) -&gt; Tuple[Dataset]:
+        log.info(&#39;Analysis started&#39;)
+        analysable = []
 
         for dataset in datasets:
             chain_file = dataset.full_path(DatasetState.PARSED, self._CHAINS_NAME_SUFFIX, True)
             if chain_file:
-                validatable.append(dataset)
-                filename = os.path.join(dataset.path(DatasetState.VALIDATED), dataset.static_filename)
-                # Open validator as context manager
-                with validator(output_file=filename, processes=self._cpu_cores, **validator_cfg) as validator_ctx:
-                    log.info(&#34;Will validate dataset: %s&#34;, dataset.static_filename)
+                analysable.append(dataset)
+                filename = os.path.join(dataset.path(DatasetState.ANALYSED), dataset.static_filename)
+                # Open CertAnalyser as context manager
+                with analyser(output_file=filename, processes=self._cpu_cores, **analyser_cfg) as analyser_ctx:
+                    log.info(&#34;Will analyse dataset: %s&#34;, dataset.static_filename)
                     for host, chain in RapidParser.read_chains(chain_file):
-                        validator_ctx.schedule(host, chain)
-                    # Indicate that no more validation data will be scheduled
-                    validator_ctx.done()
-                    log.info(&#34;Dataset validation finished&#34;)
+                        analyser_ctx.schedule(host, chain)
+                    # Indicate that no more data for analysis will be scheduled
+                    analyser_ctx.done()
+                    log.info(&#34;Dataset analysis finished&#34;)
 
-        log.info(&#39;Validation finished&#39;)
-        return tuple(validatable) if validatable else None</code></pre>
+        log.info(&#39;Analysis finished&#39;)
+        return tuple(analysable) if analysable else None</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -407,9 +407,9 @@ class RapidDatasetManager(DatasetManager):
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.analyse" href="manager.html#cevast.dataset.managers.manager.DatasetManager.analyse">analyse</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.collect" href="manager.html#cevast.dataset.managers.manager.DatasetManager.collect">collect</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.dataset_type" href="manager.html#cevast.dataset.managers.manager.DatasetManager.dataset_type">dataset_type</a></code></li>
+<li><code><a title="cevast.dataset.managers.manager.DatasetManager.filter" href="manager.html#cevast.dataset.managers.manager.DatasetManager.filter">filter</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.parse" href="manager.html#cevast.dataset.managers.manager.DatasetManager.parse">parse</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.run" href="manager.html#cevast.dataset.managers.manager.DatasetManager.run">run</a></code></li>
-<li><code><a title="cevast.dataset.managers.manager.DatasetManager.validate" href="manager.html#cevast.dataset.managers.manager.DatasetManager.validate">validate</a></code></li>
 </ul>
 </li>
 </ul>

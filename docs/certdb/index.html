@@ -92,7 +92,7 @@ from .composite_cert_db import CompositeCertDB, CompositeCertDBReadOnly</code></
         &#34;&#34;&#34;
 
     @abstractmethod
-    def delete(self, cert_id: str):
+    def delete(self, cert_id: str) -&gt; None:
         &#34;&#34;&#34;
         Delete the certificate from the database.
 
@@ -156,7 +156,7 @@ def commit(self) -&gt; Tuple[int, int]:
 </details>
 </dd>
 <dt id="cevast.certdb.CertDB.delete"><code class="name flex">
-<span>def <span class="ident">delete</span></span>(<span>self, cert_id: str)</span>
+<span>def <span class="ident">delete</span></span>(<span>self, cert_id: str) -> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Delete the certificate from the database.</p>
@@ -168,7 +168,7 @@ in the current transaction is deleted immediatelly.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def delete(self, cert_id: str):
+def delete(self, cert_id: str) -&gt; None:
     &#34;&#34;&#34;
     Delete the certificate from the database.
 
