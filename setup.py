@@ -7,7 +7,6 @@ with open('README.md', 'r') as fh:
 setup(
     name='cevast',
     version=cevast.__version__,
-    py_modules=['cevast'],
     author='Radim Podola',
     author_email='rpodola@gmail.com',
     description=cevast.__doc__,
@@ -22,8 +21,12 @@ setup(
          'Operating System :: OS Independent',
     ],
     python_requires='>=3.6',
+    install_requires=[
+        'Click',
+    ],
     entry_points='''
         [console_scripts]
         cevast=cevast.cli:cli
+        certdb=cevast.certdb.cli:certdb_group
     ''',
 )
