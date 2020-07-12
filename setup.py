@@ -30,5 +30,6 @@ setup(
         certdb=cevast.certdb.cli:certdb_group
         datasetrepository=cevast.dataset.cli:dataset_repository_group
         datasetmanager=cevast.dataset.cli:manager_group
+        certanalyse=cevast.analysis.cli:analysis_group
     ''',
 )

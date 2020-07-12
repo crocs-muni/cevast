@@ -1,6 +1,6 @@
 """Group of CLI commands used for CertDB management and access.
 
-   Entry point of CertDB module CLI.
+   Entry point of `certdb` CLI.
 
 .. important::
    In development! Only CertFileDB and read-only methods are supported now.

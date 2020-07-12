@@ -1,4 +1,7 @@
-"""Group of CLI commands used for Dataset management and tasks."""
+"""Group of CLI commands used for Dataset management and tasks.
+
+   Entry point of `datasetmanager` and `datasetrepository` CLI.
+"""
 
 import os
 from datetime import datetime

@@ -5,6 +5,7 @@ import click
 from .utils.logging import setup_cevast_logger
 from .certdb import cli as certdb_cli
 from .dataset import cli as dataset_cli
+from .analysis import cli as analysis_cli
 
 
 @click.group()
@@ -28,6 +29,7 @@ def cli(ctx, debug, cpu):
 cli.add_command(certdb_cli.certdb_group)
 cli.add_command(dataset_cli.dataset_repository_group)
 cli.add_command(dataset_cli.manager_group)
+cli.add_command(analysis_cli.analysis_group)
 
 
 if __name__ == "__main__":

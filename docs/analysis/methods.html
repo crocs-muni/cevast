@@ -120,12 +120,14 @@ def get(name: str):
     return METHODS.get(name, None)
 
 
-def show():
+def show(include_docstring: bool=False):
     &#34;&#34;&#34;Show available validation methods.&#34;&#34;&#34;
+    if include_docstring:
+        return tuple(&#34;{:&lt;8} - {}&#34;.format(name, func.__doc__) for name, func in METHODS.items())
     return tuple(METHODS.keys())
 
 
-def _cl_open_ssl(chain: list) -&gt; str:
+def _openssl(chain: list) -&gt; str:
     &#34;&#34;&#34;Validate SSL Certificate chain via command line openssl. Return result code.&#34;&#34;&#34;
     try:
         inter = []
@@ -148,7 +150,7 @@ def _cl_open_ssl(chain: list) -&gt; str:
         return UNKNOWN
 
 
-def _PyOpenSSL(chain: list) -&gt; str:
+def _pyopenssl(chain: list) -&gt; str:
     &#34;&#34;&#34;Validate SSL Certificate chain using python OpenSSL library. Return result code.&#34;&#34;&#34;
     inter = []
     server = chain[0]
@@ -208,14 +210,14 @@ def _botan(chain: list) -&gt; str:
 # try to load command-line openssl
 log.info(&#34;Loading cli openssl&#34;)
 if is_tool_available(&#34;openssl&#34;):
-    METHODS[&#39;openssl&#39;] = _cl_open_ssl
+    METHODS[&#39;openssl&#39;] = _openssl
 
 # try to load PyOpenSSL
 log.info(&#34;Loading PyOpenSSL&#34;)
 try:
     from OpenSSL import crypto  # pylint: disable=E0401
 
-    METHODS[&#39;pyopenssl&#39;] = _PyOpenSSL
+    METHODS[&#39;pyopenssl&#39;] = _pyopenssl
 except ModuleNotFoundError:
     log.info(&#34;PyOpenSSL failed to import - check if installed&#34;)
 
@@ -294,7 +296,7 @@ if __name__ == &#34;__main__&#34;:
 </details>
 </dd>
 <dt id="cevast.analysis.methods.show"><code class="name flex">
-<span>def <span class="ident">show</span></span>(<span>)</span>
+<span>def <span class="ident">show</span></span>(<span>include_docstring: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Show available validation methods.</p></div>
@@ -302,8 +304,10 @@ if __name__ == &#34;__main__&#34;:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def show():
+<pre><code class="python">def show(include_docstring: bool=False):
     &#34;&#34;&#34;Show available validation methods.&#34;&#34;&#34;
+    if include_docstring:
+        return tuple(&#34;{:&lt;8} - {}&#34;.format(name, func.__doc__) for name, func in METHODS.items())
     return tuple(METHODS.keys())</code></pre>
 </details>
 </dd>

@@ -65,12 +65,14 @@ def get(name: str):
     return METHODS.get(name, None)
 
 
-def show():
+def show(include_docstring: bool=False):
     """Show available validation methods."""
+    if include_docstring:
+        return tuple("{:<8} - {}".format(name, func.__doc__) for name, func in METHODS.items())
     return tuple(METHODS.keys())
 
 
-def _cl_open_ssl(chain: list) -> str:
+def _openssl(chain: list) -> str:
     """Validate SSL Certificate chain via command line openssl. Return result code."""
     try:
         inter = []
@@ -93,7 +95,7 @@ def _cl_open_ssl(chain: list) -> str:
         return UNKNOWN
 
 
-def _PyOpenSSL(chain: list) -> str:
+def _pyopenssl(chain: list) -> str:
     """Validate SSL Certificate chain using python OpenSSL library. Return result code."""
     inter = []
     server = chain[0]
@@ -153,14 +155,14 @@ def _botan(chain: list) -> str:
 # try to load command-line openssl
 log.info("Loading cli openssl")
 if is_tool_available("openssl"):
-    METHODS['openssl'] = _cl_open_ssl
+    METHODS['openssl'] = _openssl
 
 # try to load PyOpenSSL
 log.info("Loading PyOpenSSL")
 try:
     from OpenSSL import crypto  # pylint: disable=E0401
 
-    METHODS['pyopenssl'] = _PyOpenSSL
+    METHODS['pyopenssl'] = _pyopenssl
 except ModuleNotFoundError:
     log.info("PyOpenSSL failed to import - check if installed")
 
