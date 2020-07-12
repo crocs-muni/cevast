@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.8.1" />
 <title>cevast.dataset.collectors.rapid API documentation</title>
-<meta name="description" content="This module contains collector implementation for Rapid dataset type." />
+<meta name="description" content="This module contains collector implementation for Rapid dataset source." />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
@@ -20,12 +20,12 @@
 <h1 class="title">Module <code>cevast.dataset.collectors.rapid</code></h1>
 </header>
 <section id="section-intro">
-<p>This module contains collector implementation for Rapid dataset type.</p>
+<p>This module contains collector implementation for Rapid dataset source.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">&#34;&#34;&#34;This module contains collector implementation for Rapid dataset type.&#34;&#34;&#34;
+<pre><code class="python">&#34;&#34;&#34;This module contains collector implementation for Rapid dataset source.&#34;&#34;&#34;
 # pylint: disable=E1101
 #   - known Pylint issue https://github.com/PyCQA/pylint/issues/1411
 
@@ -35,7 +35,7 @@ import re
 from datetime import datetime
 from typing import List, Union, Tuple
 import requests
-from cevast.dataset.dataset import DatasetType, DatasetCollectionError, Dataset
+from cevast.dataset.dataset import DatasetSource, DatasetCollectionError, Dataset
 
 __author__ = &#39;Radim Podola&#39;
 
@@ -51,7 +51,7 @@ class RapidCollector:
     Set the key to &#34;RAPID_API_KEY&#34; enviroment variable or provide upon initialization.
     &#34;&#34;&#34;
 
-    dataset_type = DatasetType.RAPID.name
+    dataset_source = DatasetSource.RAPID.name
     _DATASETS_URL = &#34;https://us.api.insight.rapid7.com/opendata/studies/sonar.ssl/&#34;
     _DOWNLOAD_URL = _DATASETS_URL + &#34;{}/download/&#34;
     _QUOTA_URL = &#34;https://us.api.insight.rapid7.com/opendata/quota/&#34;
@@ -214,7 +214,7 @@ Set the key to "RAPID_API_KEY" enviroment variable or provide upon initializatio
     Set the key to &#34;RAPID_API_KEY&#34; enviroment variable or provide upon initialization.
     &#34;&#34;&#34;
 
-    dataset_type = DatasetType.RAPID.name
+    dataset_source = DatasetSource.RAPID.name
     _DATASETS_URL = &#34;https://us.api.insight.rapid7.com/opendata/studies/sonar.ssl/&#34;
     _DOWNLOAD_URL = _DATASETS_URL + &#34;{}/download/&#34;
     _QUOTA_URL = &#34;https://us.api.insight.rapid7.com/opendata/quota/&#34;
@@ -346,7 +346,7 @@ Set the key to "RAPID_API_KEY" enviroment variable or provide upon initializatio
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="cevast.dataset.collectors.rapid.RapidCollector.dataset_type"><code class="name">var <span class="ident">dataset_type</span></code></dt>
+<dt id="cevast.dataset.collectors.rapid.RapidCollector.dataset_source"><code class="name">var <span class="ident">dataset_source</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -523,7 +523,7 @@ Older datasets with different formats are not supported now.</p></div>
 <h4><code><a title="cevast.dataset.collectors.rapid.RapidCollector" href="#cevast.dataset.collectors.rapid.RapidCollector">RapidCollector</a></code></h4>
 <ul class="">
 <li><code><a title="cevast.dataset.collectors.rapid.RapidCollector.collect" href="#cevast.dataset.collectors.rapid.RapidCollector.collect">collect</a></code></li>
-<li><code><a title="cevast.dataset.collectors.rapid.RapidCollector.dataset_type" href="#cevast.dataset.collectors.rapid.RapidCollector.dataset_type">dataset_type</a></code></li>
+<li><code><a title="cevast.dataset.collectors.rapid.RapidCollector.dataset_source" href="#cevast.dataset.collectors.rapid.RapidCollector.dataset_source">dataset_source</a></code></li>
 <li><code><a title="cevast.dataset.collectors.rapid.RapidCollector.get_datasets" href="#cevast.dataset.collectors.rapid.RapidCollector.get_datasets">get_datasets</a></code></li>
 <li><code><a title="cevast.dataset.collectors.rapid.RapidCollector.get_quota" href="#cevast.dataset.collectors.rapid.RapidCollector.get_quota">get_quota</a></code></li>
 <li><code><a title="cevast.dataset.collectors.rapid.RapidCollector.quota_left" href="#cevast.dataset.collectors.rapid.RapidCollector.quota_left">quota_left</a></code></li>

@@ -1,4 +1,4 @@
-"""This module contains DatasetManager interface implementation of RAPID dataset type."""
+"""This module contains DatasetManager interface implementation of RAPID dataset source."""
 
 import os
 import logging
@@ -10,7 +10,7 @@ from cevast.analysis import CertAnalyser
 from .manager import DatasetManager, DatasetManagerTask
 from ..unifiers import RapidUnifier
 from ..collectors import RapidCollector
-from ..dataset import DatasetType, Dataset, DatasetState, DatasetUnificationError
+from ..dataset import DatasetSource, Dataset, DatasetState, DatasetUnificationError
 
 __author__ = 'Radim Podola'
 
@@ -18,14 +18,14 @@ log = logging.getLogger(__name__)
 
 
 class RapidDatasetManager(DatasetManager):
-    """DatasetManager interface implementation of RAPID dataset type."""
+    """DatasetManager interface implementation of RAPID dataset source."""
 
     _CERT_NAME_SUFFIX = 'certs'
     _HOSTS_NAME_SUFFIX = 'hosts'
     _CHAINS_NAME_SUFFIX = 'chains'
     _BROKEN_CHAINS_NAME_SUFFIX = 'broken_chains'
 
-    dataset_type = DatasetType.RAPID.name
+    dataset_source = DatasetSource.RAPID.name
 
     # TODO add date range
     # TODO make ports optional
@@ -81,7 +81,7 @@ class RapidDatasetManager(DatasetManager):
         log.info('Collecting started')
         collector = RapidCollector(api_key)
         # Create dummy dataset only to get target dir
-        dummy_dataset = Dataset(self._repository, self.dataset_type, self.__date_id, None)
+        dummy_dataset = Dataset(self._repository, self.dataset_source, self.__date_id, None)
         download_dir = dummy_dataset.path(DatasetState.COLLECTED)
         # Collect datasets
         collected = collector.collect(
@@ -109,7 +109,7 @@ class RapidDatasetManager(DatasetManager):
         return analysed if analysed else None
 
     def __init_datasets(self) -> Tuple[Dataset]:
-        return tuple(Dataset(self._repository, self.dataset_type, self.__date_id, port) for port in self._ports)
+        return tuple(Dataset(self._repository, self.dataset_source, self.__date_id, port) for port in self._ports)
 
     def __init_unifier(self, dataset: Dataset) -> RapidUnifier:
         certs_file = dataset.full_path(DatasetState.COLLECTED, self._CERT_NAME_SUFFIX, True)

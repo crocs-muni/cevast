@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.8.1" />
 <title>cevast.dataset.managers.rapid API documentation</title>
-<meta name="description" content="This module contains DatasetManager interface implementation of RAPID dataset type." />
+<meta name="description" content="This module contains DatasetManager interface implementation of RAPID dataset source." />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
@@ -20,12 +20,12 @@
 <h1 class="title">Module <code>cevast.dataset.managers.rapid</code></h1>
 </header>
 <section id="section-intro">
-<p>This module contains DatasetManager interface implementation of RAPID dataset type.</p>
+<p>This module contains DatasetManager interface implementation of RAPID dataset source.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">&#34;&#34;&#34;This module contains DatasetManager interface implementation of RAPID dataset type.&#34;&#34;&#34;
+<pre><code class="python">&#34;&#34;&#34;This module contains DatasetManager interface implementation of RAPID dataset source.&#34;&#34;&#34;
 
 import os
 import logging
@@ -37,7 +37,7 @@ from cevast.analysis import CertAnalyser
 from .manager import DatasetManager, DatasetManagerTask
 from ..unifiers import RapidUnifier
 from ..collectors import RapidCollector
-from ..dataset import DatasetType, Dataset, DatasetState, DatasetUnificationError
+from ..dataset import DatasetSource, Dataset, DatasetState, DatasetUnificationError
 
 __author__ = &#39;Radim Podola&#39;
 
@@ -45,14 +45,14 @@ log = logging.getLogger(__name__)
 
 
 class RapidDatasetManager(DatasetManager):
-    &#34;&#34;&#34;DatasetManager interface implementation of RAPID dataset type.&#34;&#34;&#34;
+    &#34;&#34;&#34;DatasetManager interface implementation of RAPID dataset source.&#34;&#34;&#34;
 
     _CERT_NAME_SUFFIX = &#39;certs&#39;
     _HOSTS_NAME_SUFFIX = &#39;hosts&#39;
     _CHAINS_NAME_SUFFIX = &#39;chains&#39;
     _BROKEN_CHAINS_NAME_SUFFIX = &#39;broken_chains&#39;
 
-    dataset_type = DatasetType.RAPID.name
+    dataset_source = DatasetSource.RAPID.name
 
     # TODO add date range
     # TODO make ports optional
@@ -108,7 +108,7 @@ class RapidDatasetManager(DatasetManager):
         log.info(&#39;Collecting started&#39;)
         collector = RapidCollector(api_key)
         # Create dummy dataset only to get target dir
-        dummy_dataset = Dataset(self._repository, self.dataset_type, self.__date_id, None)
+        dummy_dataset = Dataset(self._repository, self.dataset_source, self.__date_id, None)
         download_dir = dummy_dataset.path(DatasetState.COLLECTED)
         # Collect datasets
         collected = collector.collect(
@@ -136,7 +136,7 @@ class RapidDatasetManager(DatasetManager):
         return analysed if analysed else None
 
     def __init_datasets(self) -&gt; Tuple[Dataset]:
-        return tuple(Dataset(self._repository, self.dataset_type, self.__date_id, port) for port in self._ports)
+        return tuple(Dataset(self._repository, self.dataset_source, self.__date_id, port) for port in self._ports)
 
     def __init_unifier(self, dataset: Dataset) -&gt; RapidUnifier:
         certs_file = dataset.full_path(DatasetState.COLLECTED, self._CERT_NAME_SUFFIX, True)
@@ -222,7 +222,7 @@ class RapidDatasetManager(DatasetManager):
 <span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 13), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>DatasetManager interface implementation of RAPID dataset type.</p>
+<div class="desc"><p>DatasetManager interface implementation of RAPID dataset source.</p>
 <p>Initialize Manager.
 <code>repository</code> is dataset repository,
 'date' is date,
@@ -233,14 +233,14 @@ class RapidDatasetManager(DatasetManager):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class RapidDatasetManager(DatasetManager):
-    &#34;&#34;&#34;DatasetManager interface implementation of RAPID dataset type.&#34;&#34;&#34;
+    &#34;&#34;&#34;DatasetManager interface implementation of RAPID dataset source.&#34;&#34;&#34;
 
     _CERT_NAME_SUFFIX = &#39;certs&#39;
     _HOSTS_NAME_SUFFIX = &#39;hosts&#39;
     _CHAINS_NAME_SUFFIX = &#39;chains&#39;
     _BROKEN_CHAINS_NAME_SUFFIX = &#39;broken_chains&#39;
 
-    dataset_type = DatasetType.RAPID.name
+    dataset_source = DatasetSource.RAPID.name
 
     # TODO add date range
     # TODO make ports optional
@@ -296,7 +296,7 @@ class RapidDatasetManager(DatasetManager):
         log.info(&#39;Collecting started&#39;)
         collector = RapidCollector(api_key)
         # Create dummy dataset only to get target dir
-        dummy_dataset = Dataset(self._repository, self.dataset_type, self.__date_id, None)
+        dummy_dataset = Dataset(self._repository, self.dataset_source, self.__date_id, None)
         download_dir = dummy_dataset.path(DatasetState.COLLECTED)
         # Collect datasets
         collected = collector.collect(
@@ -324,7 +324,7 @@ class RapidDatasetManager(DatasetManager):
         return analysed if analysed else None
 
     def __init_datasets(self) -&gt; Tuple[Dataset]:
-        return tuple(Dataset(self._repository, self.dataset_type, self.__date_id, port) for port in self._ports)
+        return tuple(Dataset(self._repository, self.dataset_source, self.__date_id, port) for port in self._ports)
 
     def __init_unifier(self, dataset: Dataset) -&gt; RapidUnifier:
         certs_file = dataset.full_path(DatasetState.COLLECTED, self._CERT_NAME_SUFFIX, True)
@@ -406,7 +406,7 @@ class RapidDatasetManager(DatasetManager):
 <ul class="hlist">
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.analyse" href="manager.html#cevast.dataset.managers.manager.DatasetManager.analyse">analyse</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.collect" href="manager.html#cevast.dataset.managers.manager.DatasetManager.collect">collect</a></code></li>
-<li><code><a title="cevast.dataset.managers.manager.DatasetManager.dataset_type" href="manager.html#cevast.dataset.managers.manager.DatasetManager.dataset_type">dataset_type</a></code></li>
+<li><code><a title="cevast.dataset.managers.manager.DatasetManager.dataset_source" href="manager.html#cevast.dataset.managers.manager.DatasetManager.dataset_source">dataset_source</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.filter" href="manager.html#cevast.dataset.managers.manager.DatasetManager.filter">filter</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.run" href="manager.html#cevast.dataset.managers.manager.DatasetManager.run">run</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.unify" href="manager.html#cevast.dataset.managers.manager.DatasetManager.unify">unify</a></code></li>

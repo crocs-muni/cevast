@@ -49,7 +49,7 @@ from .rapid import RapidDatasetManager</code></pre>
 </dd>
 <dt><code class="name"><a title="cevast.dataset.managers.rapid" href="rapid.html">cevast.dataset.managers.rapid</a></code></dt>
 <dd>
-<div class="desc"><p>This module contains DatasetManager interface implementation of RAPID dataset type.</p></div>
+<div class="desc"><p>This module contains DatasetManager interface implementation of RAPID dataset source.</p></div>
 </dd>
 </dl>
 </section>
@@ -100,9 +100,9 @@ running separatelly). Running a series might also be more optimized.</p>
 
     @property
     @abstractclassmethod
-    def dataset_type(cls) -&gt; DatasetType:
+    def dataset_source(cls) -&gt; DatasetSource:
         &#34;&#34;&#34;
-        Dataset type property used to identify a manager specification.
+        Dataset source property used to identify a manager specification.
         &#34;&#34;&#34;
 
     @abstractmethod
@@ -131,7 +131,7 @@ running separatelly). Running a series might also be more optimized.</p>
     def collect(self, api_key: str = None) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
         Collect a dataset.
-        `api_key` is API access key that might be needed to retrieve datasets (depends on type implementation).
+        `api_key` is API access key that might be needed to retrieve datasets (depends on source implementation).
         Return tuple of collected Datasets.
         &#34;&#34;&#34;
 
@@ -172,7 +172,7 @@ running separatelly). Running a series might also be more optimized.</p>
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="cevast.dataset.managers.DatasetManager.dataset_type"><code class="name">var <span class="ident">dataset_type</span></code></dt>
+<dt id="cevast.dataset.managers.DatasetManager.dataset_source"><code class="name">var <span class="ident">dataset_source</span></code></dt>
 <dd>
 <div class="desc"><p>A decorator indicating abstract classmethods.</p>
 <p>Similar to abstractmethod.</p>
@@ -218,7 +218,7 @@ def analyse(self, analyser: Type[CertAnalyser], analyser_cfg: dict) -&gt; Tuple[
 </code></dt>
 <dd>
 <div class="desc"><p>Collect a dataset.
-<code>api_key</code> is API access key that might be needed to retrieve datasets (depends on type implementation).
+<code>api_key</code> is API access key that might be needed to retrieve datasets (depends on source implementation).
 Return tuple of collected Datasets.</p></div>
 <details class="source">
 <summary>
@@ -228,7 +228,7 @@ Return tuple of collected Datasets.</p></div>
 def collect(self, api_key: str = None) -&gt; Tuple[Dataset]:
     &#34;&#34;&#34;
     Collect a dataset.
-    `api_key` is API access key that might be needed to retrieve datasets (depends on type implementation).
+    `api_key` is API access key that might be needed to retrieve datasets (depends on source implementation).
     Return tuple of collected Datasets.
     &#34;&#34;&#34;</code></pre>
 </details>
@@ -360,7 +360,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
 <span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 13), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>DatasetManager interface implementation of RAPID dataset type.</p>
+<div class="desc"><p>DatasetManager interface implementation of RAPID dataset source.</p>
 <p>Initialize Manager.
 <code>repository</code> is dataset repository,
 'date' is date,
@@ -371,14 +371,14 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class RapidDatasetManager(DatasetManager):
-    &#34;&#34;&#34;DatasetManager interface implementation of RAPID dataset type.&#34;&#34;&#34;
+    &#34;&#34;&#34;DatasetManager interface implementation of RAPID dataset source.&#34;&#34;&#34;
 
     _CERT_NAME_SUFFIX = &#39;certs&#39;
     _HOSTS_NAME_SUFFIX = &#39;hosts&#39;
     _CHAINS_NAME_SUFFIX = &#39;chains&#39;
     _BROKEN_CHAINS_NAME_SUFFIX = &#39;broken_chains&#39;
 
-    dataset_type = DatasetType.RAPID.name
+    dataset_source = DatasetSource.RAPID.name
 
     # TODO add date range
     # TODO make ports optional
@@ -434,7 +434,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
         log.info(&#39;Collecting started&#39;)
         collector = RapidCollector(api_key)
         # Create dummy dataset only to get target dir
-        dummy_dataset = Dataset(self._repository, self.dataset_type, self.__date_id, None)
+        dummy_dataset = Dataset(self._repository, self.dataset_source, self.__date_id, None)
         download_dir = dummy_dataset.path(DatasetState.COLLECTED)
         # Collect datasets
         collected = collector.collect(
@@ -462,7 +462,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
         return analysed if analysed else None
 
     def __init_datasets(self) -&gt; Tuple[Dataset]:
-        return tuple(Dataset(self._repository, self.dataset_type, self.__date_id, port) for port in self._ports)
+        return tuple(Dataset(self._repository, self.dataset_source, self.__date_id, port) for port in self._ports)
 
     def __init_unifier(self, dataset: Dataset) -&gt; RapidUnifier:
         certs_file = dataset.full_path(DatasetState.COLLECTED, self._CERT_NAME_SUFFIX, True)
@@ -544,7 +544,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
 <ul class="hlist">
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.analyse" href="manager.html#cevast.dataset.managers.manager.DatasetManager.analyse">analyse</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.collect" href="manager.html#cevast.dataset.managers.manager.DatasetManager.collect">collect</a></code></li>
-<li><code><a title="cevast.dataset.managers.manager.DatasetManager.dataset_type" href="manager.html#cevast.dataset.managers.manager.DatasetManager.dataset_type">dataset_type</a></code></li>
+<li><code><a title="cevast.dataset.managers.manager.DatasetManager.dataset_source" href="manager.html#cevast.dataset.managers.manager.DatasetManager.dataset_source">dataset_source</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.filter" href="manager.html#cevast.dataset.managers.manager.DatasetManager.filter">filter</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.run" href="manager.html#cevast.dataset.managers.manager.DatasetManager.run">run</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.unify" href="manager.html#cevast.dataset.managers.manager.DatasetManager.unify">unify</a></code></li>
@@ -579,7 +579,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
 <ul class="two-column">
 <li><code><a title="cevast.dataset.managers.DatasetManager.analyse" href="#cevast.dataset.managers.DatasetManager.analyse">analyse</a></code></li>
 <li><code><a title="cevast.dataset.managers.DatasetManager.collect" href="#cevast.dataset.managers.DatasetManager.collect">collect</a></code></li>
-<li><code><a title="cevast.dataset.managers.DatasetManager.dataset_type" href="#cevast.dataset.managers.DatasetManager.dataset_type">dataset_type</a></code></li>
+<li><code><a title="cevast.dataset.managers.DatasetManager.dataset_source" href="#cevast.dataset.managers.DatasetManager.dataset_source">dataset_source</a></code></li>
 <li><code><a title="cevast.dataset.managers.DatasetManager.filter" href="#cevast.dataset.managers.DatasetManager.filter">filter</a></code></li>
 <li><code><a title="cevast.dataset.managers.DatasetManager.run" href="#cevast.dataset.managers.DatasetManager.run">run</a></code></li>
 <li><code><a title="cevast.dataset.managers.DatasetManager.unify" href="#cevast.dataset.managers.DatasetManager.unify">unify</a></code></li>

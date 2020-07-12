@@ -53,19 +53,19 @@ class DatasetInvalidError(ValueError):
     &#34;&#34;&#34;Raised when the dataset has an invalid identifier.&#34;&#34;&#34;
 
 
-class DatasetType(IntEnum):
-    &#34;&#34;&#34;Enumaration class of all supported Dataset types.&#34;&#34;&#34;
+class DatasetSource(IntEnum):
+    &#34;&#34;&#34;Enumaration class of all supported Dataset sources.&#34;&#34;&#34;
 
     RAPID = 1
     CENSYS = 2
 
     @classmethod
-    def validate(cls, dataset_type: Union[&#39;DatasetType&#39;, str]) -&gt; bool:
-        &#34;&#34;&#34;Validate DatasetType.&#34;&#34;&#34;
-        if isinstance(dataset_type, cls):
-            return dataset_type in cls
-        if isinstance(dataset_type, str):
-            return dataset_type in cls.__members__
+    def validate(cls, source: Union[&#39;DatasetSource&#39;, str]) -&gt; bool:
+        &#34;&#34;&#34;Validate DatasetSource.&#34;&#34;&#34;
+        if isinstance(source, cls):
+            return source in cls
+        if isinstance(source, str):
+            return source in cls.__members__
         return False
 
     def __str__(self):
@@ -97,11 +97,11 @@ class Dataset:
     &#34;&#34;&#34;
     Class representing a single dataset and providing an interface to the dataset on the filesystem.
 
-    Dataset is identified by `dataset_type`, `state` and filename where filename consists of mandatory
+    Dataset is identified by `source`, `state` and filename where filename consists of mandatory
     `date_id`, `port` number and optional suffix. date_id represents the date (or date range) when
     the dataset was created (certificates were collected and added to the dataset) and its string in fomat
     &#34;YYYYMMDD&#34;, port is application port on which was the data collceted, suffix can specify the dataset
-    in various ways and is used to distinguish the files internally. `dataset_type`, `date_id` and `port`
+    in various ways and is used to distinguish the files internally. `source`, `date_id` and `port`
     are static identifiers provided upon object initialization.
 
     The dataset state is dynamic identifier that is the last part of its complete identification at the time.
@@ -111,28 +111,28 @@ class Dataset:
         - UNIFIED
         - ANALYSED
 
-    Full Dataset path template: {repository}/{type}/{state}/{date_id}[_{port}][_suffix].{extension}
+    Full Dataset path template: {repository}/{source}/{state}/{date_id}[_{port}][_suffix].{extension}
     &#34;&#34;&#34;
 
-    def __init__(self, repository: str, dataset_type: Union[DatasetType, str],
+    def __init__(self, repository: str, source: Union[DatasetSource, str],
                  date_id: str, port: Union[str, int], extension: str = &#39;gz&#39;):
         &#34;&#34;&#34;Initialize the static identifiers&#34;&#34;&#34;
         # Validate and init dataset repository
         if not os.path.exists(repository):
             raise DatasetInvalidError(&#34;Repository %s not found&#34; % repository)
         self._repository = os.path.abspath(repository)
-        # Validate and init dataset type
-        if not DatasetType.validate(dataset_type):
-            raise DatasetInvalidError(&#34;Dataset type %s is not valid.&#34; % dataset_type)
-        self._dataset_type = str(dataset_type)
+        # Validate and init dataset source
+        if not DatasetSource.validate(source):
+            raise DatasetInvalidError(&#34;Dataset source %s is not valid.&#34; % source)
+        self._source = str(source)
         self._date_id = date_id
         self._port = str(port) if port is not None else &#39;&#39;
         self._extension = extension
 
     @property
-    def dataset_type(self) -&gt; str:
-        &#34;&#34;&#34;Get the Dataset Type.&#34;&#34;&#34;
-        return self._dataset_type
+    def source(self) -&gt; str:
+        &#34;&#34;&#34;Get the Dataset source.&#34;&#34;&#34;
+        return self._source
 
     @property
     def date(self) -&gt; str:
@@ -160,13 +160,13 @@ class Dataset:
         Initialize Dataset object from the given path,
         or return None if object cannot be initialized.
         &#34;&#34;&#34;
-        template = r&#34;^(?P&lt;repo&gt;\S+)[/\\](?P&lt;type&gt;\S+)[/\\](?P&lt;state&gt;\S+)[/\\](?P&lt;date&gt;\d{8})(_(?P&lt;port&gt;\d+))?(_\S+)?\.(?P&lt;ext&gt;\S+)$&#34;
+        template = r&#34;^(?P&lt;repo&gt;\S+)[/\\](?P&lt;source&gt;\S+)[/\\](?P&lt;state&gt;\S+)[/\\](?P&lt;date&gt;\d{8})(_(?P&lt;port&gt;\d+))?(_\S+)?\.(?P&lt;ext&gt;\S+)$&#34;
         match = re.match(template, path)
         if not match:
             return None
         try:
             return cls(repository=match.group(&#39;repo&#39;),
-                       dataset_type=match.group(&#39;type&#39;),
+                       source=match.group(&#39;source&#39;),
                        date_id=match.group(&#39;date&#39;),
                        port=match.group(&#39;port&#39;),
                        extension=match.group(&#39;ext&#39;),
@@ -193,7 +193,7 @@ class Dataset:
         if not DatasetState.validate(state):
             raise DatasetInvalidError(&#34;Dataset state %s is not valid.&#34; % state)
 
-        path = os.path.join(self._repository, self._dataset_type, str(state))
+        path = os.path.join(self._repository, self._source, str(state))
 
         if physically and not os.path.exists(path):
             log.info(&#34;Path &lt;%s&gt; does not exist yet, will be created.&#34;, path)
@@ -225,8 +225,8 @@ class Dataset:
             os.rmdir(path)
 
     def purge(self) -&gt; None:
-        &#34;&#34;&#34;Delete all datasets of specified type from the repository.&#34;&#34;&#34;
-        shutil.rmtree(os.path.join(self._repository, self._dataset_type), ignore_errors=True)
+        &#34;&#34;&#34;Delete all datasets of specified source from the repository.&#34;&#34;&#34;
+        shutil.rmtree(os.path.join(self._repository, self._source), ignore_errors=True)
 
     def get(self, state: Union[DatasetState, str], suffix: str = &#39;&#39;, full_path: bool = False) -&gt; Tuple[str]:
         &#34;&#34;&#34;Return all datasets stored in the dataset repository matching the paramaters.&#34;&#34;&#34;
@@ -261,13 +261,13 @@ class Dataset:
             shutil.move(os.path.abspath(source), os.path.join(path, filename))
 
     def __str__(self):
-        return os.path.join(self._repository, self._dataset_type, &#34;{}&#34;, Dataset.format_filename(self._date_id, self._port))
+        return os.path.join(self._repository, self._source, &#34;{}&#34;, Dataset.format_filename(self._date_id, self._port))
 
     def __repr__(self):
-        return &#34;&lt;%s.%s dataset_type=%s, date_id=%s, port=%s&gt;&#34; % (
+        return &#34;&lt;%s.%s source=%s, date_id=%s, port=%s&gt;&#34; % (
             self.__class__.__module__,
             self.__class__.__qualname__,
-            self._dataset_type,
+            self._source,
             self._date_id,
             self._port,
         )
@@ -277,10 +277,10 @@ class Dataset:
             # don&#39;t attempt to compare against unrelated types
             return NotImplemented
 
-        return self._port == other.port and self._date_id == other.date and self._dataset_type == other.dataset_type
+        return self._port == other.port and self._date_id == other.date and self._source == other.source
 
     def __hash__(self):
-        return hash((self._port, self._date_id, self._dataset_type))
+        return hash((self._port, self._date_id, self._source))
 
 
 class DatasetRepository:
@@ -294,16 +294,16 @@ class DatasetRepository:
         else:
             raise FileNotFoundError(&#34;Dataset Repository %s not found.&#34; % repository)
 
-    def dumps(self, dataset_type: Union[DatasetType, str] = None,
+    def dumps(self, source: Union[DatasetSource, str] = None,
               state: Union[DatasetState, str] = None, dataset_id: str = &#39;&#39;) -&gt; str:
         &#34;&#34;&#34;
         Return string representation of the specified dataset repository.
         The parameters represent the output filter options.
         &#34;&#34;&#34;
-        repo = self.get(dataset_type, state, dataset_id)
+        repo = self.get(source, state, dataset_id)
         repo_str = &#39;&#39;
-        for d_type, d_states in repo.items():
-            repo_str += &#39;{:&lt;8}: &#39;.format(d_type)
+        for d_src, d_states in repo.items():
+            repo_str += &#39;{:&lt;8}: &#39;.format(d_src)
             first_state = True
 
             for d_state, d_datasets in d_states.items():
@@ -323,46 +323,46 @@ class DatasetRepository:
 
         return repo_str
 
-    def dump(self, dataset_type: Union[DatasetType, str] = None,
+    def dump(self, source: Union[DatasetSource, str] = None,
              state: Union[DatasetState, str] = None, dataset_id: str = &#39;&#39;) -&gt; None:
         &#34;&#34;&#34;
         Print string representation of the specified dataset repository to the STDOUT.
         The parameters represent the output filter options.
         &#34;&#34;&#34;
-        print(self.dumps(dataset_type, state, dataset_id))
+        print(self.dumps(source, state, dataset_id))
 
-    def get(self, dataset_type: Union[DatasetType, str] = None,
+    def get(self, source: Union[DatasetSource, str] = None,
             state: Union[DatasetState, str] = None, dataset_id: str = &#39;&#39;) -&gt; dict:
         &#34;&#34;&#34;
         Return dictionary representation of the specified dataset repository.
         The parameters represent the output filter options.
         &#34;&#34;&#34;
 
-        def get_type() -&gt; dict:
-            ret_type = {}
+        def get_source() -&gt; dict:
+            ret_src = {}
             states = [state] if state else DatasetState
             # Iterate through filtered states and get its datasets
             for d_state in states:
                 ret_state = dataset_path.get(d_state)
                 if ret_state:
-                    ret_type[str(d_state)] = ret_state
-            return ret_type
+                    ret_src[str(d_state)] = ret_state
+            return ret_src
 
-        # Validate dataset type
-        if dataset_type and not DatasetType.validate(dataset_type):
-            raise DatasetInvalidError(&#34;Dataset type %s is not valid.&#34; % dataset_type)
+        # Validate dataset source
+        if source and not DatasetSource.validate(source):
+            raise DatasetInvalidError(&#34;Dataset source %s is not valid.&#34; % source)
         # Validate dataset state
         if state and not DatasetState.validate(state):
             raise DatasetInvalidError(&#34;Dataset state %s is not valid.&#34; % state)
 
         ret_repo = {}
-        types = [dataset_type] if dataset_type else DatasetType
-        # Iterate through filtered types and get its states
-        for d_type in types:
-            dataset_path = Dataset(self.repository, d_type, dataset_id, None)
-            ret_type = get_type()
-            if ret_type:
-                ret_repo[str(d_type)] = ret_type
+        sources = [source] if source else DatasetSource
+        # Iterate through filtered sources and get its states
+        for d_src in sources:
+            dataset_path = Dataset(self.repository, d_src, dataset_id, None)
+            ret_src = get_source()
+            if ret_src:
+                ret_repo[str(d_src)] = ret_src
 
         return ret_repo
 
@@ -381,15 +381,15 @@ class DatasetRepository:
 <dl>
 <dt id="cevast.dataset.dataset.Dataset"><code class="flex name class">
 <span>class <span class="ident">Dataset</span></span>
-<span>(</span><span>repository: str, dataset_type: Union[cevast.dataset.dataset.DatasetType, str], date_id: str, port: Union[str, int], extension: str = 'gz')</span>
+<span>(</span><span>repository: str, source: Union[cevast.dataset.dataset.DatasetSource, str], date_id: str, port: Union[str, int], extension: str = 'gz')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Class representing a single dataset and providing an interface to the dataset on the filesystem.</p>
-<p>Dataset is identified by <code>dataset_type</code>, <code>state</code> and filename where filename consists of mandatory
+<p>Dataset is identified by <code>source</code>, <code>state</code> and filename where filename consists of mandatory
 <code>date_id</code>, <code>port</code> number and optional suffix. date_id represents the date (or date range) when
 the dataset was created (certificates were collected and added to the dataset) and its string in fomat
 "YYYYMMDD", port is application port on which was the data collceted, suffix can specify the dataset
-in various ways and is used to distinguish the files internally. <code>dataset_type</code>, <code>date_id</code> and <code>port</code>
+in various ways and is used to distinguish the files internally. <code>source</code>, <code>date_id</code> and <code>port</code>
 are static identifiers provided upon object initialization.</p>
 <p>The dataset state is dynamic identifier that is the last part of its complete identification at the time.
 Each dataset can be found at 1-N of the following generalized states:
@@ -397,7 +397,7 @@ Each dataset can be found at 1-N of the following generalized states:
 - ANALYZED
 - UNIFIED
 - ANALYSED</p>
-<p>Full Dataset path template: {repository}/{type}/{state}/{date_id}[_{port}][_suffix].{extension}</p>
+<p>Full Dataset path template: {repository}/{source}/{state}/{date_id}[_{port}][_suffix].{extension}</p>
 <p>Initialize the static identifiers</p></div>
 <details class="source">
 <summary>
@@ -407,11 +407,11 @@ Each dataset can be found at 1-N of the following generalized states:
     &#34;&#34;&#34;
     Class representing a single dataset and providing an interface to the dataset on the filesystem.
 
-    Dataset is identified by `dataset_type`, `state` and filename where filename consists of mandatory
+    Dataset is identified by `source`, `state` and filename where filename consists of mandatory
     `date_id`, `port` number and optional suffix. date_id represents the date (or date range) when
     the dataset was created (certificates were collected and added to the dataset) and its string in fomat
     &#34;YYYYMMDD&#34;, port is application port on which was the data collceted, suffix can specify the dataset
-    in various ways and is used to distinguish the files internally. `dataset_type`, `date_id` and `port`
+    in various ways and is used to distinguish the files internally. `source`, `date_id` and `port`
     are static identifiers provided upon object initialization.
 
     The dataset state is dynamic identifier that is the last part of its complete identification at the time.
@@ -421,28 +421,28 @@ Each dataset can be found at 1-N of the following generalized states:
         - UNIFIED
         - ANALYSED
 
-    Full Dataset path template: {repository}/{type}/{state}/{date_id}[_{port}][_suffix].{extension}
+    Full Dataset path template: {repository}/{source}/{state}/{date_id}[_{port}][_suffix].{extension}
     &#34;&#34;&#34;
 
-    def __init__(self, repository: str, dataset_type: Union[DatasetType, str],
+    def __init__(self, repository: str, source: Union[DatasetSource, str],
                  date_id: str, port: Union[str, int], extension: str = &#39;gz&#39;):
         &#34;&#34;&#34;Initialize the static identifiers&#34;&#34;&#34;
         # Validate and init dataset repository
         if not os.path.exists(repository):
             raise DatasetInvalidError(&#34;Repository %s not found&#34; % repository)
         self._repository = os.path.abspath(repository)
-        # Validate and init dataset type
-        if not DatasetType.validate(dataset_type):
-            raise DatasetInvalidError(&#34;Dataset type %s is not valid.&#34; % dataset_type)
-        self._dataset_type = str(dataset_type)
+        # Validate and init dataset source
+        if not DatasetSource.validate(source):
+            raise DatasetInvalidError(&#34;Dataset source %s is not valid.&#34; % source)
+        self._source = str(source)
         self._date_id = date_id
         self._port = str(port) if port is not None else &#39;&#39;
         self._extension = extension
 
     @property
-    def dataset_type(self) -&gt; str:
-        &#34;&#34;&#34;Get the Dataset Type.&#34;&#34;&#34;
-        return self._dataset_type
+    def source(self) -&gt; str:
+        &#34;&#34;&#34;Get the Dataset source.&#34;&#34;&#34;
+        return self._source
 
     @property
     def date(self) -&gt; str:
@@ -470,13 +470,13 @@ Each dataset can be found at 1-N of the following generalized states:
         Initialize Dataset object from the given path,
         or return None if object cannot be initialized.
         &#34;&#34;&#34;
-        template = r&#34;^(?P&lt;repo&gt;\S+)[/\\](?P&lt;type&gt;\S+)[/\\](?P&lt;state&gt;\S+)[/\\](?P&lt;date&gt;\d{8})(_(?P&lt;port&gt;\d+))?(_\S+)?\.(?P&lt;ext&gt;\S+)$&#34;
+        template = r&#34;^(?P&lt;repo&gt;\S+)[/\\](?P&lt;source&gt;\S+)[/\\](?P&lt;state&gt;\S+)[/\\](?P&lt;date&gt;\d{8})(_(?P&lt;port&gt;\d+))?(_\S+)?\.(?P&lt;ext&gt;\S+)$&#34;
         match = re.match(template, path)
         if not match:
             return None
         try:
             return cls(repository=match.group(&#39;repo&#39;),
-                       dataset_type=match.group(&#39;type&#39;),
+                       source=match.group(&#39;source&#39;),
                        date_id=match.group(&#39;date&#39;),
                        port=match.group(&#39;port&#39;),
                        extension=match.group(&#39;ext&#39;),
@@ -503,7 +503,7 @@ Each dataset can be found at 1-N of the following generalized states:
         if not DatasetState.validate(state):
             raise DatasetInvalidError(&#34;Dataset state %s is not valid.&#34; % state)
 
-        path = os.path.join(self._repository, self._dataset_type, str(state))
+        path = os.path.join(self._repository, self._source, str(state))
 
         if physically and not os.path.exists(path):
             log.info(&#34;Path &lt;%s&gt; does not exist yet, will be created.&#34;, path)
@@ -535,8 +535,8 @@ Each dataset can be found at 1-N of the following generalized states:
             os.rmdir(path)
 
     def purge(self) -&gt; None:
-        &#34;&#34;&#34;Delete all datasets of specified type from the repository.&#34;&#34;&#34;
-        shutil.rmtree(os.path.join(self._repository, self._dataset_type), ignore_errors=True)
+        &#34;&#34;&#34;Delete all datasets of specified source from the repository.&#34;&#34;&#34;
+        shutil.rmtree(os.path.join(self._repository, self._source), ignore_errors=True)
 
     def get(self, state: Union[DatasetState, str], suffix: str = &#39;&#39;, full_path: bool = False) -&gt; Tuple[str]:
         &#34;&#34;&#34;Return all datasets stored in the dataset repository matching the paramaters.&#34;&#34;&#34;
@@ -571,13 +571,13 @@ Each dataset can be found at 1-N of the following generalized states:
             shutil.move(os.path.abspath(source), os.path.join(path, filename))
 
     def __str__(self):
-        return os.path.join(self._repository, self._dataset_type, &#34;{}&#34;, Dataset.format_filename(self._date_id, self._port))
+        return os.path.join(self._repository, self._source, &#34;{}&#34;, Dataset.format_filename(self._date_id, self._port))
 
     def __repr__(self):
-        return &#34;&lt;%s.%s dataset_type=%s, date_id=%s, port=%s&gt;&#34; % (
+        return &#34;&lt;%s.%s source=%s, date_id=%s, port=%s&gt;&#34; % (
             self.__class__.__module__,
             self.__class__.__qualname__,
-            self._dataset_type,
+            self._source,
             self._date_id,
             self._port,
         )
@@ -587,10 +587,10 @@ Each dataset can be found at 1-N of the following generalized states:
             # don&#39;t attempt to compare against unrelated types
             return NotImplemented
 
-        return self._port == other.port and self._date_id == other.date and self._dataset_type == other.dataset_type
+        return self._port == other.port and self._date_id == other.date and self._source == other.source
 
     def __hash__(self):
-        return hash((self._port, self._date_id, self._dataset_type))</code></pre>
+        return hash((self._port, self._date_id, self._source))</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
@@ -629,13 +629,13 @@ def from_full_path(cls, path: str) -&gt; &#39;Dataset&#39;:
     Initialize Dataset object from the given path,
     or return None if object cannot be initialized.
     &#34;&#34;&#34;
-    template = r&#34;^(?P&lt;repo&gt;\S+)[/\\](?P&lt;type&gt;\S+)[/\\](?P&lt;state&gt;\S+)[/\\](?P&lt;date&gt;\d{8})(_(?P&lt;port&gt;\d+))?(_\S+)?\.(?P&lt;ext&gt;\S+)$&#34;
+    template = r&#34;^(?P&lt;repo&gt;\S+)[/\\](?P&lt;source&gt;\S+)[/\\](?P&lt;state&gt;\S+)[/\\](?P&lt;date&gt;\d{8})(_(?P&lt;port&gt;\d+))?(_\S+)?\.(?P&lt;ext&gt;\S+)$&#34;
     match = re.match(template, path)
     if not match:
         return None
     try:
         return cls(repository=match.group(&#39;repo&#39;),
-                   dataset_type=match.group(&#39;type&#39;),
+                   source=match.group(&#39;source&#39;),
                    date_id=match.group(&#39;date&#39;),
                    port=match.group(&#39;port&#39;),
                    extension=match.group(&#39;ext&#39;),
@@ -648,19 +648,6 @@ def from_full_path(cls, path: str) -&gt; &#39;Dataset&#39;:
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="cevast.dataset.dataset.Dataset.dataset_type"><code class="name">var <span class="ident">dataset_type</span> : str</code></dt>
-<dd>
-<div class="desc"><p>Get the Dataset Type.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def dataset_type(self) -&gt; str:
-    &#34;&#34;&#34;Get the Dataset Type.&#34;&#34;&#34;
-    return self._dataset_type</code></pre>
-</details>
-</dd>
 <dt id="cevast.dataset.dataset.Dataset.date"><code class="name">var <span class="ident">date</span> : str</code></dt>
 <dd>
 <div class="desc"><p>Get the DATE ID.</p></div>
@@ -698,6 +685,19 @@ def extension(self) -&gt; str:
 def port(self) -&gt; str:
     &#34;&#34;&#34;Get the PORT.&#34;&#34;&#34;
     return self._port</code></pre>
+</details>
+</dd>
+<dt id="cevast.dataset.dataset.Dataset.source"><code class="name">var <span class="ident">source</span> : str</code></dt>
+<dd>
+<div class="desc"><p>Get the Dataset source.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def source(self) -&gt; str:
+    &#34;&#34;&#34;Get the Dataset source.&#34;&#34;&#34;
+    return self._source</code></pre>
 </details>
 </dd>
 <dt id="cevast.dataset.dataset.Dataset.static_filename"><code class="name">var <span class="ident">static_filename</span> : str</code></dt>
@@ -853,7 +853,7 @@ If <code>physically</code> flag is set and and path does not exist, create it.</
     if not DatasetState.validate(state):
         raise DatasetInvalidError(&#34;Dataset state %s is not valid.&#34; % state)
 
-    path = os.path.join(self._repository, self._dataset_type, str(state))
+    path = os.path.join(self._repository, self._source, str(state))
 
     if physically and not os.path.exists(path):
         log.info(&#34;Path &lt;%s&gt; does not exist yet, will be created.&#34;, path)
@@ -865,14 +865,14 @@ If <code>physically</code> flag is set and and path does not exist, create it.</
 <span>def <span class="ident">purge</span></span>(<span>self) -> NoneType</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Delete all datasets of specified type from the repository.</p></div>
+<div class="desc"><p>Delete all datasets of specified source from the repository.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def purge(self) -&gt; None:
-    &#34;&#34;&#34;Delete all datasets of specified type from the repository.&#34;&#34;&#34;
-    shutil.rmtree(os.path.join(self._repository, self._dataset_type), ignore_errors=True)</code></pre>
+    &#34;&#34;&#34;Delete all datasets of specified source from the repository.&#34;&#34;&#34;
+    shutil.rmtree(os.path.join(self._repository, self._source), ignore_errors=True)</code></pre>
 </details>
 </dd>
 </dl>
@@ -938,16 +938,16 @@ If <code>physically</code> flag is set and and path does not exist, create it.</
         else:
             raise FileNotFoundError(&#34;Dataset Repository %s not found.&#34; % repository)
 
-    def dumps(self, dataset_type: Union[DatasetType, str] = None,
+    def dumps(self, source: Union[DatasetSource, str] = None,
               state: Union[DatasetState, str] = None, dataset_id: str = &#39;&#39;) -&gt; str:
         &#34;&#34;&#34;
         Return string representation of the specified dataset repository.
         The parameters represent the output filter options.
         &#34;&#34;&#34;
-        repo = self.get(dataset_type, state, dataset_id)
+        repo = self.get(source, state, dataset_id)
         repo_str = &#39;&#39;
-        for d_type, d_states in repo.items():
-            repo_str += &#39;{:&lt;8}: &#39;.format(d_type)
+        for d_src, d_states in repo.items():
+            repo_str += &#39;{:&lt;8}: &#39;.format(d_src)
             first_state = True
 
             for d_state, d_datasets in d_states.items():
@@ -967,46 +967,46 @@ If <code>physically</code> flag is set and and path does not exist, create it.</
 
         return repo_str
 
-    def dump(self, dataset_type: Union[DatasetType, str] = None,
+    def dump(self, source: Union[DatasetSource, str] = None,
              state: Union[DatasetState, str] = None, dataset_id: str = &#39;&#39;) -&gt; None:
         &#34;&#34;&#34;
         Print string representation of the specified dataset repository to the STDOUT.
         The parameters represent the output filter options.
         &#34;&#34;&#34;
-        print(self.dumps(dataset_type, state, dataset_id))
+        print(self.dumps(source, state, dataset_id))
 
-    def get(self, dataset_type: Union[DatasetType, str] = None,
+    def get(self, source: Union[DatasetSource, str] = None,
             state: Union[DatasetState, str] = None, dataset_id: str = &#39;&#39;) -&gt; dict:
         &#34;&#34;&#34;
         Return dictionary representation of the specified dataset repository.
         The parameters represent the output filter options.
         &#34;&#34;&#34;
 
-        def get_type() -&gt; dict:
-            ret_type = {}
+        def get_source() -&gt; dict:
+            ret_src = {}
             states = [state] if state else DatasetState
             # Iterate through filtered states and get its datasets
             for d_state in states:
                 ret_state = dataset_path.get(d_state)
                 if ret_state:
-                    ret_type[str(d_state)] = ret_state
-            return ret_type
+                    ret_src[str(d_state)] = ret_state
+            return ret_src
 
-        # Validate dataset type
-        if dataset_type and not DatasetType.validate(dataset_type):
-            raise DatasetInvalidError(&#34;Dataset type %s is not valid.&#34; % dataset_type)
+        # Validate dataset source
+        if source and not DatasetSource.validate(source):
+            raise DatasetInvalidError(&#34;Dataset source %s is not valid.&#34; % source)
         # Validate dataset state
         if state and not DatasetState.validate(state):
             raise DatasetInvalidError(&#34;Dataset state %s is not valid.&#34; % state)
 
         ret_repo = {}
-        types = [dataset_type] if dataset_type else DatasetType
-        # Iterate through filtered types and get its states
-        for d_type in types:
-            dataset_path = Dataset(self.repository, d_type, dataset_id, None)
-            ret_type = get_type()
-            if ret_type:
-                ret_repo[str(d_type)] = ret_type
+        sources = [source] if source else DatasetSource
+        # Iterate through filtered sources and get its states
+        for d_src in sources:
+            dataset_path = Dataset(self.repository, d_src, dataset_id, None)
+            ret_src = get_source()
+            if ret_src:
+                ret_repo[str(d_src)] = ret_src
 
         return ret_repo
 
@@ -1016,7 +1016,7 @@ If <code>physically</code> flag is set and and path does not exist, create it.</
 <h3>Methods</h3>
 <dl>
 <dt id="cevast.dataset.dataset.DatasetRepository.dump"><code class="name flex">
-<span>def <span class="ident">dump</span></span>(<span>self, dataset_type: Union[cevast.dataset.dataset.DatasetType, str] = None, state: Union[cevast.dataset.dataset.DatasetState, str] = None, dataset_id: str = '') -> NoneType</span>
+<span>def <span class="ident">dump</span></span>(<span>self, source: Union[cevast.dataset.dataset.DatasetSource, str] = None, state: Union[cevast.dataset.dataset.DatasetState, str] = None, dataset_id: str = '') -> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Print string representation of the specified dataset repository to the STDOUT.
@@ -1025,17 +1025,17 @@ The parameters represent the output filter options.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def dump(self, dataset_type: Union[DatasetType, str] = None,
+<pre><code class="python">def dump(self, source: Union[DatasetSource, str] = None,
          state: Union[DatasetState, str] = None, dataset_id: str = &#39;&#39;) -&gt; None:
     &#34;&#34;&#34;
     Print string representation of the specified dataset repository to the STDOUT.
     The parameters represent the output filter options.
     &#34;&#34;&#34;
-    print(self.dumps(dataset_type, state, dataset_id))</code></pre>
+    print(self.dumps(source, state, dataset_id))</code></pre>
 </details>
 </dd>
 <dt id="cevast.dataset.dataset.DatasetRepository.dumps"><code class="name flex">
-<span>def <span class="ident">dumps</span></span>(<span>self, dataset_type: Union[cevast.dataset.dataset.DatasetType, str] = None, state: Union[cevast.dataset.dataset.DatasetState, str] = None, dataset_id: str = '') -> str</span>
+<span>def <span class="ident">dumps</span></span>(<span>self, source: Union[cevast.dataset.dataset.DatasetSource, str] = None, state: Union[cevast.dataset.dataset.DatasetState, str] = None, dataset_id: str = '') -> str</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return string representation of the specified dataset repository.
@@ -1044,16 +1044,16 @@ The parameters represent the output filter options.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def dumps(self, dataset_type: Union[DatasetType, str] = None,
+<pre><code class="python">def dumps(self, source: Union[DatasetSource, str] = None,
           state: Union[DatasetState, str] = None, dataset_id: str = &#39;&#39;) -&gt; str:
     &#34;&#34;&#34;
     Return string representation of the specified dataset repository.
     The parameters represent the output filter options.
     &#34;&#34;&#34;
-    repo = self.get(dataset_type, state, dataset_id)
+    repo = self.get(source, state, dataset_id)
     repo_str = &#39;&#39;
-    for d_type, d_states in repo.items():
-        repo_str += &#39;{:&lt;8}: &#39;.format(d_type)
+    for d_src, d_states in repo.items():
+        repo_str += &#39;{:&lt;8}: &#39;.format(d_src)
         first_state = True
 
         for d_state, d_datasets in d_states.items():
@@ -1075,7 +1075,7 @@ The parameters represent the output filter options.</p></div>
 </details>
 </dd>
 <dt id="cevast.dataset.dataset.DatasetRepository.get"><code class="name flex">
-<span>def <span class="ident">get</span></span>(<span>self, dataset_type: Union[cevast.dataset.dataset.DatasetType, str] = None, state: Union[cevast.dataset.dataset.DatasetState, str] = None, dataset_id: str = '') -> dict</span>
+<span>def <span class="ident">get</span></span>(<span>self, source: Union[cevast.dataset.dataset.DatasetSource, str] = None, state: Union[cevast.dataset.dataset.DatasetState, str] = None, dataset_id: str = '') -> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return dictionary representation of the specified dataset repository.
@@ -1084,41 +1084,87 @@ The parameters represent the output filter options.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get(self, dataset_type: Union[DatasetType, str] = None,
+<pre><code class="python">def get(self, source: Union[DatasetSource, str] = None,
         state: Union[DatasetState, str] = None, dataset_id: str = &#39;&#39;) -&gt; dict:
     &#34;&#34;&#34;
     Return dictionary representation of the specified dataset repository.
     The parameters represent the output filter options.
     &#34;&#34;&#34;
 
-    def get_type() -&gt; dict:
-        ret_type = {}
+    def get_source() -&gt; dict:
+        ret_src = {}
         states = [state] if state else DatasetState
         # Iterate through filtered states and get its datasets
         for d_state in states:
             ret_state = dataset_path.get(d_state)
             if ret_state:
-                ret_type[str(d_state)] = ret_state
-        return ret_type
+                ret_src[str(d_state)] = ret_state
+        return ret_src
 
-    # Validate dataset type
-    if dataset_type and not DatasetType.validate(dataset_type):
-        raise DatasetInvalidError(&#34;Dataset type %s is not valid.&#34; % dataset_type)
+    # Validate dataset source
+    if source and not DatasetSource.validate(source):
+        raise DatasetInvalidError(&#34;Dataset source %s is not valid.&#34; % source)
     # Validate dataset state
     if state and not DatasetState.validate(state):
         raise DatasetInvalidError(&#34;Dataset state %s is not valid.&#34; % state)
 
     ret_repo = {}
-    types = [dataset_type] if dataset_type else DatasetType
-    # Iterate through filtered types and get its states
-    for d_type in types:
-        dataset_path = Dataset(self.repository, d_type, dataset_id, None)
-        ret_type = get_type()
-        if ret_type:
-            ret_repo[str(d_type)] = ret_type
+    sources = [source] if source else DatasetSource
+    # Iterate through filtered sources and get its states
+    for d_src in sources:
+        dataset_path = Dataset(self.repository, d_src, dataset_id, None)
+        ret_src = get_source()
+        if ret_src:
+            ret_repo[str(d_src)] = ret_src
 
     return ret_repo</code></pre>
 </details>
+</dd>
+</dl>
+</dd>
+<dt id="cevast.dataset.dataset.DatasetSource"><code class="flex name class">
+<span>class <span class="ident">DatasetSource</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Enumaration class of all supported Dataset sources.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DatasetSource(IntEnum):
+    &#34;&#34;&#34;Enumaration class of all supported Dataset sources.&#34;&#34;&#34;
+
+    RAPID = 1
+    CENSYS = 2
+
+    @classmethod
+    def validate(cls, source: Union[&#39;DatasetSource&#39;, str]) -&gt; bool:
+        &#34;&#34;&#34;Validate DatasetSource.&#34;&#34;&#34;
+        if isinstance(source, cls):
+            return source in cls
+        if isinstance(source, str):
+            return source in cls.__members__
+        return False
+
+    def __str__(self):
+        return str(self.name)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.IntEnum</li>
+<li>builtins.int</li>
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="cevast.dataset.dataset.DatasetSource.CENSYS"><code class="name">var <span class="ident">CENSYS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="cevast.dataset.dataset.DatasetSource.RAPID"><code class="name">var <span class="ident">RAPID</span></code></dt>
+<dd>
+<div class="desc"></div>
 </dd>
 </dl>
 </dd>
@@ -1178,52 +1224,6 @@ The parameters represent the output filter options.</p></div>
 </dd>
 </dl>
 </dd>
-<dt id="cevast.dataset.dataset.DatasetType"><code class="flex name class">
-<span>class <span class="ident">DatasetType</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Enumaration class of all supported Dataset types.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class DatasetType(IntEnum):
-    &#34;&#34;&#34;Enumaration class of all supported Dataset types.&#34;&#34;&#34;
-
-    RAPID = 1
-    CENSYS = 2
-
-    @classmethod
-    def validate(cls, dataset_type: Union[&#39;DatasetType&#39;, str]) -&gt; bool:
-        &#34;&#34;&#34;Validate DatasetType.&#34;&#34;&#34;
-        if isinstance(dataset_type, cls):
-            return dataset_type in cls
-        if isinstance(dataset_type, str):
-            return dataset_type in cls.__members__
-        return False
-
-    def __str__(self):
-        return str(self.name)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>enum.IntEnum</li>
-<li>builtins.int</li>
-<li>enum.Enum</li>
-</ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="cevast.dataset.dataset.DatasetType.CENSYS"><code class="name">var <span class="ident">CENSYS</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="cevast.dataset.dataset.DatasetType.RAPID"><code class="name">var <span class="ident">RAPID</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
-</dd>
 <dt id="cevast.dataset.dataset.DatasetUnificationError"><code class="flex name class">
 <span>class <span class="ident">DatasetUnificationError</span></span>
 <span>(</span><span>...)</span>
@@ -1263,7 +1263,6 @@ The parameters represent the output filter options.</p></div>
 <li>
 <h4><code><a title="cevast.dataset.dataset.Dataset" href="#cevast.dataset.dataset.Dataset">Dataset</a></code></h4>
 <ul class="two-column">
-<li><code><a title="cevast.dataset.dataset.Dataset.dataset_type" href="#cevast.dataset.dataset.Dataset.dataset_type">dataset_type</a></code></li>
 <li><code><a title="cevast.dataset.dataset.Dataset.date" href="#cevast.dataset.dataset.Dataset.date">date</a></code></li>
 <li><code><a title="cevast.dataset.dataset.Dataset.delete" href="#cevast.dataset.dataset.Dataset.delete">delete</a></code></li>
 <li><code><a title="cevast.dataset.dataset.Dataset.exists" href="#cevast.dataset.dataset.Dataset.exists">exists</a></code></li>
@@ -1277,6 +1276,7 @@ The parameters represent the output filter options.</p></div>
 <li><code><a title="cevast.dataset.dataset.Dataset.path" href="#cevast.dataset.dataset.Dataset.path">path</a></code></li>
 <li><code><a title="cevast.dataset.dataset.Dataset.port" href="#cevast.dataset.dataset.Dataset.port">port</a></code></li>
 <li><code><a title="cevast.dataset.dataset.Dataset.purge" href="#cevast.dataset.dataset.Dataset.purge">purge</a></code></li>
+<li><code><a title="cevast.dataset.dataset.Dataset.source" href="#cevast.dataset.dataset.Dataset.source">source</a></code></li>
 <li><code><a title="cevast.dataset.dataset.Dataset.static_filename" href="#cevast.dataset.dataset.Dataset.static_filename">static_filename</a></code></li>
 </ul>
 </li>
@@ -1295,19 +1295,19 @@ The parameters represent the output filter options.</p></div>
 </ul>
 </li>
 <li>
+<h4><code><a title="cevast.dataset.dataset.DatasetSource" href="#cevast.dataset.dataset.DatasetSource">DatasetSource</a></code></h4>
+<ul class="">
+<li><code><a title="cevast.dataset.dataset.DatasetSource.CENSYS" href="#cevast.dataset.dataset.DatasetSource.CENSYS">CENSYS</a></code></li>
+<li><code><a title="cevast.dataset.dataset.DatasetSource.RAPID" href="#cevast.dataset.dataset.DatasetSource.RAPID">RAPID</a></code></li>
+</ul>
+</li>
+<li>
 <h4><code><a title="cevast.dataset.dataset.DatasetState" href="#cevast.dataset.dataset.DatasetState">DatasetState</a></code></h4>
 <ul class="">
 <li><code><a title="cevast.dataset.dataset.DatasetState.ANALYSED" href="#cevast.dataset.dataset.DatasetState.ANALYSED">ANALYSED</a></code></li>
 <li><code><a title="cevast.dataset.dataset.DatasetState.COLLECTED" href="#cevast.dataset.dataset.DatasetState.COLLECTED">COLLECTED</a></code></li>
 <li><code><a title="cevast.dataset.dataset.DatasetState.FILTERED" href="#cevast.dataset.dataset.DatasetState.FILTERED">FILTERED</a></code></li>
 <li><code><a title="cevast.dataset.dataset.DatasetState.UNIFIED" href="#cevast.dataset.dataset.DatasetState.UNIFIED">UNIFIED</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="cevast.dataset.dataset.DatasetType" href="#cevast.dataset.dataset.DatasetType">DatasetType</a></code></h4>
-<ul class="">
-<li><code><a title="cevast.dataset.dataset.DatasetType.CENSYS" href="#cevast.dataset.dataset.DatasetType.CENSYS">CENSYS</a></code></li>
-<li><code><a title="cevast.dataset.dataset.DatasetType.RAPID" href="#cevast.dataset.dataset.DatasetType.RAPID">RAPID</a></code></li>
 </ul>
 </li>
 <li>

@@ -1,4 +1,4 @@
-"""This module contains implementation of RAPID dataset type unifier."""
+"""This module contains implementation of RAPID dataset source unifier."""
 
 import os
 import gzip
@@ -7,7 +7,7 @@ import json
 from contextlib import ExitStack
 from cevast.certdb import CertDB
 from cevast.utils import BASE64_to_PEM
-from ..dataset import DatasetType
+from ..dataset import DatasetSource
 
 __author__ = 'Radim Podola'
 
@@ -22,7 +22,7 @@ class RapidUnifier:
     and builds certificate chains. Chains are written as unified dataset format.
     """
 
-    dataset_type = DatasetType.RAPID
+    dataset_source = DatasetSource.RAPID
 
     def __init__(self, certs_dataset: str, hosts_dataset: str, chain_file: str, broken_chain_file: str = None):
         # Check dataset files

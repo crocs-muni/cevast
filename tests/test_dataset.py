@@ -6,7 +6,7 @@ import os
 import shutil
 import unittest
 from enum import IntEnum
-from cevast.dataset.dataset import Dataset, DatasetState, DatasetType, DatasetInvalidError, DatasetRepository
+from cevast.dataset.dataset import Dataset, DatasetState, DatasetSource, DatasetInvalidError, DatasetRepository
 
 
 def create_file(name: str):
@@ -16,20 +16,20 @@ def create_file(name: str):
         w_file.write("adadadadadasdadadadasda")
 
 
-class TestDatasetType(unittest.TestCase):
-    """Unit test class of DatasetType Enum"""
+class TestDatasetSource(unittest.TestCase):
+    """Unit test class of DatasetSource Enum"""
 
     def test_validate(self):
-        """Test of DatasetType classmethod validate."""
+        """Test of DatasetSource classmethod validate."""
         # Test correct
-        assert DatasetType.validate(DatasetType.RAPID)
-        assert DatasetType.validate("CENSYS")
+        assert DatasetSource.validate(DatasetSource.RAPID)
+        assert DatasetSource.validate("CENSYS")
         # Test incorrect
-        assert not DatasetType.validate(5)
-        assert not DatasetType.validate(None)
-        assert not DatasetType.validate(DatasetState.UNIFIED)
+        assert not DatasetSource.validate(5)
+        assert not DatasetSource.validate(None)
+        assert not DatasetSource.validate(DatasetState.UNIFIED)
         # IntEnum is instance of class but not managed
-        assert not DatasetType.validate(IntEnum)
+        assert not DatasetSource.validate(IntEnum)
 
 
 class TestDatasetState(unittest.TestCase):
@@ -43,7 +43,7 @@ class TestDatasetState(unittest.TestCase):
         # Test incorrect
         assert not DatasetState.validate(5)
         assert not DatasetState.validate(None)
-        assert not DatasetState.validate(DatasetType.RAPID)
+        assert not DatasetState.validate(DatasetSource.RAPID)
         # IntEnum is instance of class but not managed
         assert not DatasetState.validate(IntEnum)
 
@@ -66,11 +66,11 @@ class TestDataset(unittest.TestCase):
         # Test init with wrong parameters
         self.assertRaises(DatasetInvalidError, Dataset, self.TEST_REPO, DatasetState.UNIFIED, '', '443')
         self.assertRaises(DatasetInvalidError, Dataset, self.TEST_REPO, 5, '', '443')
-        self.assertRaises(DatasetInvalidError, Dataset, self.TEST_REPO + 'invalid', DatasetType.RAPID, '', '443')
+        self.assertRaises(DatasetInvalidError, Dataset, self.TEST_REPO + 'invalid', DatasetSource.RAPID, '', '443')
         # Create Dataset instance
-        Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
+        Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-12', '443')
 
-        # Test init with STRING type paramater
+        # Test init with STRING source paramater
         Dataset(self.TEST_REPO, "RAPID", '2020-06-12', 443)
         self.assertRaises(DatasetInvalidError, Dataset, self.TEST_REPO, "UNKNOWN", '2020-06-12', '443')
 
@@ -79,7 +79,7 @@ class TestDataset(unittest.TestCase):
         # Test incorrect path
         # incorrect repository
         assert Dataset.from_full_path("totally_made_up/RAPID/COLLECTED/66112211_22_suffix.ext") is None
-        # incorrect type
+        # incorrect source
         assert Dataset.from_full_path(os.path.join(self.TEST_REPO, "RAPIDOSS/COLLECTED/66112211_22_suffix.ext")) is None
         # incorrect date
         assert Dataset.from_full_path(os.path.join(self.TEST_REPO, "RAPID/COLLECTED/661122_22_suffix.ext")) is None
@@ -94,7 +94,7 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(dataset.port, "22")
         self.assertEqual(dataset.date, "66112211")
         self.assertEqual(dataset.extension, "ext")
-        self.assertEqual(dataset.dataset_type, "RAPID")
+        self.assertEqual(dataset.source, "RAPID")
         # test without port
         dataset = Dataset.from_full_path(os.path.join(self.TEST_REPO, "RAPID/COLLECTED/66112211_5a_adasd.ext"))
         assert dataset
@@ -114,8 +114,8 @@ class TestDataset(unittest.TestCase):
 
     def test_path(self):
         """Test implementation of Dataset method PATH."""
-        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
-        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '443')
+        ds_rapid = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-12', '443')
+        ds_censys = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-12', '443')
         # Test GET with wrong state parameter
         self.assertRaises(DatasetInvalidError, ds_rapid.get, 2, False)
 
@@ -128,29 +128,29 @@ class TestDataset(unittest.TestCase):
         self.assertNotEqual(path2, path3)
         # GET should return /../repository/RAPID/UNIFIED
         self.assertEqual(
-            path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.UNIFIED.name)
+            path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetSource.RAPID.name, DatasetState.UNIFIED.name)
         )
 
         # Test GET with STRING state paramater
         path = ds_rapid.path("UNIFIED", False)
         assert not os.path.exists(path)
         self.assertEqual(
-            path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.UNIFIED.name)
+            path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetSource.RAPID.name, DatasetState.UNIFIED.name)
         )
 
         # Test physically paramater
         assert not os.path.exists(path)
         self.assertEqual(
             ds_rapid.path(DatasetState.UNIFIED, True),
-            os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.UNIFIED.name),
+            os.path.join(os.path.abspath(self.TEST_REPO), DatasetSource.RAPID.name, DatasetState.UNIFIED.name),
         )
         assert os.path.exists(path)
 
     def test_full_path(self):
         """Test implementation of Dataset method FULL_PATH."""
         ext = 'ext'
-        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443', ext)
-        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', 443, ext)
+        ds_rapid = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-12', '443', ext)
+        ds_censys = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-30', 443, ext)
         # Test GET_FULL with wrong state parameter
         self.assertRaises(
             DatasetInvalidError, ds_rapid.full_path, 2,
@@ -167,7 +167,7 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(
             path,
             os.path.join(
-                os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.UNIFIED.name, '2020-06-12_443.' + ext,
+                os.path.abspath(self.TEST_REPO), DatasetSource.RAPID.name, DatasetState.UNIFIED.name, '2020-06-12_443.' + ext,
             ),
         )
         path = ds_rapid.full_path(DatasetState.UNIFIED, 'suffix', False)
@@ -176,21 +176,21 @@ class TestDataset(unittest.TestCase):
             path,
             os.path.join(
                 os.path.abspath(self.TEST_REPO),
-                DatasetType.RAPID.name,
+                DatasetSource.RAPID.name,
                 DatasetState.UNIFIED.name,
                 '2020-06-12_443_suffix.' + ext,
             ),
         )
 
         # Test GET_FULL without port
-        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '', ext)
+        ds_censys = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-30', '', ext)
         path = ds_censys.full_path(DatasetState.UNIFIED, 'suffix', False)
         # GET_FULL should return /../repository/CENSYS/UNIFIED/2020-06-30_suffix.ext
         self.assertEqual(
             path,
             os.path.join(
                 os.path.abspath(self.TEST_REPO),
-                DatasetType.CENSYS.name,
+                DatasetSource.CENSYS.name,
                 DatasetState.UNIFIED.name,
                 '2020-06-30_suffix.' + ext,
             ),
@@ -200,7 +200,7 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(
             path,
             os.path.join(
-                os.path.abspath(self.TEST_REPO), DatasetType.CENSYS.name, DatasetState.UNIFIED.name, '2020-06-30.' + ext,
+                os.path.abspath(self.TEST_REPO), DatasetSource.CENSYS.name, DatasetState.UNIFIED.name, '2020-06-30.' + ext,
             ),
         )
 
@@ -210,7 +210,7 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(
             path,
             os.path.join(
-                os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.UNIFIED.name, '2020-06-12_443.' + ext,
+                os.path.abspath(self.TEST_REPO), DatasetSource.RAPID.name, DatasetState.UNIFIED.name, '2020-06-12_443.' + ext,
             ),
         )
 
@@ -222,17 +222,17 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(
             ds_rapid.full_path(DatasetState.UNIFIED, '', True),
             os.path.join(
-                os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.UNIFIED.name, '2020-06-12_443.' + ext,
+                os.path.abspath(self.TEST_REPO), DatasetSource.RAPID.name, DatasetState.UNIFIED.name, '2020-06-12_443.' + ext,
             ),
         )
 
     def test_delete(self):
         """Test implementation of Dataset method DELETE."""
         # Test DELETE with not existing file
-        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
-        ds_rapid2 = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-30', '443')
-        ds_rapid_noport = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
-        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', None)
+        ds_rapid = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-12', '443')
+        ds_rapid2 = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-30', '443')
+        ds_rapid_noport = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-12', '')
+        ds_censys = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-30', None)
         ds_rapid.delete(DatasetState.UNIFIED)
 
         # Create some datasets
@@ -282,10 +282,10 @@ class TestDataset(unittest.TestCase):
 
     def test_purge(self):
         """Test implementation of Dataset method PURGE."""
-        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
-        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '')
-        path_r = os.path.join(self.TEST_REPO, DatasetType.RAPID.name)
-        path_c = os.path.join(self.TEST_REPO, DatasetType.CENSYS.name)
+        ds_rapid = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-12', '')
+        ds_censys = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-12', '')
+        path_r = os.path.join(self.TEST_REPO, DatasetSource.RAPID.name)
+        path_c = os.path.join(self.TEST_REPO, DatasetSource.CENSYS.name)
         # Test PURGE on empty repository
         ds_rapid.purge()
         # Create some datasets and PURGE rapid repository
@@ -304,10 +304,10 @@ class TestDataset(unittest.TestCase):
 
     def test_get(self):
         """Test implementation of Dataset method GET."""
-        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', None)
-        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '22')
-        path_r = os.path.join(self.TEST_REPO, DatasetType.RAPID.name, DatasetState.UNIFIED.name)
-        path_c = os.path.join(self.TEST_REPO, DatasetType.CENSYS.name, DatasetState.UNIFIED.name)
+        ds_rapid = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-12', None)
+        ds_censys = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-12', '22')
+        path_r = os.path.join(self.TEST_REPO, DatasetSource.RAPID.name, DatasetState.UNIFIED.name)
+        path_c = os.path.join(self.TEST_REPO, DatasetSource.CENSYS.name, DatasetState.UNIFIED.name)
         assert not ds_rapid.get(DatasetState.UNIFIED)
         assert not ds_censys.get(DatasetState.UNIFIED)
         create_file(os.path.join(path_r, '2020-06-12.gz'))
@@ -332,10 +332,10 @@ class TestDataset(unittest.TestCase):
 
     def test_exists(self):
         """Test implementation of Dataset method EXISTS and EXISTS_ANY."""
-        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', None)
-        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '22')
-        path_r = os.path.join(self.TEST_REPO, DatasetType.RAPID.name, DatasetState.UNIFIED.name)
-        path_c = os.path.join(self.TEST_REPO, DatasetType.CENSYS.name, DatasetState.UNIFIED.name)
+        ds_rapid = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-12', None)
+        ds_censys = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-12', '22')
+        path_r = os.path.join(self.TEST_REPO, DatasetSource.RAPID.name, DatasetState.UNIFIED.name)
+        path_c = os.path.join(self.TEST_REPO, DatasetSource.CENSYS.name, DatasetState.UNIFIED.name)
         assert not ds_rapid.exists_any()
         assert not ds_rapid.exists_any()
         assert not ds_censys.exists(DatasetState.UNIFIED)
@@ -362,8 +362,8 @@ class TestDataset(unittest.TestCase):
 
     def test_move(self):
         """Test implementation of Dataset method MOVE."""
-        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '443')
-        path = os.path.join(self.TEST_REPO, DatasetType.RAPID.name, DatasetState.UNIFIED.name)
+        ds_rapid = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-12', '443')
+        path = os.path.join(self.TEST_REPO, DatasetSource.RAPID.name, DatasetState.UNIFIED.name)
         dataset = os.path.join(self.TEST_REPO, '2020-06-30_suffix.gz')
         ds_suffix_only = os.path.join(self.TEST_REPO, 'suffix.gz')
         # Test with source that doesn't exist
@@ -386,29 +386,29 @@ class TestDataset(unittest.TestCase):
         assert os.path.exists(os.path.join(path, '2020-06-30_suffix.gz'))
 
         # Test with STRING state paramater
-        ds_rapid = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '')
+        ds_rapid = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-30', '')
         create_file(ds_suffix_only)
         self.assertRaises(DatasetInvalidError, ds_rapid.move, "UNKNOWN", ds_suffix_only)
         self.assertRaises(DatasetInvalidError, ds_rapid.move, "UNKNOWN", ds_suffix_only, False)
         ds_rapid.move("ANALYSED", ds_suffix_only)
         assert not os.path.exists(ds_suffix_only)
         assert os.path.exists(
-            os.path.join(self.TEST_REPO, DatasetType.CENSYS.name, DatasetState.ANALYSED.name, '2020-06-30_suffix.gz')
+            os.path.join(self.TEST_REPO, DatasetSource.CENSYS.name, DatasetState.ANALYSED.name, '2020-06-30_suffix.gz')
         )
 
     def test_str(self):
         """Test implementation of Dataset override method __str__."""
-        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
-        # string representation should look like: repository/type/{placeholder for state}/id
+        ds_rapid = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-12', '')
+        # string representation should look like: repository/source/{placeholder for state}/id
         self.assertEqual(str(ds_rapid).format('COLLECTED'), os.path.join(ds_rapid.path('COLLECTED', False), '2020-06-12'))
 
     def test_hashable(self):
         """Test implementation of Dataset override method __hash__ and __eq__."""
-        rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-30', '443')
-        rapid_eq = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-30', '443')
-        rapid_1 = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-16', '')
-        rapid_2 = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-30', '22')
-        censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '')
+        rapid = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-30', '443')
+        rapid_eq = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-30', '443')
+        rapid_1 = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-16', '')
+        rapid_2 = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-30', '22')
+        censys = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-30', '')
         # Test equal
         self.assertEqual(rapid, rapid_eq)
         self.assertNotEqual(rapid, rapid_1)
@@ -452,13 +452,13 @@ class TestDatasetRepository(unittest.TestCase):
 
     def test_get(self):
         """Test implementation of DatasetRepository method GET."""
-        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
-        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '443')
-        ds_censys2 = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '')
+        ds_rapid = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-12', '')
+        ds_censys = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-12', '443')
+        ds_censys2 = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-30', '')
         repo = DatasetRepository(self.TEST_REPO)
         # Test GET on empty repository
         assert not repo.get()
-        assert not repo.get(dataset_type="RAPID")
+        assert not repo.get(source="RAPID")
         assert not repo.get(state="UNIFIED")
         assert not repo.get(dataset_id="2020-06-12")
         assert not repo.get("RAPID", "UNIFIED", "2020-06-12")
@@ -498,9 +498,9 @@ class TestDatasetRepository(unittest.TestCase):
             },
         )
 
-        # Test GET with specific dataset type
-        get_repo = repo.get(dataset_type=DatasetType.RAPID)
-        self.assertEqual(get_repo, repo.get(dataset_type="RAPID"))
+        # Test GET with specific source
+        get_repo = repo.get(source=DatasetSource.RAPID)
+        self.assertEqual(get_repo, repo.get(source="RAPID"))
         self.assertEqual(get_repo, {"RAPID": {"UNIFIED": ('2020-06-12_ds1.gz',)}})
 
         # Test GET with specific dataset state
@@ -523,14 +523,14 @@ class TestDatasetRepository(unittest.TestCase):
 
     def test_dumps(self):
         """Test implementation of DatasetRepository method DUMPS and __str__."""
-        ds_rapid = Dataset(self.TEST_REPO, DatasetType.RAPID, '2020-06-12', '')
-        ds_censys = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-12', '')
-        ds_censys2 = Dataset(self.TEST_REPO, DatasetType.CENSYS, '2020-06-30', '')
+        ds_rapid = Dataset(self.TEST_REPO, DatasetSource.RAPID, '2020-06-12', '')
+        ds_censys = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-12', '')
+        ds_censys2 = Dataset(self.TEST_REPO, DatasetSource.CENSYS, '2020-06-30', '')
         repo = DatasetRepository(self.TEST_REPO)
         # Test DUMPS on empty repository
         assert not repo.dumps()
         assert not str(repo)
-        assert not repo.get(dataset_type="RAPID")
+        assert not repo.get(source="RAPID")
         assert not repo.get(state="UNIFIED")
         assert not repo.get(dataset_id="2020-06-12")
         assert not repo.get("RAPID", "UNIFIED", "2020-06-12")
@@ -555,9 +555,9 @@ class TestDatasetRepository(unittest.TestCase):
         assert not repo.dumps(dataset_id='INVALID')
         self.assertNotEqual(dumps_repo, repo.dumps(dataset_id='2020-06-12'))
 
-        # Test DUMPS with specific dataset type
-        self.assertNotEqual(dumps_repo, repo.dumps(dataset_type=DatasetType.RAPID))
-        self.assertEqual(repo.dumps(dataset_type=DatasetType.RAPID), repo.dumps(dataset_type="RAPID"))
+        # Test DUMPS with specific source
+        self.assertNotEqual(dumps_repo, repo.dumps(source=DatasetSource.RAPID))
+        self.assertEqual(repo.dumps(source=DatasetSource.RAPID), repo.dumps(source="RAPID"))
 
         # Test DUMPS with specific dataset state
         self.assertNotEqual(dumps_repo, repo.dumps(state=DatasetState.UNIFIED))

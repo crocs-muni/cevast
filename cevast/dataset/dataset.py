@@ -26,19 +26,19 @@ class DatasetInvalidError(ValueError):
     """Raised when the dataset has an invalid identifier."""
 
 
-class DatasetType(IntEnum):
-    """Enumaration class of all supported Dataset types."""
+class DatasetSource(IntEnum):
+    """Enumaration class of all supported Dataset sources."""
 
     RAPID = 1
     CENSYS = 2
 
     @classmethod
-    def validate(cls, dataset_type: Union['DatasetType', str]) -> bool:
-        """Validate DatasetType."""
-        if isinstance(dataset_type, cls):
-            return dataset_type in cls
-        if isinstance(dataset_type, str):
-            return dataset_type in cls.__members__
+    def validate(cls, source: Union['DatasetSource', str]) -> bool:
+        """Validate DatasetSource."""
+        if isinstance(source, cls):
+            return source in cls
+        if isinstance(source, str):
+            return source in cls.__members__
         return False
 
     def __str__(self):
@@ -70,11 +70,11 @@ class Dataset:
     """
     Class representing a single dataset and providing an interface to the dataset on the filesystem.
 
-    Dataset is identified by `dataset_type`, `state` and filename where filename consists of mandatory
+    Dataset is identified by `source`, `state` and filename where filename consists of mandatory
     `date_id`, `port` number and optional suffix. date_id represents the date (or date range) when
     the dataset was created (certificates were collected and added to the dataset) and its string in fomat
     "YYYYMMDD", port is application port on which was the data collceted, suffix can specify the dataset
-    in various ways and is used to distinguish the files internally. `dataset_type`, `date_id` and `port`
+    in various ways and is used to distinguish the files internally. `source`, `date_id` and `port`
     are static identifiers provided upon object initialization.
 
     The dataset state is dynamic identifier that is the last part of its complete identification at the time.
@@ -84,28 +84,28 @@ class Dataset:
         - UNIFIED
         - ANALYSED
 
-    Full Dataset path template: {repository}/{type}/{state}/{date_id}[_{port}][_suffix].{extension}
+    Full Dataset path template: {repository}/{source}/{state}/{date_id}[_{port}][_suffix].{extension}
     """
 
-    def __init__(self, repository: str, dataset_type: Union[DatasetType, str],
+    def __init__(self, repository: str, source: Union[DatasetSource, str],
                  date_id: str, port: Union[str, int], extension: str = 'gz'):
         """Initialize the static identifiers"""
         # Validate and init dataset repository
         if not os.path.exists(repository):
             raise DatasetInvalidError("Repository %s not found" % repository)
         self._repository = os.path.abspath(repository)
-        # Validate and init dataset type
-        if not DatasetType.validate(dataset_type):
-            raise DatasetInvalidError("Dataset type %s is not valid." % dataset_type)
-        self._dataset_type = str(dataset_type)
+        # Validate and init dataset source
+        if not DatasetSource.validate(source):
+            raise DatasetInvalidError("Dataset source %s is not valid." % source)
+        self._source = str(source)
         self._date_id = date_id
         self._port = str(port) if port is not None else ''
         self._extension = extension
 
     @property
-    def dataset_type(self) -> str:
-        """Get the Dataset Type."""
-        return self._dataset_type
+    def source(self) -> str:
+        """Get the Dataset source."""
+        return self._source
 
     @property
     def date(self) -> str:
@@ -133,13 +133,13 @@ class Dataset:
         Initialize Dataset object from the given path,
         or return None if object cannot be initialized.
         """
-        template = r"^(?P<repo>\S+)[/\\](?P<type>\S+)[/\\](?P<state>\S+)[/\\](?P<date>\d{8})(_(?P<port>\d+))?(_\S+)?\.(?P<ext>\S+)$"
+        template = r"^(?P<repo>\S+)[/\\](?P<source>\S+)[/\\](?P<state>\S+)[/\\](?P<date>\d{8})(_(?P<port>\d+))?(_\S+)?\.(?P<ext>\S+)$"
         match = re.match(template, path)
         if not match:
             return None
         try:
             return cls(repository=match.group('repo'),
-                       dataset_type=match.group('type'),
+                       source=match.group('source'),
                        date_id=match.group('date'),
                        port=match.group('port'),
                        extension=match.group('ext'),
@@ -166,7 +166,7 @@ class Dataset:
         if not DatasetState.validate(state):
             raise DatasetInvalidError("Dataset state %s is not valid." % state)
 
-        path = os.path.join(self._repository, self._dataset_type, str(state))
+        path = os.path.join(self._repository, self._source, str(state))
 
         if physically and not os.path.exists(path):
             log.info("Path <%s> does not exist yet, will be created.", path)
@@ -198,8 +198,8 @@ class Dataset:
             os.rmdir(path)
 
     def purge(self) -> None:
-        """Delete all datasets of specified type from the repository."""
-        shutil.rmtree(os.path.join(self._repository, self._dataset_type), ignore_errors=True)
+        """Delete all datasets of specified source from the repository."""
+        shutil.rmtree(os.path.join(self._repository, self._source), ignore_errors=True)
 
     def get(self, state: Union[DatasetState, str], suffix: str = '', full_path: bool = False) -> Tuple[str]:
         """Return all datasets stored in the dataset repository matching the paramaters."""
@@ -234,13 +234,13 @@ class Dataset:
             shutil.move(os.path.abspath(source), os.path.join(path, filename))
 
     def __str__(self):
-        return os.path.join(self._repository, self._dataset_type, "{}", Dataset.format_filename(self._date_id, self._port))
+        return os.path.join(self._repository, self._source, "{}", Dataset.format_filename(self._date_id, self._port))
 
     def __repr__(self):
-        return "<%s.%s dataset_type=%s, date_id=%s, port=%s>" % (
+        return "<%s.%s source=%s, date_id=%s, port=%s>" % (
             self.__class__.__module__,
             self.__class__.__qualname__,
-            self._dataset_type,
+            self._source,
             self._date_id,
             self._port,
         )
@@ -250,10 +250,10 @@ class Dataset:
             # don't attempt to compare against unrelated types
             return NotImplemented
 
-        return self._port == other.port and self._date_id == other.date and self._dataset_type == other.dataset_type
+        return self._port == other.port and self._date_id == other.date and self._source == other.source
 
     def __hash__(self):
-        return hash((self._port, self._date_id, self._dataset_type))
+        return hash((self._port, self._date_id, self._source))
 
 
 class DatasetRepository:
@@ -267,16 +267,16 @@ class DatasetRepository:
         else:
             raise FileNotFoundError("Dataset Repository %s not found." % repository)
 
-    def dumps(self, dataset_type: Union[DatasetType, str] = None,
+    def dumps(self, source: Union[DatasetSource, str] = None,
               state: Union[DatasetState, str] = None, dataset_id: str = '') -> str:
         """
         Return string representation of the specified dataset repository.
         The parameters represent the output filter options.
         """
-        repo = self.get(dataset_type, state, dataset_id)
+        repo = self.get(source, state, dataset_id)
         repo_str = ''
-        for d_type, d_states in repo.items():
-            repo_str += '{:<8}: '.format(d_type)
+        for d_src, d_states in repo.items():
+            repo_str += '{:<8}: '.format(d_src)
             first_state = True
 
             for d_state, d_datasets in d_states.items():
@@ -296,46 +296,46 @@ class DatasetRepository:
 
         return repo_str
 
-    def dump(self, dataset_type: Union[DatasetType, str] = None,
+    def dump(self, source: Union[DatasetSource, str] = None,
              state: Union[DatasetState, str] = None, dataset_id: str = '') -> None:
         """
         Print string representation of the specified dataset repository to the STDOUT.
         The parameters represent the output filter options.
         """
-        print(self.dumps(dataset_type, state, dataset_id))
+        print(self.dumps(source, state, dataset_id))
 
-    def get(self, dataset_type: Union[DatasetType, str] = None,
+    def get(self, source: Union[DatasetSource, str] = None,
             state: Union[DatasetState, str] = None, dataset_id: str = '') -> dict:
         """
         Return dictionary representation of the specified dataset repository.
         The parameters represent the output filter options.
         """
 
-        def get_type() -> dict:
-            ret_type = {}
+        def get_source() -> dict:
+            ret_src = {}
             states = [state] if state else DatasetState
             # Iterate through filtered states and get its datasets
             for d_state in states:
                 ret_state = dataset_path.get(d_state)
                 if ret_state:
-                    ret_type[str(d_state)] = ret_state
-            return ret_type
+                    ret_src[str(d_state)] = ret_state
+            return ret_src
 
-        # Validate dataset type
-        if dataset_type and not DatasetType.validate(dataset_type):
-            raise DatasetInvalidError("Dataset type %s is not valid." % dataset_type)
+        # Validate dataset source
+        if source and not DatasetSource.validate(source):
+            raise DatasetInvalidError("Dataset source %s is not valid." % source)
         # Validate dataset state
         if state and not DatasetState.validate(state):
             raise DatasetInvalidError("Dataset state %s is not valid." % state)
 
         ret_repo = {}
-        types = [dataset_type] if dataset_type else DatasetType
-        # Iterate through filtered types and get its states
-        for d_type in types:
-            dataset_path = Dataset(self.repository, d_type, dataset_id, None)
-            ret_type = get_type()
-            if ret_type:
-                ret_repo[str(d_type)] = ret_type
+        sources = [source] if source else DatasetSource
+        # Iterate through filtered sources and get its states
+        for d_src in sources:
+            dataset_path = Dataset(self.repository, d_src, dataset_id, None)
+            ret_src = get_source()
+            if ret_src:
+                ret_repo[str(d_src)] = ret_src
 
         return ret_repo
 

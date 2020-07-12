@@ -28,13 +28,13 @@
 <pre><code class="python">&#34;&#34;&#34;This module contains DatasetManager factory implementation.&#34;&#34;&#34;
 
 from typing import Union, Type
-from .dataset import DatasetType, DatasetInvalidError
+from .dataset import DatasetSource, DatasetInvalidError
 from . import managers
 
 
 class DatasetManagerFactory:
     &#34;&#34;&#34;
-    Factory class providing the specific DatasetManager class based on DatasetType.
+    Factory class providing the specific DatasetManager class based on DatasetSource.
 
     .. IMPORTANT:: DatasetManager classes are registered automatically. To add a new
     specialized DatasetManager class, it must inherit DatasetManager and be placed
@@ -50,22 +50,22 @@ class DatasetManagerFactory:
         that are visible to the Python interpreter (obtained from `type.__subclasses__()`).
         &#34;&#34;&#34;
         for manager_class in managers.DatasetManager.__subclasses__():
-            if hasattr(manager_class, &#39;dataset_type&#39;):
-                cls.__classes[str(manager_class.dataset_type)] = manager_class
+            if hasattr(manager_class, &#39;dataset_source&#39;):
+                cls.__classes[str(manager_class.dataset_source)] = manager_class
 
     @classmethod
-    def get_manager(cls, dataset_type: Union[DatasetType, str]) -&gt; Type[managers.DatasetManager]:
-        &#34;&#34;&#34;Return a corresponding DatasetManager class based on `dataset_type`.&#34;&#34;&#34;
+    def get_manager(cls, dataset_source: Union[DatasetSource, str]) -&gt; Type[managers.DatasetManager]:
+        &#34;&#34;&#34;Return a corresponding DatasetManager class based on `dataset_source`.&#34;&#34;&#34;
         if not cls.__classes:
             cls.__load_classes()
 
         # Validate and init dataset manager
-        if not DatasetType.validate(dataset_type):
-            raise DatasetInvalidError(&#34;Dataset type %s is not valid.&#34; % dataset_type)
-        if str(dataset_type) not in cls.__classes:
-            raise DatasetInvalidError(&#34;Dataset type %s has no manager.&#34; % dataset_type)
+        if not DatasetSource.validate(dataset_source):
+            raise DatasetInvalidError(&#34;Dataset source %s is not valid.&#34; % dataset_source)
+        if str(dataset_source) not in cls.__classes:
+            raise DatasetInvalidError(&#34;Dataset source %s has no manager.&#34; % dataset_source)
 
-        return cls.__classes[str(dataset_type)]</code></pre>
+        return cls.__classes[str(dataset_source)]</code></pre>
 </details>
 </section>
 <section>
@@ -81,7 +81,7 @@ class DatasetManagerFactory:
 <span>class <span class="ident">DatasetManagerFactory</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Factory class providing the specific DatasetManager class based on DatasetType.</p>
+<div class="desc"><p>Factory class providing the specific DatasetManager class based on DatasetSource.</p>
 <div class="admonition important">
 <p class="admonition-title">Important:&ensp;DatasetManager classes are registered automatically. To add a new</p>
 </div>
@@ -93,7 +93,7 @@ in "cevast.dataset.managers" package.</p></div>
 </summary>
 <pre><code class="python">class DatasetManagerFactory:
     &#34;&#34;&#34;
-    Factory class providing the specific DatasetManager class based on DatasetType.
+    Factory class providing the specific DatasetManager class based on DatasetSource.
 
     .. IMPORTANT:: DatasetManager classes are registered automatically. To add a new
     specialized DatasetManager class, it must inherit DatasetManager and be placed
@@ -109,47 +109,47 @@ in "cevast.dataset.managers" package.</p></div>
         that are visible to the Python interpreter (obtained from `type.__subclasses__()`).
         &#34;&#34;&#34;
         for manager_class in managers.DatasetManager.__subclasses__():
-            if hasattr(manager_class, &#39;dataset_type&#39;):
-                cls.__classes[str(manager_class.dataset_type)] = manager_class
+            if hasattr(manager_class, &#39;dataset_source&#39;):
+                cls.__classes[str(manager_class.dataset_source)] = manager_class
 
     @classmethod
-    def get_manager(cls, dataset_type: Union[DatasetType, str]) -&gt; Type[managers.DatasetManager]:
-        &#34;&#34;&#34;Return a corresponding DatasetManager class based on `dataset_type`.&#34;&#34;&#34;
+    def get_manager(cls, dataset_source: Union[DatasetSource, str]) -&gt; Type[managers.DatasetManager]:
+        &#34;&#34;&#34;Return a corresponding DatasetManager class based on `dataset_source`.&#34;&#34;&#34;
         if not cls.__classes:
             cls.__load_classes()
 
         # Validate and init dataset manager
-        if not DatasetType.validate(dataset_type):
-            raise DatasetInvalidError(&#34;Dataset type %s is not valid.&#34; % dataset_type)
-        if str(dataset_type) not in cls.__classes:
-            raise DatasetInvalidError(&#34;Dataset type %s has no manager.&#34; % dataset_type)
+        if not DatasetSource.validate(dataset_source):
+            raise DatasetInvalidError(&#34;Dataset source %s is not valid.&#34; % dataset_source)
+        if str(dataset_source) not in cls.__classes:
+            raise DatasetInvalidError(&#34;Dataset source %s has no manager.&#34; % dataset_source)
 
-        return cls.__classes[str(dataset_type)]</code></pre>
+        return cls.__classes[str(dataset_source)]</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
 <dt id="cevast.dataset.manager_factory.DatasetManagerFactory.get_manager"><code class="name flex">
-<span>def <span class="ident">get_manager</span></span>(<span>dataset_type: Union[cevast.dataset.dataset.DatasetType, str]) -> Type[<a title="cevast.dataset.managers.manager.DatasetManager" href="managers/manager.html#cevast.dataset.managers.manager.DatasetManager">DatasetManager</a>]</span>
+<span>def <span class="ident">get_manager</span></span>(<span>dataset_source: Union[cevast.dataset.dataset.DatasetSource, str]) -> Type[<a title="cevast.dataset.managers.manager.DatasetManager" href="managers/manager.html#cevast.dataset.managers.manager.DatasetManager">DatasetManager</a>]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Return a corresponding DatasetManager class based on <code>dataset_type</code>.</p></div>
+<div class="desc"><p>Return a corresponding DatasetManager class based on <code>dataset_source</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def get_manager(cls, dataset_type: Union[DatasetType, str]) -&gt; Type[managers.DatasetManager]:
-    &#34;&#34;&#34;Return a corresponding DatasetManager class based on `dataset_type`.&#34;&#34;&#34;
+def get_manager(cls, dataset_source: Union[DatasetSource, str]) -&gt; Type[managers.DatasetManager]:
+    &#34;&#34;&#34;Return a corresponding DatasetManager class based on `dataset_source`.&#34;&#34;&#34;
     if not cls.__classes:
         cls.__load_classes()
 
     # Validate and init dataset manager
-    if not DatasetType.validate(dataset_type):
-        raise DatasetInvalidError(&#34;Dataset type %s is not valid.&#34; % dataset_type)
-    if str(dataset_type) not in cls.__classes:
-        raise DatasetInvalidError(&#34;Dataset type %s has no manager.&#34; % dataset_type)
+    if not DatasetSource.validate(dataset_source):
+        raise DatasetInvalidError(&#34;Dataset source %s is not valid.&#34; % dataset_source)
+    if str(dataset_source) not in cls.__classes:
+        raise DatasetInvalidError(&#34;Dataset source %s has no manager.&#34; % dataset_source)
 
-    return cls.__classes[str(dataset_type)]</code></pre>
+    return cls.__classes[str(dataset_source)]</code></pre>
 </details>
 </dd>
 </dl>

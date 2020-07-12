@@ -31,7 +31,7 @@ from typing import Tuple, Union, Type
 from datetime import datetime
 from abc import ABC, abstractmethod, abstractclassmethod
 from enum import IntEnum
-from cevast.dataset.dataset import DatasetType, Dataset
+from cevast.dataset.dataset import DatasetSource, Dataset
 from cevast.certdb import CertDB
 from cevast.analysis import CertAnalyser
 
@@ -74,9 +74,9 @@ class DatasetManager(ABC):
 
     @property
     @abstractclassmethod
-    def dataset_type(cls) -&gt; DatasetType:
+    def dataset_source(cls) -&gt; DatasetSource:
         &#34;&#34;&#34;
-        Dataset type property used to identify a manager specification.
+        Dataset source property used to identify a manager specification.
         &#34;&#34;&#34;
 
     @abstractmethod
@@ -105,7 +105,7 @@ class DatasetManager(ABC):
     def collect(self, api_key: str = None) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
         Collect a dataset.
-        `api_key` is API access key that might be needed to retrieve datasets (depends on type implementation).
+        `api_key` is API access key that might be needed to retrieve datasets (depends on source implementation).
         Return tuple of collected Datasets.
         &#34;&#34;&#34;
 
@@ -186,9 +186,9 @@ running separatelly). Running a series might also be more optimized.</p>
 
     @property
     @abstractclassmethod
-    def dataset_type(cls) -&gt; DatasetType:
+    def dataset_source(cls) -&gt; DatasetSource:
         &#34;&#34;&#34;
-        Dataset type property used to identify a manager specification.
+        Dataset source property used to identify a manager specification.
         &#34;&#34;&#34;
 
     @abstractmethod
@@ -217,7 +217,7 @@ running separatelly). Running a series might also be more optimized.</p>
     def collect(self, api_key: str = None) -&gt; Tuple[Dataset]:
         &#34;&#34;&#34;
         Collect a dataset.
-        `api_key` is API access key that might be needed to retrieve datasets (depends on type implementation).
+        `api_key` is API access key that might be needed to retrieve datasets (depends on source implementation).
         Return tuple of collected Datasets.
         &#34;&#34;&#34;
 
@@ -258,7 +258,7 @@ running separatelly). Running a series might also be more optimized.</p>
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="cevast.dataset.managers.manager.DatasetManager.dataset_type"><code class="name">var <span class="ident">dataset_type</span></code></dt>
+<dt id="cevast.dataset.managers.manager.DatasetManager.dataset_source"><code class="name">var <span class="ident">dataset_source</span></code></dt>
 <dd>
 <div class="desc"><p>A decorator indicating abstract classmethods.</p>
 <p>Similar to abstractmethod.</p>
@@ -304,7 +304,7 @@ def analyse(self, analyser: Type[CertAnalyser], analyser_cfg: dict) -&gt; Tuple[
 </code></dt>
 <dd>
 <div class="desc"><p>Collect a dataset.
-<code>api_key</code> is API access key that might be needed to retrieve datasets (depends on type implementation).
+<code>api_key</code> is API access key that might be needed to retrieve datasets (depends on source implementation).
 Return tuple of collected Datasets.</p></div>
 <details class="source">
 <summary>
@@ -314,7 +314,7 @@ Return tuple of collected Datasets.</p></div>
 def collect(self, api_key: str = None) -&gt; Tuple[Dataset]:
     &#34;&#34;&#34;
     Collect a dataset.
-    `api_key` is API access key that might be needed to retrieve datasets (depends on type implementation).
+    `api_key` is API access key that might be needed to retrieve datasets (depends on source implementation).
     Return tuple of collected Datasets.
     &#34;&#34;&#34;</code></pre>
 </details>
@@ -462,7 +462,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
 <ul class="two-column">
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.analyse" href="#cevast.dataset.managers.manager.DatasetManager.analyse">analyse</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.collect" href="#cevast.dataset.managers.manager.DatasetManager.collect">collect</a></code></li>
-<li><code><a title="cevast.dataset.managers.manager.DatasetManager.dataset_type" href="#cevast.dataset.managers.manager.DatasetManager.dataset_type">dataset_type</a></code></li>
+<li><code><a title="cevast.dataset.managers.manager.DatasetManager.dataset_source" href="#cevast.dataset.managers.manager.DatasetManager.dataset_source">dataset_source</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.filter" href="#cevast.dataset.managers.manager.DatasetManager.filter">filter</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.run" href="#cevast.dataset.managers.manager.DatasetManager.run">run</a></code></li>
 <li><code><a title="cevast.dataset.managers.manager.DatasetManager.unify" href="#cevast.dataset.managers.manager.DatasetManager.unify">unify</a></code></li>

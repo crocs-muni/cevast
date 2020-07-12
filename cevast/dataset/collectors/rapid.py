@@ -1,4 +1,4 @@
-"""This module contains collector implementation for Rapid dataset type."""
+"""This module contains collector implementation for Rapid dataset source."""
 # pylint: disable=E1101
 #   - known Pylint issue https://github.com/PyCQA/pylint/issues/1411
 
@@ -8,7 +8,7 @@ import re
 from datetime import datetime
 from typing import List, Union, Tuple
 import requests
-from cevast.dataset.dataset import DatasetType, DatasetCollectionError, Dataset
+from cevast.dataset.dataset import DatasetSource, DatasetCollectionError, Dataset
 
 __author__ = 'Radim Podola'
 
@@ -24,7 +24,7 @@ class RapidCollector:
     Set the key to "RAPID_API_KEY" enviroment variable or provide upon initialization.
     """
 
-    dataset_type = DatasetType.RAPID.name
+    dataset_source = DatasetSource.RAPID.name
     _DATASETS_URL = "https://us.api.insight.rapid7.com/opendata/studies/sonar.ssl/"
     _DOWNLOAD_URL = _DATASETS_URL + "{}/download/"
     _QUOTA_URL = "https://us.api.insight.rapid7.com/opendata/quota/"

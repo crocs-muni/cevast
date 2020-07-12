@@ -65,7 +65,7 @@ def get(name: str):
     return METHODS.get(name, None)
 
 
-def show(include_docstring: bool=False):
+def show(include_docstring: bool = False):
     """Show available validation methods."""
     if include_docstring:
         return tuple("{:<8} - {}".format(name, func.__doc__) for name, func in METHODS.items())

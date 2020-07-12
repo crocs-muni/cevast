@@ -9,7 +9,7 @@ import click
 from cevast.certdb import CertFileDB, CertFileDBReadOnly
 from cevast.utils.logging import setup_cevast_logger
 from cevast.analysis import ChainValidator
-from .dataset import DatasetRepository, DatasetType, DatasetState
+from .dataset import DatasetRepository, DatasetSource, DatasetState
 from .manager_factory import DatasetManagerFactory, DatasetInvalidError
 from .managers import DatasetManagerTask
 
@@ -58,7 +58,7 @@ def dataset_repository_group(ctx, directory):
 
 
 @dataset_repository_group.command('show')
-@click.option('--type', '-t', 'type_', type=click.Choice([str(t) for t in DatasetType]), help='Dataset Type to filter.')
+@click.option('--source', '-s', 'source', type=click.Choice([str(t) for t in DatasetSource]), help='Dataset source to filter.')
 @click.option('--state', '-s', type=click.Choice([str(t) for t in DatasetState]), help='Dataset State to filter.')
 @click.option(
     '--date',
@@ -67,16 +67,16 @@ def dataset_repository_group(ctx, directory):
     help='Dataset date to filter in format [YYYYMMDD] (only part of date can be set).',
 )
 @click.pass_context
-def dataset_repository_show(ctx, type_, state, date):
+def dataset_repository_show(ctx, source, state, date):
     """Show datasets in <DIRECTORY> matching given filter(s)."""
-    click.echo(ctx.obj['repo'].dumps(dataset_id=date or '', dataset_type=type_, state=state))
+    click.echo(ctx.obj['repo'].dumps(dataset_id=date or '', source=source, state=state))
 
 
 # ------------------------------- Dataset CLI -------------------------------
 @click.group('manager')
 @click.argument('directory', type=click.Path(exists=True))
 @click.option(
-    '--type', '-t', 'type_', required=True, type=click.Choice([str(t) for t in DatasetType]), help='Dataset Type.'
+    '--source', '-s', 'source', required=True, type=click.Choice([str(t) for t in DatasetSource]), help='Dataset source.'
 )
 @click.option(
     '--date',
@@ -91,7 +91,7 @@ def dataset_repository_show(ctx, type_, state, date):
 @click.option('--cpu', type=int, help='Max Number of CPU cores to use.')
 @click.version_option()
 @click.pass_context
-def manager_group(ctx, directory, type_, date, port, cpu):
+def manager_group(ctx, directory, source, date, port, cpu):
     """Gives access to specified Dataset management."""
     ctx.ensure_object(dict)
     if cpu is None:
@@ -102,7 +102,7 @@ def manager_group(ctx, directory, type_, date, port, cpu):
         setup_cevast_logger(process_id=cpu > 1)
 
     try:
-        manager = DatasetManagerFactory.get_manager(type_)(repository=directory, date=date, ports=port, cpu_cores=cpu)
+        manager = DatasetManagerFactory.get_manager(source)(repository=directory, date=date, ports=port, cpu_cores=cpu)
     except DatasetInvalidError as err:
         click.echo('Failed to load manager: {}'.format(err))
         ctx.exit(1)

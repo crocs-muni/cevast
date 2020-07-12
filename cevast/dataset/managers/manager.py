@@ -4,7 +4,7 @@ from typing import Tuple, Union, Type
 from datetime import datetime
 from abc import ABC, abstractmethod, abstractclassmethod
 from enum import IntEnum
-from cevast.dataset.dataset import DatasetType, Dataset
+from cevast.dataset.dataset import DatasetSource, Dataset
 from cevast.certdb import CertDB
 from cevast.analysis import CertAnalyser
 
@@ -47,9 +47,9 @@ class DatasetManager(ABC):
 
     @property
     @abstractclassmethod
-    def dataset_type(cls) -> DatasetType:
+    def dataset_source(cls) -> DatasetSource:
         """
-        Dataset type property used to identify a manager specification.
+        Dataset source property used to identify a manager specification.
         """
 
     @abstractmethod
@@ -78,7 +78,7 @@ class DatasetManager(ABC):
     def collect(self, api_key: str = None) -> Tuple[Dataset]:
         """
         Collect a dataset.
-        `api_key` is API access key that might be needed to retrieve datasets (depends on type implementation).
+        `api_key` is API access key that might be needed to retrieve datasets (depends on source implementation).
         Return tuple of collected Datasets.
         """
 
