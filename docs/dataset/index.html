@@ -58,6 +58,10 @@ from .managers import DatasetManagerTask, DatasetManager</code></pre>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
+<dt><code class="name"><a title="cevast.dataset.cli" href="cli.html">cevast.dataset.cli</a></code></dt>
+<dd>
+<div class="desc"><p>Group of CLI commands used for Dataset management and tasks.</p></div>
+</dd>
 <dt><code class="name"><a title="cevast.dataset.collectors" href="collectors/index.html">cevast.dataset.collectors</a></code></dt>
 <dd>
 <div class="desc"><p>This package provides tools for collecting certificate datasets.</p></div>
@@ -99,10 +103,10 @@ from .managers import DatasetManagerTask, DatasetManager</code></pre>
 <div class="desc"><p>Class representing a single dataset and providing an interface to the dataset on the filesystem.</p>
 <p>Dataset is identified by <code>dataset_type</code>, <code>state</code> and filename where filename consists of mandatory
 <code>date_id</code>, <code>port</code> number and optional suffix. date_id represents the date (or date range) when
-the dataset was created (certificates were collected and added to the dataset), port is application
-port on which was the data collceted, suffix can specify the dataset in various ways and is used
-to distinguish the files internally. <code>dataset_type</code>, <code>date_id</code> and <code>port</code> are static identifiers provided
-upon object initialization.</p>
+the dataset was created (certificates were collected and added to the dataset) and its string in fomat
+"YYYYMMDD", port is application port on which was the data collceted, suffix can specify the dataset
+in various ways and is used to distinguish the files internally. <code>dataset_type</code>, <code>date_id</code> and <code>port</code>
+are static identifiers provided upon object initialization.</p>
 <p>The dataset state is dynamic identifier that is the last part of its complete identification at the time.
 Each dataset can be found at 1-N of the following generalized states:
 - COLLECTED
@@ -121,10 +125,10 @@ Each dataset can be found at 1-N of the following generalized states:
 
     Dataset is identified by `dataset_type`, `state` and filename where filename consists of mandatory
     `date_id`, `port` number and optional suffix. date_id represents the date (or date range) when
-    the dataset was created (certificates were collected and added to the dataset), port is application
-    port on which was the data collceted, suffix can specify the dataset in various ways and is used
-    to distinguish the files internally. `dataset_type`, `date_id` and `port` are static identifiers provided
-    upon object initialization.
+    the dataset was created (certificates were collected and added to the dataset) and its string in fomat
+    &#34;YYYYMMDD&#34;, port is application port on which was the data collceted, suffix can specify the dataset
+    in various ways and is used to distinguish the files internally. `dataset_type`, `date_id` and `port`
+    are static identifiers provided upon object initialization.
 
     The dataset state is dynamic identifier that is the last part of its complete identification at the time.
     Each dataset can be found at 1-N of the following generalized states:
@@ -631,7 +635,7 @@ If <code>physically</code> flag is set and and path does not exist, create it.</
 </dd>
 <dt id="cevast.dataset.DatasetManager"><code class="flex name class">
 <span>class <span class="ident">DatasetManager</span></span>
-<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 10), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
+<span>(</span><span>repository: str, date: <method 'date' of 'datetime.datetime' objects> = datetime.date(2020, 7, 12), ports: Tuple[str] = ('443',), cpu_cores: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>An abstract DatasetManager class representing an interface that can be used to perform
@@ -1031,9 +1035,24 @@ def get_manager(cls, dataset_type: Union[DatasetType, str]) -&gt; Type[managers.
         repo = self.get(dataset_type, state, dataset_id)
         repo_str = &#39;&#39;
         for d_type, d_states in repo.items():
+            repo_str += &#39;{:&lt;8}: &#39;.format(d_type)
+            first_state = True
+
             for d_state, d_datasets in d_states.items():
-                if d_datasets:
-                    repo_str += &#34;{}: {}: [{}]\n&#34;.format(d_type, d_state, &#39;, &#39;.join(d_datasets))
+                if first_state:
+                    first_state = False
+                else:
+                    repo_str += &#34; &#34; * 10
+                repo_str += &#34;{:&lt;10}: &#34;.format(d_state)
+
+                first_dataset = True
+                for dataset in d_datasets:
+                    if first_dataset:
+                        repo_str += dataset + &#34;\n&#34;
+                        first_dataset = False
+                    else:
+                        repo_str += &#34; &#34; * 22 + dataset + &#34;\n&#34;
+
         return repo_str
 
     def dump(self, dataset_type: Union[DatasetType, str] = None,
@@ -1122,9 +1141,24 @@ The parameters represent the output filter options.</p></div>
     repo = self.get(dataset_type, state, dataset_id)
     repo_str = &#39;&#39;
     for d_type, d_states in repo.items():
+        repo_str += &#39;{:&lt;8}: &#39;.format(d_type)
+        first_state = True
+
         for d_state, d_datasets in d_states.items():
-            if d_datasets:
-                repo_str += &#34;{}: {}: [{}]\n&#34;.format(d_type, d_state, &#39;, &#39;.join(d_datasets))
+            if first_state:
+                first_state = False
+            else:
+                repo_str += &#34; &#34; * 10
+            repo_str += &#34;{:&lt;10}: &#34;.format(d_state)
+
+            first_dataset = True
+            for dataset in d_datasets:
+                if first_dataset:
+                    repo_str += dataset + &#34;\n&#34;
+                    first_dataset = False
+                else:
+                    repo_str += &#34; &#34; * 22 + dataset + &#34;\n&#34;
+
     return repo_str</code></pre>
 </details>
 </dd>
@@ -1314,6 +1348,7 @@ The parameters represent the output filter options.</p></div>
 </li>
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
+<li><code><a title="cevast.dataset.cli" href="cli.html">cevast.dataset.cli</a></code></li>
 <li><code><a title="cevast.dataset.collectors" href="collectors/index.html">cevast.dataset.collectors</a></code></li>
 <li><code><a title="cevast.dataset.dataset" href="dataset.html">cevast.dataset.dataset</a></code></li>
 <li><code><a title="cevast.dataset.filters" href="filters/index.html">cevast.dataset.filters</a></code></li>

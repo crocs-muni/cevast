@@ -88,6 +88,8 @@ import logging
 import subprocess
 from collections import OrderedDict
 
+__author__ = &#39;Radim Podola&#39;
+
 
 log = logging.getLogger(__name__)
 
@@ -215,7 +217,7 @@ try:
 
     METHODS[&#39;pyopenssl&#39;] = _PyOpenSSL
 except ModuleNotFoundError:
-    log.exception(&#34;PyOpenSSL failed to import - check if installed&#34;)
+    log.info(&#34;PyOpenSSL failed to import - check if installed&#34;)
 
 # try to load Botan
 log.info(&#34;Loading Botan&#34;)
@@ -224,9 +226,9 @@ try:
 
     METHODS[&#39;botan&#39;] = _botan
 except ModuleNotFoundError:
-    log.exception(&#34;Botan failed to import - check if installed&#34;)
+    log.info(&#34;Botan failed to import - check if installed&#34;)
 except Exception:
-    log.exception(&#34;Botan failed to initialized - check if library is installed properly&#34;)
+    log.info(&#34;Botan failed to initialized - check if library is installed properly&#34;)
 
 
 if __name__ == &#34;__main__&#34;:

@@ -1,6 +1,12 @@
 """Utils is a collection providing various functions for Cevast needs."""
 
-__all__ = ('validate_PEM', 'BASE64_to_PEM', 'make_PEM_filename', 'remove_empty_folders', 'directory_with_prefix')
+__all__ = (
+    'validate_PEM',
+    'BASE64_to_PEM',
+    'make_PEM_filename',
+    'remove_empty_folders',
+    'directory_with_prefix',
+)
 __version__ = '0.1'
 __author__ = 'Radim Podola'
 

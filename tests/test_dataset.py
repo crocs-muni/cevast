@@ -127,12 +127,16 @@ class TestDataset(unittest.TestCase):
         self.assertNotEqual(path, path2)
         self.assertNotEqual(path2, path3)
         # GET should return /../repository/RAPID/UNIFIED
-        self.assertEqual(path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.UNIFIED.name))
+        self.assertEqual(
+            path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.UNIFIED.name)
+        )
 
         # Test GET with STRING state paramater
         path = ds_rapid.path("UNIFIED", False)
         assert not os.path.exists(path)
-        self.assertEqual(path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.UNIFIED.name))
+        self.assertEqual(
+            path, os.path.join(os.path.abspath(self.TEST_REPO), DatasetType.RAPID.name, DatasetState.UNIFIED.name)
+        )
 
         # Test physically paramater
         assert not os.path.exists(path)
@@ -185,7 +189,10 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(
             path,
             os.path.join(
-                os.path.abspath(self.TEST_REPO), DatasetType.CENSYS.name, DatasetState.UNIFIED.name, '2020-06-30_suffix.' + ext,
+                os.path.abspath(self.TEST_REPO),
+                DatasetType.CENSYS.name,
+                DatasetState.UNIFIED.name,
+                '2020-06-30_suffix.' + ext,
             ),
         )
         path = ds_censys.full_path(DatasetState.UNIFIED, '', False)

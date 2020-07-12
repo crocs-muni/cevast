@@ -1,4 +1,3 @@
-
 """This module contains implementation of RAPID dataset filter."""
 
 import logging

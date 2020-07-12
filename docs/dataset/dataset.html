@@ -99,10 +99,10 @@ class Dataset:
 
     Dataset is identified by `dataset_type`, `state` and filename where filename consists of mandatory
     `date_id`, `port` number and optional suffix. date_id represents the date (or date range) when
-    the dataset was created (certificates were collected and added to the dataset), port is application
-    port on which was the data collceted, suffix can specify the dataset in various ways and is used
-    to distinguish the files internally. `dataset_type`, `date_id` and `port` are static identifiers provided
-    upon object initialization.
+    the dataset was created (certificates were collected and added to the dataset) and its string in fomat
+    &#34;YYYYMMDD&#34;, port is application port on which was the data collceted, suffix can specify the dataset
+    in various ways and is used to distinguish the files internally. `dataset_type`, `date_id` and `port`
+    are static identifiers provided upon object initialization.
 
     The dataset state is dynamic identifier that is the last part of its complete identification at the time.
     Each dataset can be found at 1-N of the following generalized states:
@@ -303,9 +303,24 @@ class DatasetRepository:
         repo = self.get(dataset_type, state, dataset_id)
         repo_str = &#39;&#39;
         for d_type, d_states in repo.items():
+            repo_str += &#39;{:&lt;8}: &#39;.format(d_type)
+            first_state = True
+
             for d_state, d_datasets in d_states.items():
-                if d_datasets:
-                    repo_str += &#34;{}: {}: [{}]\n&#34;.format(d_type, d_state, &#39;, &#39;.join(d_datasets))
+                if first_state:
+                    first_state = False
+                else:
+                    repo_str += &#34; &#34; * 10
+                repo_str += &#34;{:&lt;10}: &#34;.format(d_state)
+
+                first_dataset = True
+                for dataset in d_datasets:
+                    if first_dataset:
+                        repo_str += dataset + &#34;\n&#34;
+                        first_dataset = False
+                    else:
+                        repo_str += &#34; &#34; * 22 + dataset + &#34;\n&#34;
+
         return repo_str
 
     def dump(self, dataset_type: Union[DatasetType, str] = None,
@@ -372,10 +387,10 @@ class DatasetRepository:
 <div class="desc"><p>Class representing a single dataset and providing an interface to the dataset on the filesystem.</p>
 <p>Dataset is identified by <code>dataset_type</code>, <code>state</code> and filename where filename consists of mandatory
 <code>date_id</code>, <code>port</code> number and optional suffix. date_id represents the date (or date range) when
-the dataset was created (certificates were collected and added to the dataset), port is application
-port on which was the data collceted, suffix can specify the dataset in various ways and is used
-to distinguish the files internally. <code>dataset_type</code>, <code>date_id</code> and <code>port</code> are static identifiers provided
-upon object initialization.</p>
+the dataset was created (certificates were collected and added to the dataset) and its string in fomat
+"YYYYMMDD", port is application port on which was the data collceted, suffix can specify the dataset
+in various ways and is used to distinguish the files internally. <code>dataset_type</code>, <code>date_id</code> and <code>port</code>
+are static identifiers provided upon object initialization.</p>
 <p>The dataset state is dynamic identifier that is the last part of its complete identification at the time.
 Each dataset can be found at 1-N of the following generalized states:
 - COLLECTED
@@ -394,10 +409,10 @@ Each dataset can be found at 1-N of the following generalized states:
 
     Dataset is identified by `dataset_type`, `state` and filename where filename consists of mandatory
     `date_id`, `port` number and optional suffix. date_id represents the date (or date range) when
-    the dataset was created (certificates were collected and added to the dataset), port is application
-    port on which was the data collceted, suffix can specify the dataset in various ways and is used
-    to distinguish the files internally. `dataset_type`, `date_id` and `port` are static identifiers provided
-    upon object initialization.
+    the dataset was created (certificates were collected and added to the dataset) and its string in fomat
+    &#34;YYYYMMDD&#34;, port is application port on which was the data collceted, suffix can specify the dataset
+    in various ways and is used to distinguish the files internally. `dataset_type`, `date_id` and `port`
+    are static identifiers provided upon object initialization.
 
     The dataset state is dynamic identifier that is the last part of its complete identification at the time.
     Each dataset can be found at 1-N of the following generalized states:
@@ -932,9 +947,24 @@ If <code>physically</code> flag is set and and path does not exist, create it.</
         repo = self.get(dataset_type, state, dataset_id)
         repo_str = &#39;&#39;
         for d_type, d_states in repo.items():
+            repo_str += &#39;{:&lt;8}: &#39;.format(d_type)
+            first_state = True
+
             for d_state, d_datasets in d_states.items():
-                if d_datasets:
-                    repo_str += &#34;{}: {}: [{}]\n&#34;.format(d_type, d_state, &#39;, &#39;.join(d_datasets))
+                if first_state:
+                    first_state = False
+                else:
+                    repo_str += &#34; &#34; * 10
+                repo_str += &#34;{:&lt;10}: &#34;.format(d_state)
+
+                first_dataset = True
+                for dataset in d_datasets:
+                    if first_dataset:
+                        repo_str += dataset + &#34;\n&#34;
+                        first_dataset = False
+                    else:
+                        repo_str += &#34; &#34; * 22 + dataset + &#34;\n&#34;
+
         return repo_str
 
     def dump(self, dataset_type: Union[DatasetType, str] = None,
@@ -1023,9 +1053,24 @@ The parameters represent the output filter options.</p></div>
     repo = self.get(dataset_type, state, dataset_id)
     repo_str = &#39;&#39;
     for d_type, d_states in repo.items():
+        repo_str += &#39;{:&lt;8}: &#39;.format(d_type)
+        first_state = True
+
         for d_state, d_datasets in d_states.items():
-            if d_datasets:
-                repo_str += &#34;{}: {}: [{}]\n&#34;.format(d_type, d_state, &#39;, &#39;.join(d_datasets))
+            if first_state:
+                first_state = False
+            else:
+                repo_str += &#34; &#34; * 10
+            repo_str += &#34;{:&lt;10}: &#34;.format(d_state)
+
+            first_dataset = True
+            for dataset in d_datasets:
+                if first_dataset:
+                    repo_str += dataset + &#34;\n&#34;
+                    first_dataset = False
+                else:
+                    repo_str += &#34; &#34; * 22 + dataset + &#34;\n&#34;
+
     return repo_str</code></pre>
 </details>
 </dd>

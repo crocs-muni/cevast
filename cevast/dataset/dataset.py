@@ -72,10 +72,10 @@ class Dataset:
 
     Dataset is identified by `dataset_type`, `state` and filename where filename consists of mandatory
     `date_id`, `port` number and optional suffix. date_id represents the date (or date range) when
-    the dataset was created (certificates were collected and added to the dataset), port is application
-    port on which was the data collceted, suffix can specify the dataset in various ways and is used
-    to distinguish the files internally. `dataset_type`, `date_id` and `port` are static identifiers provided
-    upon object initialization.
+    the dataset was created (certificates were collected and added to the dataset) and its string in fomat
+    "YYYYMMDD", port is application port on which was the data collceted, suffix can specify the dataset
+    in various ways and is used to distinguish the files internally. `dataset_type`, `date_id` and `port`
+    are static identifiers provided upon object initialization.
 
     The dataset state is dynamic identifier that is the last part of its complete identification at the time.
     Each dataset can be found at 1-N of the following generalized states:
@@ -276,9 +276,24 @@ class DatasetRepository:
         repo = self.get(dataset_type, state, dataset_id)
         repo_str = ''
         for d_type, d_states in repo.items():
+            repo_str += '{:<8}: '.format(d_type)
+            first_state = True
+
             for d_state, d_datasets in d_states.items():
-                if d_datasets:
-                    repo_str += "{}: {}: [{}]\n".format(d_type, d_state, ', '.join(d_datasets))
+                if first_state:
+                    first_state = False
+                else:
+                    repo_str += " " * 10
+                repo_str += "{:<10}: ".format(d_state)
+
+                first_dataset = True
+                for dataset in d_datasets:
+                    if first_dataset:
+                        repo_str += dataset + "\n"
+                        first_dataset = False
+                    else:
+                        repo_str += " " * 22 + dataset + "\n"
+
         return repo_str
 
     def dump(self, dataset_type: Union[DatasetType, str] = None,

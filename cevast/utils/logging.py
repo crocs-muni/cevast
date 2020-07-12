@@ -25,6 +25,34 @@ def __rotator(source, dest):
     os.remove(source)
 
 
+def cli_logger() -> logging.Logger:
+    return logging.getLogger('CEVAST_CLI')
+
+
+# TODO setup separate logger to log some info to the console with use of CLI
+# or use click-log ???
+def setup_cli_logger() -> logging.Logger:
+    """
+    Setup the CLI project logger 'CEVAST_CLI'.
+
+    Logger has configured a standard console_handler.
+
+    TODO: add support for colours
+    """
+    # Setup formatter
+    # TODO is it needed?
+    formatter = logging.Formatter('%(message)s')
+    cli_logger = logging.getLogger('CEVAST_CLI')
+
+    # Setup handler writing error-like logs to console
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+
+    cli_logger.addHandler(console_handler)
+    return cli_logger
+
+
 # TODO fix problem with mp logging https://medium.com/@rui.jorge.rei/semi-correct-handling-of-log-rotation-in-multiprocess-python-applications-75c56eca6780
 def setup_cevast_logger(debug: bool = False, process_id: bool = False) -> logging.Logger:
     """
@@ -37,7 +65,6 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -> loggin
     Each module-level logger must start with 'cevast.' to inherit the setup.
 
     TODO: add support for config file
-    TODO: add filter for console outputs
     """
     if not os.path.exists(LOG_DIR):
         os.mkdir(LOG_DIR)

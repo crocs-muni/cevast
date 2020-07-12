@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.8.1" />
 <title>cevast.cli API documentation</title>
-<meta name="description" content="" />
+<meta name="description" content="Entry point of CEVAST Command Line Interface." />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
@@ -20,95 +20,45 @@
 <h1 class="title">Module <code>cevast.cli</code></h1>
 </header>
 <section id="section-intro">
+<p>Entry point of CEVAST Command Line Interface.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import os
-import argparse
-from typing import List
-from datetime import datetime
-from cevast.certdb import CertFileDB
-from cevast.dataset import DatasetManagerFactory, DatasetManagerTask, DatasetType
-from cevast.utils.logging import setup_cevast_logger
-from cevast.analysis import ChainValidator
+<pre><code class="python">&#34;&#34;&#34;Entry point of CEVAST Command Line Interface.&#34;&#34;&#34;
+
+import os
+import click
+from .utils.logging import setup_cevast_logger
+from .certdb import cli as certdb_cli
+from .dataset import cli as dataset_cli
 
 
-# based on cpus set process_id
-log = setup_cevast_logger(debug=False, process_id=True)
+@click.group()
+@click.option(&#39;--debug/--no-debug&#39;, default=False, help=&#39;DEBUG logging level will be turned on.&#39;)
+@click.option(&#39;--cpu&#39;, default=os.cpu_count() - 1, type=int, help=&#39;Max Number of CPU cores to use.&#39;)
+@click.version_option()
+@click.pass_context
+def cli(ctx, debug, cpu):
+    &#34;&#34;&#34;Cevast is a set of tools for collection and analysis of X.509 certificate datasets.&#34;&#34;&#34;
+
+    # based on parameters setup logger
+    setup_cevast_logger(debug=debug, process_id=cpu &gt; 1)
+
+    if debug:
+        click.echo(&#39;Debug mode is ON&#39;)
+
+    ctx.ensure_object(dict)
+    ctx.obj[&#39;cpu&#39;] = cpu
 
 
-def valid_date(s):
-    try:
-        return datetime.strptime(s, &#34;%Y-%m-%d&#34;).date()
-    except ValueError:
-        msg = &#34;Not a valid date: &#39;{0}&#39;.&#34;.format(s)
-        raise argparse.ArgumentTypeError(msg)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(&#39;type&#39;, type=str.upper, choices=[str(t) for t in DatasetType])
-    parser.add_argument(&#39;repository&#39;, nargs=&#39;?&#39;, default=os.getcwd())
-    parser.add_argument(&#34;-d&#34;,
-                        &#34;--date&#34;,
-                        help=&#34;The Date ID - format YYYY-MM-DD&#34;,
-                        required=True,
-                        type=valid_date)
-    parser.add_argument(&#39;--certdb&#39;, required=True)
-    parser.add_argument(&#39;-t&#39;, &#39;--task&#39;, action=&#39;append&#39;, type=str.upper, choices=[str(t) for t in DatasetManagerTask])
-    parser.add_argument(&#39;--port&#39;, default=&#39;443&#39;)
-    parser.add_argument(&#39;--cpu&#39;, default=os.cpu_count() - 1, type=int)
-
-    return parser.parse_args()
-
-
-# If only validation -&gt; use CertDBReadonly!!!
-
-
-def cli():
-    &#34;&#34;&#34;Runs the cli.&#34;&#34;&#34;
-    log.info(&#39;Starting&#39;)
-    args = parse_args()
-    log.info(args)
-
-    try:
-        db = CertFileDB(args.certdb, args.cpu)
-    except ValueError:
-        log.info(&#39;CertFileDB does not exist yet, will be created.&#39;)
-        CertFileDB.setup(args.certdb, owner=&#39;cevast&#39;, desc=&#39;Cevast CertFileDB&#39;)
-        db = CertFileDB(args.certdb, args.cpu)
-
-    manager = DatasetManagerFactory.get_manager(args.type)(args.repository, date=args.date, ports=args.port, cpu_cores=args.cpu)
-
-    if not args.task:
-        log.warning(&#39;Nothing to do, yeaaaa&#39;)
-        return None
-
-    tasks = []
-    #analyser_cfg = {&#39;certdb&#39;: db, &#39;methods&#39;: [&#39;botan&#39;]}
-    analyser_cfg = {&#39;certdb&#39;: db}
-    for args_task in args.task:
-        if DatasetManagerTask.validate(args_task):
-            task = DatasetManagerTask[args_task]
-            params = {}
-            if task == DatasetManagerTask.COLLECT:
-                pass
-            elif task == DatasetManagerTask.UNIFY:
-                params[&#39;certdb&#39;] = db
-            elif task == DatasetManagerTask.ANALYSE:
-                params[&#39;analyser_cfg&#39;] = analyser_cfg
-                params[&#39;analyser&#39;] = ChainValidator
-
-            tasks.append((task, params))
-    print(tasks)
-    manager.run(tasks)
-
-    db.commit()
+cli.add_command(certdb_cli.certdb_group)
+cli.add_command(dataset_cli.dataset_repository_group)
+cli.add_command(dataset_cli.dataset_group)
 
 
 if __name__ == &#34;__main__&#34;:
-    cli()</code></pre>
+    cli()  # pylint: disable=E1120</code></pre>
 </details>
 </section>
 <section>
@@ -116,102 +66,6 @@ if __name__ == &#34;__main__&#34;:
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-functions">Functions</h2>
-<dl>
-<dt id="cevast.cli.cli"><code class="name flex">
-<span>def <span class="ident">cli</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Runs the cli.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def cli():
-    &#34;&#34;&#34;Runs the cli.&#34;&#34;&#34;
-    log.info(&#39;Starting&#39;)
-    args = parse_args()
-    log.info(args)
-
-    try:
-        db = CertFileDB(args.certdb, args.cpu)
-    except ValueError:
-        log.info(&#39;CertFileDB does not exist yet, will be created.&#39;)
-        CertFileDB.setup(args.certdb, owner=&#39;cevast&#39;, desc=&#39;Cevast CertFileDB&#39;)
-        db = CertFileDB(args.certdb, args.cpu)
-
-    manager = DatasetManagerFactory.get_manager(args.type)(args.repository, date=args.date, ports=args.port, cpu_cores=args.cpu)
-
-    if not args.task:
-        log.warning(&#39;Nothing to do, yeaaaa&#39;)
-        return None
-
-    tasks = []
-    #analyser_cfg = {&#39;certdb&#39;: db, &#39;methods&#39;: [&#39;botan&#39;]}
-    analyser_cfg = {&#39;certdb&#39;: db}
-    for args_task in args.task:
-        if DatasetManagerTask.validate(args_task):
-            task = DatasetManagerTask[args_task]
-            params = {}
-            if task == DatasetManagerTask.COLLECT:
-                pass
-            elif task == DatasetManagerTask.UNIFY:
-                params[&#39;certdb&#39;] = db
-            elif task == DatasetManagerTask.ANALYSE:
-                params[&#39;analyser_cfg&#39;] = analyser_cfg
-                params[&#39;analyser&#39;] = ChainValidator
-
-            tasks.append((task, params))
-    print(tasks)
-    manager.run(tasks)
-
-    db.commit()</code></pre>
-</details>
-</dd>
-<dt id="cevast.cli.parse_args"><code class="name flex">
-<span>def <span class="ident">parse_args</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(&#39;type&#39;, type=str.upper, choices=[str(t) for t in DatasetType])
-    parser.add_argument(&#39;repository&#39;, nargs=&#39;?&#39;, default=os.getcwd())
-    parser.add_argument(&#34;-d&#34;,
-                        &#34;--date&#34;,
-                        help=&#34;The Date ID - format YYYY-MM-DD&#34;,
-                        required=True,
-                        type=valid_date)
-    parser.add_argument(&#39;--certdb&#39;, required=True)
-    parser.add_argument(&#39;-t&#39;, &#39;--task&#39;, action=&#39;append&#39;, type=str.upper, choices=[str(t) for t in DatasetManagerTask])
-    parser.add_argument(&#39;--port&#39;, default=&#39;443&#39;)
-    parser.add_argument(&#39;--cpu&#39;, default=os.cpu_count() - 1, type=int)
-
-    return parser.parse_args()</code></pre>
-</details>
-</dd>
-<dt id="cevast.cli.valid_date"><code class="name flex">
-<span>def <span class="ident">valid_date</span></span>(<span>s)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def valid_date(s):
-    try:
-        return datetime.strptime(s, &#34;%Y-%m-%d&#34;).date()
-    except ValueError:
-        msg = &#34;Not a valid date: &#39;{0}&#39;.&#34;.format(s)
-        raise argparse.ArgumentTypeError(msg)</code></pre>
-</details>
-</dd>
-</dl>
 </section>
 <section>
 </section>
@@ -225,13 +79,6 @@ if __name__ == &#34;__main__&#34;:
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="cevast" href="index.html">cevast</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="cevast.cli.cli" href="#cevast.cli.cli">cli</a></code></li>
-<li><code><a title="cevast.cli.parse_args" href="#cevast.cli.parse_args">parse_args</a></code></li>
-<li><code><a title="cevast.cli.valid_date" href="#cevast.cli.valid_date">valid_date</a></code></li>
 </ul>
 </li>
 </ul>

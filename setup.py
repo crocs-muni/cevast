@@ -28,5 +28,6 @@ setup(
         [console_scripts]
         cevast=cevast.cli:cli
         certdb=cevast.certdb.cli:certdb_group
+        dataset=cevast.dataset.cli:dataset_group
     ''',
 )

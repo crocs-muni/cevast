@@ -2,8 +2,9 @@
 
 import os
 import click
-from cevast.utils.logging import setup_cevast_logger
-from cevast.certdb import cli as certdb_cli
+from .utils.logging import setup_cevast_logger
+from .certdb import cli as certdb_cli
+from .dataset import cli as dataset_cli
 
 
 @click.group()
@@ -17,15 +18,17 @@ def cli(ctx, debug, cpu):
     # based on parameters setup logger
     setup_cevast_logger(debug=debug, process_id=cpu > 1)
 
-    click.echo('Debug mode is %s' % ('on' if debug else 'off'))
-    click.echo('Starting')
+    if debug:
+        click.echo('Debug mode is ON')
 
     ctx.ensure_object(dict)
     ctx.obj['cpu'] = cpu
 
 
 cli.add_command(certdb_cli.certdb_group)
+cli.add_command(dataset_cli.dataset_repository_group)
+cli.add_command(dataset_cli.dataset_group)
 
 
 if __name__ == "__main__":
-    cli() # pylint: disable=E1120
+    cli()  # pylint: disable=E1120
