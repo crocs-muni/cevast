@@ -27,17 +27,25 @@
 </summary>
 <pre><code class="python">&#34;&#34;&#34;Group of CLI commands used for Dataset management and tasks.&#34;&#34;&#34;
 
+import os
 from datetime import datetime
 import click
-from .dataset import Dataset, DatasetRepository, DatasetType, DatasetState
+from cevast.certdb import CertFileDB, CertFileDBReadOnly
+from cevast.utils.logging import setup_cevast_logger
+from cevast.analysis import ChainValidator
+from .dataset import DatasetRepository, DatasetType, DatasetState
+from .manager_factory import DatasetManagerFactory, DatasetInvalidError
+from .managers import DatasetManagerTask
 
 __author__ = &#39;Radim Podola&#39;
+
+CLI_DATE_FORMAT = &#39;%Y-%m-%d&#39;
 
 
 def _validate_cli_date(_, __, value):
     &#34;&#34;&#34;Validates format of date.&#34;&#34;&#34;
     try:
-        return datetime.strptime(value, &#34;%Y-%m-%d&#34;).date()
+        return datetime.strptime(value, CLI_DATE_FORMAT).date()
     except ValueError:
         raise click.BadParameter(&#39;Date need to be in format YYYY-mm-dd&#39;)
 
@@ -45,6 +53,8 @@ def _validate_cli_date(_, __, value):
 def _validate_cli_filter_date(_, __, value):
     &#34;&#34;&#34;Validates format of date filter.&#34;&#34;&#34;
     try:
+        if value is None:
+            return None
         if not value or len(value) &gt; 8:
             raise click.BadParameter(&#39;Date filter need to be in format YYYYmmdd (can be partial e.g. only YYYYmm)&#39;)
         int(value)  # test for number
@@ -53,12 +63,21 @@ def _validate_cli_filter_date(_, __, value):
         raise click.BadParameter(&#39;Date filter need to be in format YYYYmmdd (can be partial e.g. only YYYYmm)&#39;)
 
 
+def _prepare_analyser_arg(certdb):
+    return {&#39;analyser_cfg&#39;: {&#39;certdb&#39;: certdb},
+            &#39;analyser&#39;: ChainValidator}
+
+
 # -------------------------- DatasetRepository CLI --------------------------
 @click.group(&#39;repository&#39;)
 @click.argument(&#39;directory&#39;, type=click.Path(exists=True))
 @click.pass_context
 def dataset_repository_group(ctx, directory):
     &#34;&#34;&#34;Gives access to Dataset Repository at &lt;DIRECTORY&gt;.&#34;&#34;&#34;
+    ctx.ensure_object(dict)
+    if ctx.parent is None:  # Check if was called diretly via &#34;datasetrepository&#34; alias and should set up logger then
+        setup_cevast_logger()
+
     ctx.obj[&#39;repo&#39;] = DatasetRepository(directory)
 
 
@@ -78,112 +97,139 @@ def dataset_repository_show(ctx, type_, state, date):
 
 
 # ------------------------------- Dataset CLI -------------------------------
-@click.group(&#39;dataset&#39;)
+@click.group(&#39;manager&#39;)
 @click.argument(&#39;directory&#39;, type=click.Path(exists=True))
 @click.option(
-    &#39;--type&#39;, &#39;-t&#39;, &#39;type_&#39;, required=True, type=click.Choice([str(t) for t in DatasetType]), help=&#39;Dataset Type to filter.&#39;
-)
-@click.option(
-    &#39;--state&#39;, &#39;-s&#39;, required=True, type=click.Choice([str(t) for t in DatasetState]), help=&#39;Dataset State to filter.&#39;
+    &#39;--type&#39;, &#39;-t&#39;, &#39;type_&#39;, required=True, type=click.Choice([str(t) for t in DatasetType]), help=&#39;Dataset Type.&#39;
 )
 @click.option(
     &#39;--date&#39;,
     &#39;-d&#39;,
-    required=True,
+    default=datetime.today().date().strftime(CLI_DATE_FORMAT),
     callback=_validate_cli_date,
-    help=&#39;Dataset date to filter in format [YYYYMMDD] (only part of date can be set).&#39;,
+    help=&#39;Dataset date in format [YYYY-mm-dd].&#39;,
 )
+@click.option(
+    &#39;--port&#39;, &#39;-p&#39;, default=[443], multiple=True, help=&#39;Dataset Port(s).&#39;
+)
+@click.option(&#39;--cpu&#39;, type=int, help=&#39;Max Number of CPU cores to use.&#39;)
 @click.version_option()
 @click.pass_context
-def dataset_group(ctx, storage, cpu, read_only):
-    &#34;&#34;&#34;Gives access to CertDB at &lt;DIRECTORY&gt;.&#34;&#34;&#34;
+def manager_group(ctx, directory, type_, date, port, cpu):
+    &#34;&#34;&#34;Gives access to specified Dataset management.&#34;&#34;&#34;
     ctx.ensure_object(dict)
+    if cpu is None:
+        cpu = ctx.obj.get(&#39;cpu&#39;, os.cpu_count() - 1)  # Might be specified on top level command
+    ctx.obj[&#39;cpu&#39;] = cpu  # Pass it to subcommands
 
-
-&#34;&#34;&#34;
-    CertFileDB.setup(storage, owner=&#39;cevast&#39;, desc=&#39;Cevast CertFileDB&#39;)
+    if ctx.parent is None:  # Check if was called diretly via &#34;manager&#34; alias and should set up logger then
+        setup_cevast_logger(process_id=cpu &gt; 1)
 
     try:
-        db = CertFileDB(args.certdb, args.cpu)
-    except ValueError:
-        log.info(&#39;CertFileDB does not exist yet, will be created.&#39;)
-        CertFileDB.setup(args.certdb, owner=&#39;cevast&#39;, desc=&#39;Cevast CertFileDB&#39;)
-        db = CertFileDB(args.certdb, args.cpu)
-
-    manager = DatasetManagerFactory.get_manager(args.type)(args.repository, date=args.date, ports=args.port, cpu_cores=args.cpu)
+        manager = DatasetManagerFactory.get_manager(type_)(repository=directory, date=date, ports=port, cpu_cores=cpu)
+    except DatasetInvalidError as err:
+        click.echo(&#39;Failed to load manager: {}&#39;.format(err))
+        ctx.exit(1)
 
     ctx.obj[&#39;manager&#39;] = manager
-&#34;&#34;&#34;
 
 
-@dataset_group.command(&#39;collect&#39;)
+@manager_group.command(&#39;collect&#39;)
+@click.option(&#39;--api_key&#39;, help=&#39;API Key might needed for collection.&#39;)
 @click.pass_context
-def dataset_collect(ctx):
+def manager_collect(ctx, api_key):
     &#34;&#34;&#34;Collects dataset(s) matching given filter(s).&#34;&#34;&#34;
+    collected = ctx.obj[&#39;manager&#39;].collect(api_key)
+    click.echo(&#39;Collected Datasets: {}&#39;.format(collected))
 
 
-@dataset_group.command(&#39;unify&#39;)
+@manager_group.command(&#39;unify&#39;)
+@click.option(
+    &#39;--certdb&#39;,
+    required=True,
+    type=click.Path(exists=True),
+    help=&#39;Path to CertDB where the certificates should be stored into.&#39;
+)
 @click.pass_context
-def dataset_unify(ctx):
+def manager_unify(ctx, certdb):
     &#34;&#34;&#34;Unifies dataset(s) matching given filter(s).&#34;&#34;&#34;
+    try:
+        certdb = CertFileDB(certdb, ctx.obj[&#39;cpu&#39;])
+    except ValueError:
+        click.echo(
+            &#39;CertFileDB does not exist at {} yet, run &#34;cevast certdb setup --help&#34; for more information&#39;.format(certdb)
+        )
+        ctx.exit(1)
+
+    unified = ctx.obj[&#39;manager&#39;].unify(certdb)
+    certdb.commit()
+    click.echo(&#39;Unified Datasets: {}&#39;.format(unified))
 
 
-# If only validation -&gt; use CertDBReadonly!!!
-@dataset_group.command(&#39;analyse&#39;)
+@manager_group.command(&#39;analyse&#39;)
+@click.option(
+    &#39;--certdb&#39;,
+    required=True,
+    type=click.Path(exists=True),
+    help=&#39;Path to CertDB where the certificates should be read from.&#39;
+)
 @click.pass_context
-def dataset_analyse(ctx):
+def manager_analyse(ctx, certdb):
     &#34;&#34;&#34;Analyses dataset(s) matching given filter(s).&#34;&#34;&#34;
+    try:
+        certdb = CertFileDBReadOnly(certdb)
+    except ValueError:
+        click.echo(
+            &#39;CertFileDB does not exist at {} yet, run &#34;cevast certdb setup --help&#34; for more information&#39;.format(certdb)
+        )
+        ctx.exit(1)
+
+    analysed = ctx.obj[&#39;manager&#39;].analyse(**_prepare_analyser_arg(certdb))
+    click.echo(&#39;Analysed Datasets: {}&#39;.format(analysed))
 
 
-@dataset_group.command(&#39;run&#39;)
+@manager_group.command(&#39;runner&#39;)
+@click.option(
+    &#39;--certdb&#39;,
+    required=True,
+    type=click.Path(exists=True),
+    help=&#39;Path to CertDB where the certificates should be stored/read to/from.&#39;
+)
+@click.option(
+    &#39;--task&#39;,
+    &#39;-t&#39;,
+    type=click.Choice([str(t) for t in DatasetManagerTask], case_sensitive=False),
+    multiple=True,
+    help=&#39;Dataset Task(s) to run in Work pipeline.&#39;
+)
 @click.pass_context
-def dataset_run(ctx):
+def manager_run(ctx, certdb, task):
     &#34;&#34;&#34;Runs Task pipeline for dataset(s) matching given filter(s).&#34;&#34;&#34;
+    # Open CertDB
+    try:
+        certdb = CertFileDB(certdb, ctx.obj[&#39;cpu&#39;])
+    except ValueError:
+        click.echo(
+            &#39;CertFileDB does not exist at {} yet, run &#34;cevast certdb setup --help&#34; for more information&#39;.format(certdb)
+        )
+        ctx.exit(1)
 
-
-&#34;&#34;&#34;
+    # Prepare parameters
     tasks = []
-    #analyser_cfg = {&#39;certdb&#39;: db, &#39;methods&#39;: [&#39;botan&#39;]}
-    analyser_cfg = {&#39;certdb&#39;: db}
-    for args_task in args.task:
-        if DatasetManagerTask.validate(args_task):
-            task = DatasetManagerTask[args_task]
-            params = {}
-            if task == DatasetManagerTask.COLLECT:
-                pass
-            elif task == DatasetManagerTask.UNIFY:
-                params[&#39;certdb&#39;] = db
-            elif task == DatasetManagerTask.ANALYSE:
-                params[&#39;analyser_cfg&#39;] = analyser_cfg
-                params[&#39;analyser&#39;] = ChainValidator
+    for single in task:
+        params = {}
+        single = DatasetManagerTask[single]
+        if single == DatasetManagerTask.COLLECT:
+            pass
+        elif single == DatasetManagerTask.UNIFY:
+            params[&#39;certdb&#39;] = certdb
+        elif single == DatasetManagerTask.ANALYSE:
+            params = _prepare_analyser_arg(certdb)
 
-            tasks.append((task, params))
-    print(tasks)
-    manager.run(tasks)
+        tasks.append((single, params))
 
-    db.commit()
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(&#39;type&#39;, type=str.upper, choices=[str(t) for t in DatasetType])
-    parser.add_argument(&#39;repository&#39;, nargs=&#39;?&#39;, default=os.getcwd())
-    parser.add_argument(&#34;-d&#34;,
-                        &#34;--date&#34;,
-                        help=&#34;The Date ID - format YYYY-MM-DD&#34;,
-                        required=True,
-                        type=valid_date)
-    parser.add_argument(&#39;--certdb&#39;, required=True)
-    parser.add_argument(&#39;-t&#39;, &#39;--task&#39;, action=&#39;append&#39;, type=str.upper, choices=[str(t) for t in DatasetManagerTask])
-    parser.add_argument(&#39;--port&#39;, default=&#39;443&#39;)
-    parser.add_argument(&#39;--cpu&#39;, default=os.cpu_count() - 1, type=int)
-
-    return parser.parse_args()
-&#34;&#34;&#34;
-
-
-if __name__ == &#34;__main__&#34;:
-    dataset_group()  # pylint: disable=E1120</code></pre>
+    ctx.obj[&#39;manager&#39;].run(tasks)
+    certdb.commit()</code></pre>
 </details>
 </section>
 <section>

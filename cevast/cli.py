@@ -27,7 +27,7 @@ def cli(ctx, debug, cpu):
 
 cli.add_command(certdb_cli.certdb_group)
 cli.add_command(dataset_cli.dataset_repository_group)
-cli.add_command(dataset_cli.dataset_group)
+cli.add_command(dataset_cli.manager_group)
 
 
 if __name__ == "__main__":

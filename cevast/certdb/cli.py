@@ -85,7 +85,3 @@ def certdb_exist(ctx, certificate_id):
 def certdb_setup(ctx):
     """Setups CertDB at <storage>."""
     CertFileDB.setup(ctx.obj['storage'], owner='cevast', desc='Cevast CertFileDB')
-
-
-if __name__ == "__main__":
-    certdb_group()  # pylint: disable=E1120

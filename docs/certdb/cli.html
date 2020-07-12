@@ -117,11 +117,7 @@ def certdb_exist(ctx, certificate_id):
 @click.pass_context
 def certdb_setup(ctx):
     &#34;&#34;&#34;Setups CertDB at &lt;storage&gt;.&#34;&#34;&#34;
-    CertFileDB.setup(ctx.obj[&#39;storage&#39;], owner=&#39;cevast&#39;, desc=&#39;Cevast CertFileDB&#39;)
-
-
-if __name__ == &#34;__main__&#34;:
-    certdb_group()  # pylint: disable=E1120</code></pre>
+    CertFileDB.setup(ctx.obj[&#39;storage&#39;], owner=&#39;cevast&#39;, desc=&#39;Cevast CertFileDB&#39;)</code></pre>
 </details>
 </section>
 <section>
