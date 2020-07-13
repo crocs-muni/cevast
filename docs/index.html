@@ -51,6 +51,9 @@ Without having the permissions, you can install Cevast in your home directory in
 <p>or</p>
 <pre><code>python3 setup.py install --user
 </code></pre>
+<p>and correspondingly the requirements:</p>
+<pre><code>pip3 install --quiet -r requirements.txt --user
+</code></pre>
 <p>You can verify that Cevast is running correctly in your environment by executing unit tests as follows:</p>
 <pre><code>make test
 </code></pre>
@@ -59,7 +62,7 @@ Without having the permissions, you can install Cevast in your home directory in
 <h4 id="continuous-integration">Continuous Integration</h4>
 <p>CI is set up with use of <a href="https://github.com/crocs-muni/cert-validation-stats/actions?query=workflow%3A%22Python+application%22">GitHub Actions workflow</a>.
 CI workflow runs unit tests and lint the code.</p>
-<h4 id="tests">Tests</h4>
+<h4 id="testing">Testing</h4>
 <p>Tests are located in <code>tests/</code> and can be executed by running <code>unittest</code> via <code>make</code> target:</p>
 <pre><code>make test
 </code></pre>
@@ -73,7 +76,7 @@ CI workflow runs unit tests and lint the code.</p>
 </code></pre>
 <p>To not forget, you might be interested to set up git <em>pre-commit hook</em> with following commands:</p>
 <pre><code>make docs
-git add -u docs
+git add docs
 </code></pre>
 <h2 id="licensing">Licensing</h2>
 <p>This project is licensed under MIT License.</p>
@@ -140,7 +143,7 @@ __author__ = &#39;Radim Podola&#39;</code></pre>
 </li>
 <li><a href="#developing">Developing</a><ul>
 <li><a href="#continuous-integration">Continuous Integration</a></li>
-<li><a href="#tests">Tests</a></li>
+<li><a href="#testing">Testing</a></li>
 <li><a href="#code-style">Code style</a></li>
 <li><a href="#documentation">Documentation</a></li>
 </ul>

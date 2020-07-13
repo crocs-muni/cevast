@@ -114,7 +114,7 @@ def dataset_repository_show(ctx, source, state, date):
     help=&#39;Dataset date in format [YYYY-mm-dd].&#39;,
 )
 @click.option(
-    &#39;--port&#39;, &#39;-p&#39;, default=[443], multiple=True, help=&#39;Dataset Port(s).&#39;
+    &#39;--port&#39;, &#39;-p&#39;, default=[&#39;443&#39;], multiple=True, help=&#39;Dataset Port(s).&#39;
 )
 @click.option(&#39;--cpu&#39;, type=int, help=&#39;Max Number of CPU cores to use.&#39;)
 @click.version_option()
