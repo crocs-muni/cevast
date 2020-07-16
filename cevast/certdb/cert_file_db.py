@@ -467,9 +467,16 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             pass
 
     def __write_commit_info(self, inserted: int, deleted: int) -> None:
-        # TODO what is MEta file does not exists
         meta_path = os.path.join(self.storage, self.META_FILENAME)
-        meta = toml.load(meta_path, OrderedDict)
+        if not os.path.exists(meta_path):
+            # Create META file
+            meta = OrderedDict()
+            meta['INFO'] = OrderedDict()
+            meta['INFO']['owner'] = ""
+            meta['INFO']['description'] = ""
+            meta['INFO']['created'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S%Z')
+        else:
+            meta = toml.load(meta_path, OrderedDict)
         # Update DB INFO
         total_cnt = meta['INFO'].get('number_of_certificates', 0)
         meta['INFO']['number_of_certificates'] = total_cnt + inserted - deleted

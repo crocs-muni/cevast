@@ -118,6 +118,17 @@ class TestCertFileDBReadOnly(unittest.TestCase):
         # Try to setup different DB on the same storage
         self.assertRaises(ValueError, CertFileDB.setup, self.TEST_STORAGE, 1, 'PEM', 'Testing DB 2', 'unittest')
 
+        # Try to open DB configured manually, and commit something
+        new_loc = os.path.join(self.TEST_STORAGE, 'new')
+        os.makedirs(new_loc)
+        shutil.move(
+            os.path.join(self.TEST_STORAGE, CertFileDBReadOnly.CONF_FILENAME), 
+            os.path.join(new_loc, CertFileDBReadOnly.CONF_FILENAME)
+        )
+        assert os.path.exists(os.path.join(new_loc, CertFileDBReadOnly.CONF_FILENAME))
+        db = CertFileDB(new_loc)
+        commit_test_certs(db, TEST_CERTS_1)
+
     def test_init(self):
         """
         Test of CertFileDBReadOnly initialization
