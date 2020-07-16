@@ -5,6 +5,7 @@ from .dataset import DatasetSource, DatasetInvalidError
 from . import managers
 
 
+# TODO move to submodule managers, import * a check for subclass there
 class DatasetManagerFactory:
     """
     Factory class providing the specific DatasetManager class based on DatasetSource.

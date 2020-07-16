@@ -14,6 +14,7 @@ __author__ = 'Radim Podola'
 log = logging.getLogger(__name__)
 
 
+# TODO metoda recalculate broken chain
 class RapidUnifier:
     """
     A unifier class that unifies RAPID dataset.

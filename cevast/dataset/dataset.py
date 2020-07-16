@@ -80,7 +80,7 @@ class Dataset:
     The dataset state is dynamic identifier that is the last part of its complete identification at the time.
     Each dataset can be found at 1-N of the following generalized states:
         - COLLECTED
-        - ANALYZED
+        - FILTERED
         - UNIFIED
         - ANALYSED
 

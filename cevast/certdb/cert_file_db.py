@@ -64,6 +64,7 @@ log = logging.getLogger(__name__)
 # - allow_more_transaction Flag that will not raise DBInUse error??
 # - or reserve block?? mmap vector of flags (up to 256 els) - each element is root block
 # TODO make persist_and_clear_storage/clear_storage utility method that will not use transaction data
+# TODO check this out https://github.com/ThomasPinna/python_zipfile_improvement/tree/master
 
 
 class CertFileDBReadOnly(CertDBReadOnly):
@@ -82,6 +83,13 @@ class CertFileDBReadOnly(CertDBReadOnly):
               desc: str = 'CertFileDB', owner: str = '', maintain_info: bool = True) -> None:
         """
         Setup CertFileDB storage directory with the given parameters.
+        `storage_path` is path to the database root directory,
+        `structure_level` is hierarchy level of certificate blocks,
+        `cert_format` is used format of stored certificates,
+        `desc` is database description,
+        `owner` is database owner,
+        `maintain_info` is flag whether to maintain META file or not.
+
         Directory, configuration and META file is created.
         Raise ValueError for wrong parameters or if DB already exists.
         """
@@ -459,6 +467,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             pass
 
     def __write_commit_info(self, inserted: int, deleted: int) -> None:
+        # TODO what is MEta file does not exists
         meta_path = os.path.join(self.storage, self.META_FILENAME)
         meta = toml.load(meta_path, OrderedDict)
         # Update DB INFO
