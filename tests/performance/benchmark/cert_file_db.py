@@ -1,7 +1,7 @@
 """
     This modul contains benchmark script testing performance of modul cevast.certdb.cert_file_db
 
-Run as:> python3 -m cProfile -s calls benchmark_CertFileDB.py perf_st 10000-certs.gz > profiles/{commit}_cert_file_db
+Run as:> python3 -m cProfile -s calls cert_file_db.py {storage} {10000_certs.gz} {CPUs} > profiles/{commit}_cert_file_db_CPUs
 """
 
 import sys
@@ -36,7 +36,7 @@ print("CPUs used: %s" % cpus)
 print()
 print("Started insert:")
 t0 = time.time()
-for sha, cert in unifier.RapidUnifier.read_certs(dataset):
+for sha, cert in unifier.RapidUnifier.parse_certs(dataset):
     certdb.insert(sha, BASE64_to_PEM(cert))
     certs.append(sha)
 print("Finished: %r" % (time.time() - t0))
@@ -53,7 +53,7 @@ print("Finished: %r" % (time.time() - t0))
 print()
 print("Started 2nd insert:")
 t0 = time.time()
-for sha, cert in unifier.RapidUnifier.read_certs(dataset):
+for sha, cert in unifier.RapidUnifier.parse_certs(dataset):
     certdb.insert(sha, BASE64_to_PEM(cert))
 print("Finished: %r" % (time.time() - t0))
 print()
@@ -67,15 +67,20 @@ t0 = time.time()
 assert certdb_rdonly.exists_all(certs)
 print("Finished: %r" % (time.time() - t0))
 print()
+print("Check every cert for existance 2nd time (ReadOnly):")
+t0 = time.time()
+assert certdb_rdonly.exists_all(certs)
+print("Finished: %r" % (time.time() - t0))
+print()
 print("Started get:")
 t0 = time.time()
 for cert in certs:
     certdb.get(cert)
 print("Finished: %r" % (time.time() - t0))
 print()
-print("Started delete: ")
+print("Started delete every 2nd cert: ")
 t0 = time.time()
-for cert in certs:
+for cert in certs[::2]:
     certdb.delete(cert)
 print("Finished: %r" % (time.time() - t0))
 print()

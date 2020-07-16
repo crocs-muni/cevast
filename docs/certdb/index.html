@@ -663,9 +663,16 @@ and a file system properties as a storage mechanism.</p>
             pass
 
     def __write_commit_info(self, inserted: int, deleted: int) -&gt; None:
-        # TODO what is MEta file does not exists
         meta_path = os.path.join(self.storage, self.META_FILENAME)
-        meta = toml.load(meta_path, OrderedDict)
+        if not os.path.exists(meta_path):
+            # Create META file
+            meta = OrderedDict()
+            meta[&#39;INFO&#39;] = OrderedDict()
+            meta[&#39;INFO&#39;][&#39;owner&#39;] = &#34;&#34;
+            meta[&#39;INFO&#39;][&#39;description&#39;] = &#34;&#34;
+            meta[&#39;INFO&#39;][&#39;created&#39;] = datetime.now().strftime(&#39;%Y-%m-%d %H:%M:%S%Z&#39;)
+        else:
+            meta = toml.load(meta_path, OrderedDict)
         # Update DB INFO
         total_cnt = meta[&#39;INFO&#39;].get(&#39;number_of_certificates&#39;, 0)
         meta[&#39;INFO&#39;][&#39;number_of_certificates&#39;] = total_cnt + inserted - deleted
