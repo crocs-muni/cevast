@@ -316,7 +316,7 @@ with certificates. Directory will be clean-up upon calling <code>done</code>.
         if server.startswith(WORKER_TMP_DIR):
             os.remove(server)
 
-        return &#34;{}, {}, {}\n&#34;.format(host.rjust(15), &#34;, &#34;.join(result), &#34; -&gt; &#34;.join(chain))
+        return &#34;{}, {}, {}\n&#34;.format(host.rjust(15), &#34;, &#34;.join(result), &#34;, &#34;.join(chain))
 
     def __enter__(self):
         return self

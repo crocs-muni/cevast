@@ -663,6 +663,7 @@ and a file system properties as a storage mechanism.</p>
             pass
 
     def __write_commit_info(self, inserted: int, deleted: int) -&gt; None:
+        # TODO what is MEta file does not exists
         meta_path = os.path.join(self.storage, self.META_FILENAME)
         meta = toml.load(meta_path, OrderedDict)
         # Update DB INFO
@@ -818,6 +819,13 @@ and a file system properties as a storage mechanism.</p>
               desc: str = &#39;CertFileDB&#39;, owner: str = &#39;&#39;, maintain_info: bool = True) -&gt; None:
         &#34;&#34;&#34;
         Setup CertFileDB storage directory with the given parameters.
+        `storage_path` is path to the database root directory,
+        `structure_level` is hierarchy level of certificate blocks,
+        `cert_format` is used format of stored certificates,
+        `desc` is database description,
+        `owner` is database owner,
+        `maintain_info` is flag whether to maintain META file or not.
+
         Directory, configuration and META file is created.
         Raise ValueError for wrong parameters or if DB already exists.
         &#34;&#34;&#34;
@@ -967,7 +975,13 @@ and a file system properties as a storage mechanism.</p>
 </code></dt>
 <dd>
 <div class="desc"><p>Setup CertFileDB storage directory with the given parameters.
-Directory, configuration and META file is created.
+<code>storage_path</code> is path to the database root directory,
+<code>structure_level</code> is hierarchy level of certificate blocks,
+<code>cert_format</code> is used format of stored certificates,
+<code>desc</code> is database description,
+<code>owner</code> is database owner,
+<code>maintain_info</code> is flag whether to maintain META file or not.</p>
+<p>Directory, configuration and META file is created.
 Raise ValueError for wrong parameters or if DB already exists.</p></div>
 <details class="source">
 <summary>
@@ -978,6 +992,13 @@ def setup(storage_path: str, structure_level: int = 2, cert_format: str = &#39;P
           desc: str = &#39;CertFileDB&#39;, owner: str = &#39;&#39;, maintain_info: bool = True) -&gt; None:
     &#34;&#34;&#34;
     Setup CertFileDB storage directory with the given parameters.
+    `storage_path` is path to the database root directory,
+    `structure_level` is hierarchy level of certificate blocks,
+    `cert_format` is used format of stored certificates,
+    `desc` is database description,
+    `owner` is database owner,
+    `maintain_info` is flag whether to maintain META file or not.
+
     Directory, configuration and META file is created.
     Raise ValueError for wrong parameters or if DB already exists.
     &#34;&#34;&#34;

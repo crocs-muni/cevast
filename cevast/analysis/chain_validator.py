@@ -135,7 +135,7 @@ class ChainValidator(CertAnalyser):
         if server.startswith(WORKER_TMP_DIR):
             os.remove(server)
 
-        return "{}, {}, {}\n".format(host.rjust(15), ", ".join(result), " -> ".join(chain))
+        return "{}, {}, {}\n".format(host.rjust(15), ", ".join(result), ", ".join(chain))
 
     def __enter__(self):
         return self
