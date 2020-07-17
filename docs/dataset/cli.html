@@ -37,7 +37,7 @@ import click
 from cevast.certdb import CertFileDB, CertFileDBReadOnly
 from cevast.utils.logging import setup_cevast_logger
 from cevast.analysis import ChainValidator
-from .dataset import DatasetRepository, DatasetSource, DatasetState
+from .dataset import DatasetRepository, DatasetSource, DatasetState, Dataset
 from .manager_factory import DatasetManagerFactory, DatasetInvalidError
 from .managers import DatasetManagerTask
 
@@ -70,6 +70,21 @@ def _validate_cli_filter_date(_, __, value):
 def _prepare_analyser_arg(certdb):
     return {&#39;analyser_cfg&#39;: {&#39;certdb&#39;: certdb},
             &#39;analyser&#39;: ChainValidator}
+
+
+def __agregate(file):
+    from collections import Counter
+
+    with open(file) as f:
+        header = f.readline().split(&#39;,&#39;)
+        
+        cntrs = [Counter() for _ in range(len(header) - 2)]  # methods only
+        for line in f.readlines():
+            els = [res.strip() for res in line.split(&#39;,&#39;)]
+            for col, cntr in enumerate(cntrs, 1):
+                cntr[els[col]] += 1
+
+        return {header[idx].strip(): dict(cnt) for idx, cnt in enumerate(cntrs, 1)}
 
 
 # -------------------------- DatasetRepository CLI --------------------------
@@ -122,6 +137,13 @@ def dataset_repository_show(ctx, source, state, date):
 def manager_group(ctx, directory, source, date, port, cpu):
     &#34;&#34;&#34;Gives access to specified Dataset management.&#34;&#34;&#34;
     ctx.ensure_object(dict)
+
+    if ctx.invoked_subcommand == &#39;stats&#39;:
+        ctx.obj[&#39;datasets&#39;] = []
+        for p in port:
+            ctx.obj[&#39;datasets&#39;].append(Dataset(directory, source, date.strftime(&#39;%Y%m%d&#39;), p, &#39;csv&#39;))
+        return
+
     if cpu is None:
         cpu = ctx.obj.get(&#39;cpu&#39;, os.cpu_count() - 1)  # Might be specified on top level command
     ctx.obj[&#39;cpu&#39;] = cpu  # Pass it to subcommands
@@ -233,7 +255,23 @@ def manager_run(ctx, certdb, task):
         tasks.append((single, params))
 
     ctx.obj[&#39;manager&#39;].run(tasks)
-    certdb.commit()</code></pre>
+    certdb.commit()
+
+
+@manager_group.command(&#39;stats&#39;)
+@click.option(&#39;--aggregate&#39;, &#39;-a&#39;, is_flag=True, help=&#39;Shows aggregation statistics.&#39;)
+@click.pass_context
+def stats(ctx, aggregate):
+    &#34;&#34;&#34;Print statistics about dataset(s) matching given filter(s).&#34;&#34;&#34;
+    for dataset in ctx.obj[&#39;datasets&#39;]:
+        analysed = dataset.full_path(DatasetState.ANALYSED, check_if_exists=True)
+        if not analysed:
+            click.echo(&#34;Not found Dataset {}&#34;.format(str(dataset)).format(&#39;ANALYSED&#39;))
+            continue
+        click.echo(&#34;Found Dataset {}&#34;.format(str(dataset)).format(&#39;ANALYSED&#39;))
+        if aggregate:
+            for method, res in __agregate(analysed).items():
+                click.echo(&#34;{:&lt;10}: {}&#34;.format(method, sorted(res.items())))</code></pre>
 </details>
 </section>
 <section>

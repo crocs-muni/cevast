@@ -9,7 +9,7 @@ import click
 from cevast.certdb import CertFileDB, CertFileDBReadOnly
 from cevast.utils.logging import setup_cevast_logger
 from cevast.analysis import ChainValidator
-from .dataset import DatasetRepository, DatasetSource, DatasetState
+from .dataset import DatasetRepository, DatasetSource, DatasetState, Dataset
 from .manager_factory import DatasetManagerFactory, DatasetInvalidError
 from .managers import DatasetManagerTask
 
@@ -42,6 +42,21 @@ def _validate_cli_filter_date(_, __, value):
 def _prepare_analyser_arg(certdb):
     return {'analyser_cfg': {'certdb': certdb},
             'analyser': ChainValidator}
+
+
+def __agregate(file):
+    from collections import Counter
+
+    with open(file) as f:
+        header = f.readline().split(',')
+        
+        cntrs = [Counter() for _ in range(len(header) - 2)]  # methods only
+        for line in f.readlines():
+            els = [res.strip() for res in line.split(',')]
+            for col, cntr in enumerate(cntrs, 1):
+                cntr[els[col]] += 1
+
+        return {header[idx].strip(): dict(cnt) for idx, cnt in enumerate(cntrs, 1)}
 
 
 # -------------------------- DatasetRepository CLI --------------------------
@@ -94,6 +109,13 @@ def dataset_repository_show(ctx, source, state, date):
 def manager_group(ctx, directory, source, date, port, cpu):
     """Gives access to specified Dataset management."""
     ctx.ensure_object(dict)
+
+    if ctx.invoked_subcommand == 'stats':
+        ctx.obj['datasets'] = []
+        for p in port:
+            ctx.obj['datasets'].append(Dataset(directory, source, date.strftime('%Y%m%d'), p, 'csv'))
+        return
+
     if cpu is None:
         cpu = ctx.obj.get('cpu', os.cpu_count() - 1)  # Might be specified on top level command
     ctx.obj['cpu'] = cpu  # Pass it to subcommands
@@ -206,3 +228,19 @@ def manager_run(ctx, certdb, task):
 
     ctx.obj['manager'].run(tasks)
     certdb.commit()
+
+
+@manager_group.command('stats')
+@click.option('--aggregate', '-a', is_flag=True, help='Shows aggregation statistics.')
+@click.pass_context
+def stats(ctx, aggregate):
+    """Print statistics about dataset(s) matching given filter(s)."""
+    for dataset in ctx.obj['datasets']:
+        analysed = dataset.full_path(DatasetState.ANALYSED, check_if_exists=True)
+        if not analysed:
+            click.echo("Not found Dataset {}".format(str(dataset)).format('ANALYSED'))
+            continue
+        click.echo("Found Dataset {}".format(str(dataset)).format('ANALYSED'))
+        if aggregate:
+            for method, res in __agregate(analysed).items():
+                click.echo("{:<10}: {}".format(method, sorted(res.items())))

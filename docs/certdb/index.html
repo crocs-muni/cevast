@@ -591,8 +591,8 @@ and a file system properties as a storage mechanism.</p>
         if certs and os.path.exists(block_archive):
             deleted_all = True
             new_block_archive = block_archive + &#39;_new&#39;
-            with ZipFile(block_archive, &#39;r&#39;, ZIP_DEFLATED) as zin,\
-                 ZipFile(new_block_archive, &#39;w&#39;, ZIP_DEFLATED) as zout:
+            with ZipFile(block_archive, &#39;r&#39;, ZIP_STORED) as zin,\
+                 ZipFile(new_block_archive, &#39;w&#39;, ZIP_STORED) as zout:
                 for name in zin.namelist():
                     if os.path.splitext(name)[0] not in certs:
                         zout.writestr(name, zin.read(name))
@@ -626,7 +626,7 @@ and a file system properties as a storage mechanism.</p>
             log.debug(&#39;Creating archive: %s&#39;, block_archive)
 
         # TODO compare performance for higher compresslevel
-        with ZipFile(block_archive, &#34;a&#34; if append else &#34;w&#34;, ZIP_DEFLATED) as zout:
+        with ZipFile(block_archive, &#34;a&#34; if append else &#34;w&#34;, ZIP_STORED) as zout:
             if append:
                 persisted_certs = zout.namelist()
 
@@ -715,8 +715,8 @@ def delete_certs(block_archive: str, certs: set) -&gt; int:
     if certs and os.path.exists(block_archive):
         deleted_all = True
         new_block_archive = block_archive + &#39;_new&#39;
-        with ZipFile(block_archive, &#39;r&#39;, ZIP_DEFLATED) as zin,\
-             ZipFile(new_block_archive, &#39;w&#39;, ZIP_DEFLATED) as zout:
+        with ZipFile(block_archive, &#39;r&#39;, ZIP_STORED) as zin,\
+             ZipFile(new_block_archive, &#39;w&#39;, ZIP_STORED) as zout:
             for name in zin.namelist():
                 if os.path.splitext(name)[0] not in certs:
                     zout.writestr(name, zin.read(name))
@@ -759,7 +759,7 @@ def persist_certs(block_path: str, block_archive: str, certs: set) -&gt; int:
         log.debug(&#39;Creating archive: %s&#39;, block_archive)
 
     # TODO compare performance for higher compresslevel
-    with ZipFile(block_archive, &#34;a&#34; if append else &#34;w&#34;, ZIP_DEFLATED) as zout:
+    with ZipFile(block_archive, &#34;a&#34; if append else &#34;w&#34;, ZIP_STORED) as zout:
         if append:
             persisted_certs = zout.namelist()
 
@@ -850,7 +850,7 @@ and a file system properties as a storage mechanism.</p>
         config[&#39;PARAMETERS&#39;][&#39;storage&#39;] = storage_path
         config[&#39;PARAMETERS&#39;][&#39;structure_level&#39;] = structure_level
         config[&#39;PARAMETERS&#39;][&#39;cert_format&#39;] = cert_format
-        config[&#39;PARAMETERS&#39;][&#39;compression_method&#39;] = &#39;ZIP_DEFLATED&#39;
+        config[&#39;PARAMETERS&#39;][&#39;compression_method&#39;] = &#39;ZIP_STORED&#39;
         config[&#39;PARAMETERS&#39;][&#39;maintain_info&#39;] = maintain_info
         with open(config_path, &#39;w&#39;) as cfg_file:
             toml.dump(config, cfg_file)
@@ -886,7 +886,7 @@ and a file system properties as a storage mechanism.</p>
         # Check if certificate exists
         try:
             zip_file = self._get_block_archive(cert_id)
-            with ZipFile(zip_file, &#39;r&#39;, ZIP_DEFLATED) as z_obj:
+            with ZipFile(zip_file, &#39;r&#39;, ZIP_STORED) as z_obj:
                 with z_obj.open(cert_id) as cert:
                     log.debug(&#39;&lt;%s&gt; found persisted in zip &lt;%s&gt;&#39;, cert_id, zip_file)
                     return cert.read().decode(&#39;utf-8&#39;)
@@ -902,7 +902,7 @@ and a file system properties as a storage mechanism.</p>
         # Check if certificate exists persisted
         try:
             zip_file = self._get_block_archive(cert_id)
-            with ZipFile(zip_file, &#39;r&#39;, ZIP_DEFLATED) as z_obj:
+            with ZipFile(zip_file, &#39;r&#39;, ZIP_STORED) as z_obj:
                 zipinfo = z_obj.getinfo(cert_id)
                 zipinfo.filename = make_PEM_filename(cert_id)
                 z_obj.extract(zipinfo, target_dir)
@@ -925,7 +925,7 @@ and a file system properties as a storage mechanism.</p>
         # Check if certificate exists persisted
         try:
             zip_file = self._get_block_archive(cert_id)
-            with ZipFile(zip_file, &#39;r&#39;, ZIP_DEFLATED) as z_obj:
+            with ZipFile(zip_file, &#39;r&#39;, ZIP_STORED) as z_obj:
                 z_obj.getinfo(cert_id)
                 log.debug(&#39;&lt;%s&gt; exists persisted &lt;%s&gt;&#39;, cert_id, zip_file)
                 self._cache.add(cert_id)
@@ -1023,7 +1023,7 @@ def setup(storage_path: str, structure_level: int = 2, cert_format: str = &#39;P
     config[&#39;PARAMETERS&#39;][&#39;storage&#39;] = storage_path
     config[&#39;PARAMETERS&#39;][&#39;structure_level&#39;] = structure_level
     config[&#39;PARAMETERS&#39;][&#39;cert_format&#39;] = cert_format
-    config[&#39;PARAMETERS&#39;][&#39;compression_method&#39;] = &#39;ZIP_DEFLATED&#39;
+    config[&#39;PARAMETERS&#39;][&#39;compression_method&#39;] = &#39;ZIP_STORED&#39;
     config[&#39;PARAMETERS&#39;][&#39;maintain_info&#39;] = maintain_info
     with open(config_path, &#39;w&#39;) as cfg_file:
         toml.dump(config, cfg_file)
