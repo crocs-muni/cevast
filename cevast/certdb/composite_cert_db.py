@@ -8,7 +8,7 @@ This module contains implementation of CompositeCertDB.
 """
 
 import logging
-from typing import Set, Tuple, Union
+from typing import List, Tuple, Union
 from cevast.certdb.cert_db import (
     CertDB,
     CertDBReadOnly,
@@ -28,16 +28,20 @@ class CompositeCertDBReadOnly(CertDBReadOnly):
 
     def __init__(self):
         log.info('Initializing CompositeCertDBReadOnly composite manager...')
-        # Set managing all registered CertDBReadOnly components
-        self._children: Set(CertDBReadOnly) = set()
+        # List managing all registered CertDBReadOnly components
+        self._children: List(CertDBReadOnly) = []
 
     def register(self, certdb: CertDBReadOnly) -> None:
         """Add component object to the composite manager."""
-        self._children.add(certdb)
+        if certdb not in self._children:
+            self._children.append(certdb)
 
     def unregister(self, certdb: CertDBReadOnly) -> None:
         """Remove component object from the composite manager."""
-        self._children.discard(certdb)
+        try:
+            self._children.remove(certdb)
+        except ValueError:
+            pass
 
     def is_registered(self, certdb: CertDBReadOnly) -> bool:
         """Test if component object is registered in the composite manager."""
@@ -84,19 +88,26 @@ class CompositeCertDB(CertDB, CompositeCertDBReadOnly):
 
     def __init__(self):  # pylint: disable=W0231
         log.info('Initializing CompositeCertDB composite manager...')
-        # Set managing all registered CertDB components
-        self._children: Set(Union[CertDB, CertDBReadOnly]) = set()
-        # Set managing all registered CertDBReadOnly components
-        self.__io_allowed: Set(CertDB) = set()
+        # List managing all registered CertDB components
+        self._children: List(Union[CertDB, CertDBReadOnly]) = []
+        # List managing all registered CertDBReadOnly components
+        self.__io_allowed: List(CertDB) = []
 
     def register(self, certdb: Union[CertDB, CertDBReadOnly]) -> None:
-        self._children.add(certdb)
-        if isinstance(certdb, CertDB):
-            self.__io_allowed.add(certdb)
+        if certdb not in self._children:
+            self._children.append(certdb)
+            if isinstance(certdb, CertDB):
+                self.__io_allowed.append(certdb)
 
     def unregister(self, certdb: Union[CertDB, CertDBReadOnly]) -> None:
-        self._children.discard(certdb)
-        self.__io_allowed.discard(certdb)
+        try:
+            self._children.remove(certdb)
+        except ValueError:
+            pass
+        try:
+            self.__io_allowed.remove(certdb)
+        except ValueError:
+            pass
 
     def insert(self, cert_id: str, cert: str) -> None:
         for child in self.__io_allowed:

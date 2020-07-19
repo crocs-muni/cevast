@@ -34,7 +34,7 @@
 import os
 from datetime import datetime
 import click
-from cevast.certdb import CertFileDB, CertFileDBReadOnly
+from cevast.certdb import CertFileDB, CertFileDBReadOnly, CompositeCertDBReadOnly
 from cevast.utils.logging import setup_cevast_logger
 from cevast.analysis import ChainValidator
 from .dataset import DatasetRepository, DatasetSource, DatasetState, Dataset
@@ -203,14 +203,16 @@ def manager_unify(ctx, certdb):
 def manager_analyse(ctx, certdb):
     &#34;&#34;&#34;Analyses dataset(s) matching given filter(s).&#34;&#34;&#34;
     try:
-        certdb = CertFileDBReadOnly(certdb)
+        compositeDB = CompositeCertDBReadOnly()
+        compositeDB.register(CertFileDBReadOnly(certdb))
+        compositeDB.register(CertFileDBReadOnly(&#39;common_certificate_pool&#39;))
     except ValueError:
         click.echo(
-            &#39;CertFileDB does not exist at {} yet, run &#34;cevast certdb setup --help&#34; for more information&#39;.format(certdb)
+            &#39;CertFileDB does not exist at {} yet, run &#34;cevast certdb setup --help&#34; for more information&#39;.format(compositeDB)
         )
         ctx.exit(1)
 
-    analysed = ctx.obj[&#39;manager&#39;].analyse(**_prepare_analyser_arg(certdb))
+    analysed = ctx.obj[&#39;manager&#39;].analyse(**_prepare_analyser_arg(compositeDB))
     click.echo(&#39;Analysed Datasets: {}&#39;.format(analysed))
 
 
@@ -234,6 +236,9 @@ def manager_run(ctx, certdb, task):
     # Open CertDB
     try:
         certdb = CertFileDB(certdb, ctx.obj[&#39;cpu&#39;])
+        compositeDB = CompositeCertDBReadOnly()
+        compositeDB.register(certdb)
+        compositeDB.register(CertFileDBReadOnly(&#39;common_certificate_pool&#39;))
     except ValueError:
         click.echo(
             &#39;CertFileDB does not exist at {} yet, run &#34;cevast certdb setup --help&#34; for more information&#39;.format(certdb)
@@ -250,11 +255,14 @@ def manager_run(ctx, certdb, task):
         elif single == DatasetManagerTask.UNIFY:
             params[&#39;certdb&#39;] = certdb
         elif single == DatasetManagerTask.ANALYSE:
-            params = _prepare_analyser_arg(certdb)
+            params = _prepare_analyser_arg(compositeDB)
 
         tasks.append((single, params))
 
-    ctx.obj[&#39;manager&#39;].run(tasks)
+    collected, unified, analysed = ctx.obj[&#39;manager&#39;].run(tasks)
+    click.echo(&#39;Collected Datasets: {}&#39;.format(collected))
+    click.echo(&#39;Unified Datasets: {}&#39;.format(unified))
+    click.echo(&#39;Analysed Datasets: {}&#39;.format(analysed))
     certdb.commit()
 
 
@@ -266,9 +274,9 @@ def stats(ctx, aggregate):
     for dataset in ctx.obj[&#39;datasets&#39;]:
         analysed = dataset.full_path(DatasetState.ANALYSED, check_if_exists=True)
         if not analysed:
-            click.echo(&#34;Not found Dataset {}&#34;.format(str(dataset)).format(&#39;ANALYSED&#39;))
+            click.echo(&#34;Not found Dataset {}&#34;.format(analysed))
             continue
-        click.echo(&#34;Found Dataset {}&#34;.format(str(dataset)).format(&#39;ANALYSED&#39;))
+        click.echo(&#34;Found Dataset {}&#34;.format(analysed))
         if aggregate:
             for method, res in __agregate(analysed).items():
                 click.echo(&#34;{:&lt;10}: {}&#34;.format(method, sorted(res.items())))</code></pre>

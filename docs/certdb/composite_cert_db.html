@@ -40,7 +40,7 @@ This module contains implementation of CompositeCertDB.
 &#34;&#34;&#34;
 
 import logging
-from typing import Set, Tuple, Union
+from typing import List, Tuple, Union
 from cevast.certdb.cert_db import (
     CertDB,
     CertDBReadOnly,
@@ -60,16 +60,20 @@ class CompositeCertDBReadOnly(CertDBReadOnly):
 
     def __init__(self):
         log.info(&#39;Initializing CompositeCertDBReadOnly composite manager...&#39;)
-        # Set managing all registered CertDBReadOnly components
-        self._children: Set(CertDBReadOnly) = set()
+        # List managing all registered CertDBReadOnly components
+        self._children: List(CertDBReadOnly) = []
 
     def register(self, certdb: CertDBReadOnly) -&gt; None:
         &#34;&#34;&#34;Add component object to the composite manager.&#34;&#34;&#34;
-        self._children.add(certdb)
+        if certdb not in self._children:
+            self._children.append(certdb)
 
     def unregister(self, certdb: CertDBReadOnly) -&gt; None:
         &#34;&#34;&#34;Remove component object from the composite manager.&#34;&#34;&#34;
-        self._children.discard(certdb)
+        try:
+            self._children.remove(certdb)
+        except ValueError:
+            pass
 
     def is_registered(self, certdb: CertDBReadOnly) -&gt; bool:
         &#34;&#34;&#34;Test if component object is registered in the composite manager.&#34;&#34;&#34;
@@ -116,19 +120,26 @@ class CompositeCertDB(CertDB, CompositeCertDBReadOnly):
 
     def __init__(self):  # pylint: disable=W0231
         log.info(&#39;Initializing CompositeCertDB composite manager...&#39;)
-        # Set managing all registered CertDB components
-        self._children: Set(Union[CertDB, CertDBReadOnly]) = set()
-        # Set managing all registered CertDBReadOnly components
-        self.__io_allowed: Set(CertDB) = set()
+        # List managing all registered CertDB components
+        self._children: List(Union[CertDB, CertDBReadOnly]) = []
+        # List managing all registered CertDBReadOnly components
+        self.__io_allowed: List(CertDB) = []
 
     def register(self, certdb: Union[CertDB, CertDBReadOnly]) -&gt; None:
-        self._children.add(certdb)
-        if isinstance(certdb, CertDB):
-            self.__io_allowed.add(certdb)
+        if certdb not in self._children:
+            self._children.append(certdb)
+            if isinstance(certdb, CertDB):
+                self.__io_allowed.append(certdb)
 
     def unregister(self, certdb: Union[CertDB, CertDBReadOnly]) -&gt; None:
-        self._children.discard(certdb)
-        self.__io_allowed.discard(certdb)
+        try:
+            self._children.remove(certdb)
+        except ValueError:
+            pass
+        try:
+            self.__io_allowed.remove(certdb)
+        except ValueError:
+            pass
 
     def insert(self, cert_id: str, cert: str) -&gt; None:
         for child in self.__io_allowed:
@@ -174,19 +185,26 @@ class CompositeCertDB(CertDB, CompositeCertDBReadOnly):
 
     def __init__(self):  # pylint: disable=W0231
         log.info(&#39;Initializing CompositeCertDB composite manager...&#39;)
-        # Set managing all registered CertDB components
-        self._children: Set(Union[CertDB, CertDBReadOnly]) = set()
-        # Set managing all registered CertDBReadOnly components
-        self.__io_allowed: Set(CertDB) = set()
+        # List managing all registered CertDB components
+        self._children: List(Union[CertDB, CertDBReadOnly]) = []
+        # List managing all registered CertDBReadOnly components
+        self.__io_allowed: List(CertDB) = []
 
     def register(self, certdb: Union[CertDB, CertDBReadOnly]) -&gt; None:
-        self._children.add(certdb)
-        if isinstance(certdb, CertDB):
-            self.__io_allowed.add(certdb)
+        if certdb not in self._children:
+            self._children.append(certdb)
+            if isinstance(certdb, CertDB):
+                self.__io_allowed.append(certdb)
 
     def unregister(self, certdb: Union[CertDB, CertDBReadOnly]) -&gt; None:
-        self._children.discard(certdb)
-        self.__io_allowed.discard(certdb)
+        try:
+            self._children.remove(certdb)
+        except ValueError:
+            pass
+        try:
+            self.__io_allowed.remove(certdb)
+        except ValueError:
+            pass
 
     def insert(self, cert_id: str, cert: str) -&gt; None:
         for child in self.__io_allowed:
@@ -226,9 +244,10 @@ class CompositeCertDB(CertDB, CompositeCertDBReadOnly):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def register(self, certdb: Union[CertDB, CertDBReadOnly]) -&gt; None:
-    self._children.add(certdb)
-    if isinstance(certdb, CertDB):
-        self.__io_allowed.add(certdb)</code></pre>
+    if certdb not in self._children:
+        self._children.append(certdb)
+        if isinstance(certdb, CertDB):
+            self.__io_allowed.append(certdb)</code></pre>
 </details>
 </dd>
 </dl>
@@ -274,16 +293,20 @@ class CompositeCertDB(CertDB, CompositeCertDBReadOnly):
 
     def __init__(self):
         log.info(&#39;Initializing CompositeCertDBReadOnly composite manager...&#39;)
-        # Set managing all registered CertDBReadOnly components
-        self._children: Set(CertDBReadOnly) = set()
+        # List managing all registered CertDBReadOnly components
+        self._children: List(CertDBReadOnly) = []
 
     def register(self, certdb: CertDBReadOnly) -&gt; None:
         &#34;&#34;&#34;Add component object to the composite manager.&#34;&#34;&#34;
-        self._children.add(certdb)
+        if certdb not in self._children:
+            self._children.append(certdb)
 
     def unregister(self, certdb: CertDBReadOnly) -&gt; None:
         &#34;&#34;&#34;Remove component object from the composite manager.&#34;&#34;&#34;
-        self._children.discard(certdb)
+        try:
+            self._children.remove(certdb)
+        except ValueError:
+            pass
 
     def is_registered(self, certdb: CertDBReadOnly) -&gt; bool:
         &#34;&#34;&#34;Test if component object is registered in the composite manager.&#34;&#34;&#34;
@@ -358,7 +381,8 @@ class CompositeCertDB(CertDB, CompositeCertDBReadOnly):
 </summary>
 <pre><code class="python">def register(self, certdb: CertDBReadOnly) -&gt; None:
     &#34;&#34;&#34;Add component object to the composite manager.&#34;&#34;&#34;
-    self._children.add(certdb)</code></pre>
+    if certdb not in self._children:
+        self._children.append(certdb)</code></pre>
 </details>
 </dd>
 <dt id="cevast.certdb.composite_cert_db.CompositeCertDBReadOnly.unregister"><code class="name flex">
@@ -372,7 +396,10 @@ class CompositeCertDB(CertDB, CompositeCertDBReadOnly):
 </summary>
 <pre><code class="python">def unregister(self, certdb: CertDBReadOnly) -&gt; None:
     &#34;&#34;&#34;Remove component object from the composite manager.&#34;&#34;&#34;
-    self._children.discard(certdb)</code></pre>
+    try:
+        self._children.remove(certdb)
+    except ValueError:
+        pass</code></pre>
 </details>
 </dd>
 </dl>
