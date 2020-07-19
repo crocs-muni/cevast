@@ -138,6 +138,10 @@ class CertFileDBReadOnly(CertDBReadOnly):
         self._cache: set = set()
         # Pre-compute index used for block_id
         self._block_id_index = self._params['structure_level'] + 1
+        # Redefine _get_block_id method for special case with structure_level = 0
+        if self._params['structure_level'] == 0:
+            fixed_block_id = os.path.basename(self.storage)
+            self._get_block_id = lambda _: fixed_block_id
 
     def get(self, cert_id: str) -> str:
         # Check if certificate exists
@@ -178,7 +182,6 @@ class CertFileDBReadOnly(CertDBReadOnly):
         if cert_id in self._cache:
             log.debug('<%s> found in cache', cert_id)
             return True
-
         # Check if certificate exists persisted
         try:
             zip_file = self._get_block_archive(cert_id)
@@ -231,10 +234,6 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         # Max number of CPU cores that can be used (-1 is max limit by hardware)
         self.__cpu_cores = int(cpu_cores)
         log.info('Will use %d CPUs', self.__cpu_cores)
-        # Redefine _get_block_id method for special case with structure_level = 0
-        if self._params['structure_level'] == 0:
-            fixed_block_id = os.path.basename(storage)
-            self._get_block_id = lambda _: fixed_block_id
 
     def get(self, cert_id: str) -> str:
         # Check if certificate exists as a file (transaction still open)
