@@ -107,7 +107,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
         config['PARAMETERS']['storage'] = storage_path
         config['PARAMETERS']['structure_level'] = structure_level
         config['PARAMETERS']['cert_format'] = cert_format
-        config['PARAMETERS']['compression_method'] = 'ZIP_STORED'
+        config['PARAMETERS']['compression_method'] = 'ZIP_DEFLATED'
         config['PARAMETERS']['maintain_info'] = maintain_info
         with open(config_path, 'w') as cfg_file:
             toml.dump(config, cfg_file)
@@ -147,7 +147,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
         # Check if certificate exists
         try:
             zip_file = self._get_block_archive(cert_id)
-            with ZipFile(zip_file, 'r', ZIP_STORED) as z_obj:
+            with ZipFile(zip_file, 'r', ZIP_DEFLATED) as z_obj:
                 with z_obj.open(cert_id) as cert:
                     log.debug('<%s> found persisted in zip <%s>', cert_id, zip_file)
                     return cert.read().decode('utf-8')
@@ -163,7 +163,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
         # Check if certificate exists persisted
         try:
             zip_file = self._get_block_archive(cert_id)
-            with ZipFile(zip_file, 'r', ZIP_STORED) as z_obj:
+            with ZipFile(zip_file, 'r', ZIP_DEFLATED) as z_obj:
                 zipinfo = z_obj.getinfo(cert_id)
                 zipinfo.filename = make_PEM_filename(cert_id)
                 z_obj.extract(zipinfo, target_dir)
@@ -185,7 +185,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
         # Check if certificate exists persisted
         try:
             zip_file = self._get_block_archive(cert_id)
-            with ZipFile(zip_file, 'r', ZIP_STORED) as z_obj:
+            with ZipFile(zip_file, 'r', ZIP_DEFLATED) as z_obj:
                 z_obj.getinfo(cert_id)
                 log.debug('<%s> exists persisted <%s>', cert_id, zip_file)
                 self._cache.add(cert_id)
@@ -394,8 +394,8 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         if certs and os.path.exists(block_archive):
             deleted_all = True
             new_block_archive = block_archive + '_new'
-            with ZipFile(block_archive, 'r', ZIP_STORED) as zin,\
-                 ZipFile(new_block_archive, 'w', ZIP_STORED) as zout:
+            with ZipFile(block_archive, 'r', ZIP_DEFLATED) as zin,\
+                 ZipFile(new_block_archive, 'w', ZIP_DEFLATED) as zout:
                 for name in zin.namelist():
                     if os.path.splitext(name)[0] not in certs:
                         zout.writestr(name, zin.read(name))
@@ -429,7 +429,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             log.debug('Creating archive: %s', block_archive)
 
         # TODO compare performance for higher compresslevel
-        with ZipFile(block_archive, "a" if append else "w", ZIP_STORED) as zout:
+        with ZipFile(block_archive, "a" if append else "w", ZIP_DEFLATED) as zout:
             if append:
                 persisted_certs = zout.namelist()
 

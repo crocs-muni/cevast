@@ -271,9 +271,9 @@ def stats(ctx, aggregate):
     for dataset in ctx.obj[&#39;datasets&#39;]:
         analysed = dataset.full_path(DatasetState.ANALYSED, check_if_exists=True)
         if not analysed:
-            click.echo(&#34;Not found Dataset {}&#34;.format(analysed))
+            click.echo(&#34;Not found Dataset {}&#34;.format(str(dataset)).format(&#39;ANALYSED&#39;))
             continue
-        click.echo(&#34;Found Dataset {}&#34;.format(analysed))
+        click.echo(&#34;Found Dataset {}&#34;.format(str(dataset)).format(&#39;ANALYSED&#39;))
         if aggregate:
             for method, res in __agregate(analysed).items():
                 click.echo(&#34;{:&lt;10}: {}&#34;.format(method, sorted(res.items())))</code></pre>
