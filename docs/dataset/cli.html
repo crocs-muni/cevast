@@ -34,8 +34,8 @@
 import os
 from datetime import datetime
 import click
-from cevast.certdb import CertFileDB, CertFileDBReadOnly, CompositeCertDBReadOnly
-from cevast.utils.logging import setup_cevast_logger
+from cevast.certdb import CertFileDB, CertFileDBReadOnly
+from cevast.utils.logging import setup_cevast_logger, setup_cli_logger
 from cevast.analysis import ChainValidator
 from .dataset import DatasetRepository, DatasetSource, DatasetState, Dataset
 from .manager_factory import DatasetManagerFactory, DatasetInvalidError
@@ -96,6 +96,7 @@ def dataset_repository_group(ctx, directory):
     ctx.ensure_object(dict)
     if ctx.parent is None:  # Check if was called diretly via &#34;datasetrepository&#34; alias and should set up logger then
         setup_cevast_logger()
+        setup_cli_logger()
 
     ctx.obj[&#39;repo&#39;] = DatasetRepository(directory)
 
@@ -150,6 +151,7 @@ def manager_group(ctx, directory, source, date, port, cpu):
 
     if ctx.parent is None:  # Check if was called diretly via &#34;manager&#34; alias and should set up logger then
         setup_cevast_logger(process_id=cpu &gt; 1)
+        setup_cli_logger()
 
     try:
         manager = DatasetManagerFactory.get_manager(source)(repository=directory, date=date, ports=port, cpu_cores=cpu)
@@ -183,7 +185,7 @@ def manager_unify(ctx, certdb):
         certdb = CertFileDB(certdb, ctx.obj[&#39;cpu&#39;])
     except ValueError:
         click.echo(
-            &#39;CertFileDB does not exist at {} yet, run &#34;cevast certdb setup --help&#34; for more information&#39;.format(certdb)
+            &#39;CertFileDB does not exist at {0} yet, run &#34;cevast certdb {0} setup --help&#34; for more information&#39;.format(certdb)
         )
         ctx.exit(1)
 
@@ -203,16 +205,14 @@ def manager_unify(ctx, certdb):
 def manager_analyse(ctx, certdb):
     &#34;&#34;&#34;Analyses dataset(s) matching given filter(s).&#34;&#34;&#34;
     try:
-        compositeDB = CompositeCertDBReadOnly()
-        compositeDB.register(CertFileDBReadOnly(certdb))
-        compositeDB.register(CertFileDBReadOnly(&#39;common_certificate_pool&#39;))
+        certdb = CertFileDBReadOnly(certdb)
     except ValueError:
         click.echo(
-            &#39;CertFileDB does not exist at {} yet, run &#34;cevast certdb setup --help&#34; for more information&#39;.format(compositeDB)
+            &#39;CertFileDB does not exist at {0} yet, run &#34;cevast certdb {0} setup --help&#34; for more information&#39;.format(certdb)
         )
         ctx.exit(1)
 
-    analysed = ctx.obj[&#39;manager&#39;].analyse(**_prepare_analyser_arg(compositeDB))
+    analysed = ctx.obj[&#39;manager&#39;].analyse(**_prepare_analyser_arg(certdb))
     click.echo(&#39;Analysed Datasets: {}&#39;.format(analysed))
 
 
@@ -236,12 +236,9 @@ def manager_run(ctx, certdb, task):
     # Open CertDB
     try:
         certdb = CertFileDB(certdb, ctx.obj[&#39;cpu&#39;])
-        compositeDB = CompositeCertDBReadOnly()
-        compositeDB.register(certdb)
-        compositeDB.register(CertFileDBReadOnly(&#39;common_certificate_pool&#39;))
     except ValueError:
         click.echo(
-            &#39;CertFileDB does not exist at {} yet, run &#34;cevast certdb setup --help&#34; for more information&#39;.format(certdb)
+            &#39;CertFileDB does not exist at {0} yet, run &#34;cevast certdb {0} setup --help&#34; for more information&#39;.format(certdb)
         )
         ctx.exit(1)
 
@@ -255,7 +252,7 @@ def manager_run(ctx, certdb, task):
         elif single == DatasetManagerTask.UNIFY:
             params[&#39;certdb&#39;] = certdb
         elif single == DatasetManagerTask.ANALYSE:
-            params = _prepare_analyser_arg(compositeDB)
+            params = _prepare_analyser_arg(certdb)
 
         tasks.append((single, params))
 

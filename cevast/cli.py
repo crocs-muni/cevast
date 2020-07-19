@@ -2,7 +2,7 @@
 
 import os
 import click
-from .utils.logging import setup_cevast_logger
+from .utils.logging import setup_cevast_logger, setup_cli_logger
 from .certdb import cli as certdb_cli
 from .dataset import cli as dataset_cli
 from .analysis import cli as analysis_cli
@@ -18,6 +18,7 @@ def cli(ctx, debug, cpu):
 
     # based on parameters setup logger
     setup_cevast_logger(debug=debug, process_id=cpu > 1)
+    setup_cli_logger()
 
     if debug:
         click.echo('Debug mode is ON')

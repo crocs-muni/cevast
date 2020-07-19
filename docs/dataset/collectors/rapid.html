@@ -40,6 +40,7 @@ from cevast.dataset.dataset import DatasetSource, DatasetCollectionError, Datase
 __author__ = &#39;Radim Podola&#39;
 
 log = logging.getLogger(__name__)
+cli_log = logging.getLogger(&#39;CEVAST_CLI&#39;)
 
 
 class RapidCollector:
@@ -133,7 +134,9 @@ class RapidCollector:
             if os.path.exists(path):
                 log.info(&#39;Dataset is already downloaded.&#39;)
             else:
+                cli_log.info(&#39;Will download dataset file &lt;%s&gt;&#39;, dataset_file)
                 self.__download(dataset_file, path)
+                cli_log.info(&#39;Dataset file &lt;%s&gt; downloaded&#39;, dataset_file)
 
         log.info(&#39;Rapid datasets collected.&#39;)
         return tuple(datasets_to_download.values())
@@ -296,7 +299,9 @@ Set the key to "RAPID_API_KEY" enviroment variable or provide upon initializatio
             if os.path.exists(path):
                 log.info(&#39;Dataset is already downloaded.&#39;)
             else:
+                cli_log.info(&#39;Will download dataset file &lt;%s&gt;&#39;, dataset_file)
                 self.__download(dataset_file, path)
+                cli_log.info(&#39;Dataset file &lt;%s&gt; downloaded&#39;, dataset_file)
 
         log.info(&#39;Rapid datasets collected.&#39;)
         return tuple(datasets_to_download.values())
@@ -443,7 +448,9 @@ Older datasets with different formats are not supported now.</p></div>
         if os.path.exists(path):
             log.info(&#39;Dataset is already downloaded.&#39;)
         else:
+            cli_log.info(&#39;Will download dataset file &lt;%s&gt;&#39;, dataset_file)
             self.__download(dataset_file, path)
+            cli_log.info(&#39;Dataset file &lt;%s&gt; downloaded&#39;, dataset_file)
 
     log.info(&#39;Rapid datasets collected.&#39;)
     return tuple(datasets_to_download.values())</code></pre>

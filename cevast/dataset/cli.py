@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 import click
 from cevast.certdb import CertFileDB, CertFileDBReadOnly
-from cevast.utils.logging import setup_cevast_logger
+from cevast.utils.logging import setup_cevast_logger, setup_cli_logger
 from cevast.analysis import ChainValidator
 from .dataset import DatasetRepository, DatasetSource, DatasetState, Dataset
 from .manager_factory import DatasetManagerFactory, DatasetInvalidError
@@ -68,6 +68,7 @@ def dataset_repository_group(ctx, directory):
     ctx.ensure_object(dict)
     if ctx.parent is None:  # Check if was called diretly via "datasetrepository" alias and should set up logger then
         setup_cevast_logger()
+        setup_cli_logger()
 
     ctx.obj['repo'] = DatasetRepository(directory)
 
@@ -122,6 +123,7 @@ def manager_group(ctx, directory, source, date, port, cpu):
 
     if ctx.parent is None:  # Check if was called diretly via "manager" alias and should set up logger then
         setup_cevast_logger(process_id=cpu > 1)
+        setup_cli_logger()
 
     try:
         manager = DatasetManagerFactory.get_manager(source)(repository=directory, date=date, ports=port, cpu_cores=cpu)
@@ -155,7 +157,7 @@ def manager_unify(ctx, certdb):
         certdb = CertFileDB(certdb, ctx.obj['cpu'])
     except ValueError:
         click.echo(
-            'CertFileDB does not exist at {} yet, run "cevast certdb setup --help" for more information'.format(certdb)
+            'CertFileDB does not exist at {0} yet, run "cevast certdb {0} setup --help" for more information'.format(certdb)
         )
         ctx.exit(1)
 
@@ -178,7 +180,7 @@ def manager_analyse(ctx, certdb):
         certdb = CertFileDBReadOnly(certdb)
     except ValueError:
         click.echo(
-            'CertFileDB does not exist at {} yet, run "cevast certdb setup --help" for more information'.format(certdb)
+            'CertFileDB does not exist at {0} yet, run "cevast certdb {0} setup --help" for more information'.format(certdb)
         )
         ctx.exit(1)
 
@@ -208,7 +210,7 @@ def manager_run(ctx, certdb, task):
         certdb = CertFileDB(certdb, ctx.obj['cpu'])
     except ValueError:
         click.echo(
-            'CertFileDB does not exist at {} yet, run "cevast certdb setup --help" for more information'.format(certdb)
+            'CertFileDB does not exist at {0} yet, run "cevast certdb {0} setup --help" for more information'.format(certdb)
         )
         ctx.exit(1)
 
@@ -226,7 +228,10 @@ def manager_run(ctx, certdb, task):
 
         tasks.append((single, params))
 
-    ctx.obj['manager'].run(tasks)
+    collected, unified, analysed = ctx.obj['manager'].run(tasks)
+    click.echo('Collected Datasets: {}'.format(collected))
+    click.echo('Unified Datasets: {}'.format(unified))
+    click.echo('Analysed Datasets: {}'.format(analysed))
     certdb.commit()
 
 
@@ -238,9 +243,9 @@ def stats(ctx, aggregate):
     for dataset in ctx.obj['datasets']:
         analysed = dataset.full_path(DatasetState.ANALYSED, check_if_exists=True)
         if not analysed:
-            click.echo("Not found Dataset {}".format(str(dataset)).format('ANALYSED'))
+            click.echo("Not found Dataset {}".format(analysed))
             continue
-        click.echo("Found Dataset {}".format(str(dataset)).format('ANALYSED'))
+        click.echo("Found Dataset {}".format(analysed))
         if aggregate:
             for method, res in __agregate(analysed).items():
                 click.echo("{:<10}: {}".format(method, sorted(res.items())))

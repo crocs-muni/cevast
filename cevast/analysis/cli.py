@@ -4,7 +4,7 @@
 """
 
 import click
-from cevast.analysis.methods import get_all, get, show
+from cevast.analysis.methods import get, show
 
 __author__ = 'Radim Podola'
 

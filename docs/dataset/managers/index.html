@@ -393,7 +393,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
         log.info(&#39;RapidDatasetManager initialized with repository=%s, date=%s, ports=%s&#39;, repository, date, ports)
 
     def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -&gt; None:
-        collected_datasets, unified_datasets = None, None
+        collected_datasets, unified_datasets, analysed_datasets = None, None, None
         # Sort just to ensure valid sequence
         task_pipline = sorted(task_pipline, key=lambda x: x[0])
         log.info(&#39;Started with task pipeline %s&#39;, task_pipline)
@@ -402,6 +402,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
             for task_item in task_pipline:
                 task, params = task_item
                 log.info(&#39;Run task %s with parameters: %s&#39;, task, params)
+                cli_log.info(&#39;Running TASK %s&#39;, task)
                 # Runs collection TASK, collected datasets might be used in next task
                 if task == DatasetManagerTask.COLLECT:
                     collected_datasets = self.collect(**params)
@@ -429,9 +430,11 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
         except TypeError:
             log.exception(&#34;Error when running task pipeline, are the arguments set correctly?&#34;)
         log.info(&#34;Finished&#34;)
+        return collected_datasets, unified_datasets, analysed_datasets
 
     def collect(self, api_key: str = None) -&gt; Tuple[Dataset]:
         log.info(&#39;Collecting started&#39;)
+        cli_log.info(&#39;Collecting started&#39;)
         collector = RapidCollector(api_key)
         # Create dummy dataset only to get target dir
         dummy_dataset = Dataset(self._repository, self.dataset_source, self.__date_id, None)
@@ -444,6 +447,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
         datasets = tuple(OrderedDict.fromkeys(map(Dataset.from_full_path, collected)))
         log.info(&#39;%d dataset were downloaded&#39;, len(datasets))
         log.info(&#39;Collecting finished&#39;)
+        cli_log.info(&#39;Collecting finished&#39;)
         return datasets if datasets else None
 
     def filter(self, methods: list = None) -&gt; str:
@@ -480,6 +484,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
 
     def __unify(self, certdb: CertDB, datasets: Tuple[Dataset], store_log: bool = True) -&gt; Tuple[Dataset]:
         log.info(&#39;Unifying started&#39;)
+        cli_log.info(&#39;Unifying started&#39;)
         # First validate datasets and init unifiers
         unifyable, unifiers = [], []
         for dataset in datasets:
@@ -491,6 +496,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
         for unifier in unifiers:
             try:
                 unifier.store_certs(certdb)
+                cli_log.info(&#39;Parsing certificates from Dataset file &lt;%s&gt;&#39;, unifier.certs_dataset)
             except (OSError, ValueError):
                 log.exception(&#34;Error during certs dataset parsing -&gt; rollback&#34;)
                 certdb.rollback()
@@ -498,6 +504,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
         # Now parse and store chains
         for unifier in unifiers:
             try:
+                cli_log.info(&#39;Parsing host chains from Dataset file &lt;%s&gt;&#39;, unifier.certs_dataset)
                 unifier.store_chains(certdb)
                 if store_log:
                     # Store dataset unification log
@@ -510,10 +517,12 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
         # for dataset in unifyable:
         #    dataset.delete(DatasetState.COLLECTED)
         log.info(&#39;Unifying finished&#39;)
+        cli_log.info(&#39;Unifying finished&#39;)
         return tuple(unifyable) if unifyable else None
 
     def __analyse(self, datasets: Tuple[Dataset], analyser: Type[CertAnalyser], analyser_cfg: dict) -&gt; Tuple[Dataset]:
         log.info(&#39;Analysis started&#39;)
+        cli_log.info(&#39;Analysis started&#39;)
         analysable = []
 
         for dataset in datasets:
@@ -531,6 +540,7 @@ def unify(self, certdb: CertDB) -&gt; Tuple[Dataset]:
                     log.info(&#34;Dataset analysis finished&#34;)
 
         log.info(&#39;Analysis finished&#39;)
+        cli_log.info(&#39;Analysis finished&#39;)
         return tuple(analysable) if analysable else None</code></pre>
 </details>
 <h3>Ancestors</h3>

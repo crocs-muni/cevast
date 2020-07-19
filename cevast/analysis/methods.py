@@ -26,6 +26,7 @@ Module can also be run as a standalone script with following usage:
    and intermediates (validation would be better then)
 """
 # TODO rename to validation_methods
+# TODO add support for reference time
 
 import sys
 import os
@@ -148,7 +149,7 @@ def _botan(chain: list) -> str:
 
         return str(code)
     except botan.BotanException:
-        log.exception("Validation failed: %s", ", ".join(chain))
+        log.info("Validation failed: %s", ", ".join(chain))
         return UNKNOWN
 
 

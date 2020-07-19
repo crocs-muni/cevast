@@ -15,6 +15,7 @@ from ..dataset import DatasetSource, Dataset, DatasetState, DatasetUnificationEr
 __author__ = 'Radim Podola'
 
 log = logging.getLogger(__name__)
+cli_log = logging.getLogger('CEVAST_CLI')
 
 
 class RapidDatasetManager(DatasetManager):
@@ -40,7 +41,7 @@ class RapidDatasetManager(DatasetManager):
         log.info('RapidDatasetManager initialized with repository=%s, date=%s, ports=%s', repository, date, ports)
 
     def run(self, task_pipline: Tuple[Tuple[DatasetManagerTask, dict]]) -> None:
-        collected_datasets, unified_datasets = None, None
+        collected_datasets, unified_datasets, analysed_datasets = None, None, None
         # Sort just to ensure valid sequence
         task_pipline = sorted(task_pipline, key=lambda x: x[0])
         log.info('Started with task pipeline %s', task_pipline)
@@ -49,6 +50,7 @@ class RapidDatasetManager(DatasetManager):
             for task_item in task_pipline:
                 task, params = task_item
                 log.info('Run task %s with parameters: %s', task, params)
+                cli_log.info('Running TASK %s', task)
                 # Runs collection TASK, collected datasets might be used in next task
                 if task == DatasetManagerTask.COLLECT:
                     collected_datasets = self.collect(**params)
@@ -76,9 +78,11 @@ class RapidDatasetManager(DatasetManager):
         except TypeError:
             log.exception("Error when running task pipeline, are the arguments set correctly?")
         log.info("Finished")
+        return collected_datasets, unified_datasets, analysed_datasets
 
     def collect(self, api_key: str = None) -> Tuple[Dataset]:
         log.info('Collecting started')
+        cli_log.info('Collecting started')
         collector = RapidCollector(api_key)
         # Create dummy dataset only to get target dir
         dummy_dataset = Dataset(self._repository, self.dataset_source, self.__date_id, None)
@@ -91,6 +95,7 @@ class RapidDatasetManager(DatasetManager):
         datasets = tuple(OrderedDict.fromkeys(map(Dataset.from_full_path, collected)))
         log.info('%d dataset were downloaded', len(datasets))
         log.info('Collecting finished')
+        cli_log.info('Collecting finished')
         return datasets if datasets else None
 
     def filter(self, methods: list = None) -> str:
@@ -127,6 +132,7 @@ class RapidDatasetManager(DatasetManager):
 
     def __unify(self, certdb: CertDB, datasets: Tuple[Dataset], store_log: bool = True) -> Tuple[Dataset]:
         log.info('Unifying started')
+        cli_log.info('Unifying started')
         # First validate datasets and init unifiers
         unifyable, unifiers = [], []
         for dataset in datasets:
@@ -138,6 +144,7 @@ class RapidDatasetManager(DatasetManager):
         for unifier in unifiers:
             try:
                 unifier.store_certs(certdb)
+                cli_log.info('Parsing certificates from Dataset file <%s>', unifier.certs_dataset)
             except (OSError, ValueError):
                 log.exception("Error during certs dataset parsing -> rollback")
                 certdb.rollback()
@@ -145,6 +152,7 @@ class RapidDatasetManager(DatasetManager):
         # Now parse and store chains
         for unifier in unifiers:
             try:
+                cli_log.info('Parsing host chains from Dataset file <%s>', unifier.certs_dataset)
                 unifier.store_chains(certdb)
                 if store_log:
                     # Store dataset unification log
@@ -157,10 +165,12 @@ class RapidDatasetManager(DatasetManager):
         # for dataset in unifyable:
         #    dataset.delete(DatasetState.COLLECTED)
         log.info('Unifying finished')
+        cli_log.info('Unifying finished')
         return tuple(unifyable) if unifyable else None
 
     def __analyse(self, datasets: Tuple[Dataset], analyser: Type[CertAnalyser], analyser_cfg: dict) -> Tuple[Dataset]:
         log.info('Analysis started')
+        cli_log.info('Analysis started')
         analysable = []
 
         for dataset in datasets:
@@ -178,4 +188,5 @@ class RapidDatasetManager(DatasetManager):
                     log.info("Dataset analysis finished")
 
         log.info('Analysis finished')
+        cli_log.info('Analysis finished')
         return tuple(analysable) if analysable else None

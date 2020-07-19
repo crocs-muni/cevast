@@ -204,7 +204,7 @@ def _botan(chain: list) -&gt; str:
 
         return str(code)
     except botan.BotanException:
-        log.exception(&#34;Validation failed: %s&#34;, &#34;, &#34;.join(chain))
+        log.info(&#34;Validation failed: %s&#34;, &#34;, &#34;.join(chain))
         return UNKNOWN
 
 

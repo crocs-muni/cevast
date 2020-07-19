@@ -154,7 +154,9 @@ Set the key to "RAPID_API_KEY" enviroment variable or provide upon initializatio
             if os.path.exists(path):
                 log.info(&#39;Dataset is already downloaded.&#39;)
             else:
+                cli_log.info(&#39;Will download dataset file &lt;%s&gt;&#39;, dataset_file)
                 self.__download(dataset_file, path)
+                cli_log.info(&#39;Dataset file &lt;%s&gt; downloaded&#39;, dataset_file)
 
         log.info(&#39;Rapid datasets collected.&#39;)
         return tuple(datasets_to_download.values())
@@ -301,7 +303,9 @@ Older datasets with different formats are not supported now.</p></div>
         if os.path.exists(path):
             log.info(&#39;Dataset is already downloaded.&#39;)
         else:
+            cli_log.info(&#39;Will download dataset file &lt;%s&gt;&#39;, dataset_file)
             self.__download(dataset_file, path)
+            cli_log.info(&#39;Dataset file &lt;%s&gt; downloaded&#39;, dataset_file)
 
     log.info(&#39;Rapid datasets collected.&#39;)
     return tuple(datasets_to_download.values())</code></pre>

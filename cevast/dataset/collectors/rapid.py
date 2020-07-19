@@ -13,6 +13,7 @@ from cevast.dataset.dataset import DatasetSource, DatasetCollectionError, Datase
 __author__ = 'Radim Podola'
 
 log = logging.getLogger(__name__)
+cli_log = logging.getLogger('CEVAST_CLI')
 
 
 class RapidCollector:
@@ -106,7 +107,9 @@ class RapidCollector:
             if os.path.exists(path):
                 log.info('Dataset is already downloaded.')
             else:
+                cli_log.info('Will download dataset file <%s>', dataset_file)
                 self.__download(dataset_file, path)
+                cli_log.info('Dataset file <%s> downloaded', dataset_file)
 
         log.info('Rapid datasets collected.')
         return tuple(datasets_to_download.values())

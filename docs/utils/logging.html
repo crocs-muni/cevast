@@ -69,10 +69,10 @@ def setup_cli_logger() -&gt; logging.Logger:
     # Setup formatter
     formatter = logging.Formatter(&#39;%(message)s&#39;)
     cli_logger = logging.getLogger(&#39;CEVAST_CLI&#39;)
+    cli_logger.setLevel(logging.INFO)
 
     # Setup handler writing error-like logs to console
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
 
     cli_logger.addHandler(console_handler)
@@ -108,9 +108,9 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -&gt; log
         )
 
     # Setup handler writing error-like logs to console
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.WARNING)
-    console_handler.setFormatter(formatter)
+    # console_handler = logging.StreamHandler(sys.stdout)
+    # console_handler.setLevel(logging.CRITICAL)
+    # console_handler.setFormatter(formatter)
 
     # Setup handler writing logs to a file with compressing of the rotated files
     file_handler = logging.handlers.RotatingFileHandler(
@@ -124,7 +124,7 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -&gt; log
     logger = logging.getLogger(&#39;cevast&#39;)
     logger.setLevel(logging.DEBUG if debug else logging.INFO)
     logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+    # logger.addHandler(console_handler)
 
     return logger</code></pre>
 </details>
@@ -191,9 +191,9 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -&gt; log
         )
 
     # Setup handler writing error-like logs to console
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.WARNING)
-    console_handler.setFormatter(formatter)
+    # console_handler = logging.StreamHandler(sys.stdout)
+    # console_handler.setLevel(logging.CRITICAL)
+    # console_handler.setFormatter(formatter)
 
     # Setup handler writing logs to a file with compressing of the rotated files
     file_handler = logging.handlers.RotatingFileHandler(
@@ -207,7 +207,7 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -&gt; log
     logger = logging.getLogger(&#39;cevast&#39;)
     logger.setLevel(logging.DEBUG if debug else logging.INFO)
     logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+    # logger.addHandler(console_handler)
 
     return logger</code></pre>
 </details>
@@ -234,10 +234,10 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -&gt; log
     # Setup formatter
     formatter = logging.Formatter(&#39;%(message)s&#39;)
     cli_logger = logging.getLogger(&#39;CEVAST_CLI&#39;)
+    cli_logger.setLevel(logging.INFO)
 
     # Setup handler writing error-like logs to console
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
 
     cli_logger.addHandler(console_handler)

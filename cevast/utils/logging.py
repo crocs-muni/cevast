@@ -40,13 +40,12 @@ def setup_cli_logger() -> logging.Logger:
     TODO: add support for colours
     """
     # Setup formatter
-    # TODO is it needed?
     formatter = logging.Formatter('%(message)s')
     cli_logger = logging.getLogger('CEVAST_CLI')
+    cli_logger.setLevel(logging.INFO)
 
     # Setup handler writing error-like logs to console
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
 
     cli_logger.addHandler(console_handler)
@@ -82,9 +81,9 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -> loggin
         )
 
     # Setup handler writing error-like logs to console
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.WARNING)
-    console_handler.setFormatter(formatter)
+    # console_handler = logging.StreamHandler(sys.stdout)
+    # console_handler.setLevel(logging.CRITICAL)
+    # console_handler.setFormatter(formatter)
 
     # Setup handler writing logs to a file with compressing of the rotated files
     file_handler = logging.handlers.RotatingFileHandler(
@@ -98,6 +97,6 @@ def setup_cevast_logger(debug: bool = False, process_id: bool = False) -> loggin
     logger = logging.getLogger('cevast')
     logger.setLevel(logging.DEBUG if debug else logging.INFO)
     logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+    # logger.addHandler(console_handler)
 
     return logger
