@@ -5,7 +5,6 @@ Import and add your DatasetManager implementation into __all__ for identificatio
 """
 
 __all__ = ['DatasetManager', 'DatasetManagerTask', 'RapidDatasetManager']
-__version__ = '0.1'
 __author__ = 'Radim Podola'
 
 from .manager import DatasetManager, DatasetManagerTask

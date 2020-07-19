@@ -49,7 +49,7 @@ def __agregate(file):
 
     with open(file) as f:
         header = f.readline().split(',')
-        
+
         cntrs = [Counter() for _ in range(len(header) - 2)]  # methods only
         for line in f.readlines():
             els = [res.strip() for res in line.split(',')]

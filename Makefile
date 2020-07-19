@@ -1,4 +1,4 @@
-interpret = python3.6
+interpret = python3
 trg = cevast/ tests/test_*
 max_line_len = 127
 

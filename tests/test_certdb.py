@@ -122,7 +122,7 @@ class TestCertFileDBReadOnly(unittest.TestCase):
         new_loc = os.path.join(self.TEST_STORAGE, 'new')
         os.makedirs(new_loc)
         shutil.move(
-            os.path.join(self.TEST_STORAGE, CertFileDBReadOnly.CONF_FILENAME), 
+            os.path.join(self.TEST_STORAGE, CertFileDBReadOnly.CONF_FILENAME),
             os.path.join(new_loc, CertFileDBReadOnly.CONF_FILENAME)
         )
         assert os.path.exists(os.path.join(new_loc, CertFileDBReadOnly.CONF_FILENAME))
