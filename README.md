@@ -1,11 +1,9 @@
 Cevast: Certificate Validation Statistics Tool
 ==============================================
 
-![Python application](https://github.com/crocs-muni/cert-validation-stats/workflows/Python%20application/badge.svg?branch=master)
+![Python application](https://github.com/crocs-muni/cevast/workflows/Python%20application/badge.svg?branch=master)
 
 Cevast is an open source tool for collection, management and validation of SSL/TLS certificates.
-
-TODO
 
 Installation
 ------------
@@ -17,8 +15,8 @@ Installation
 
 You can install Cevast as follows:
 
-    git clone https://github.com/crocs-muni/cert-validation-stats
-    cd cert-validation-stats
+    git clone https://github.com/crocs-muni/cevast
+    cd cevast
     pip3 install --quiet -r requirements.txt
     make install
 
@@ -28,7 +26,7 @@ or without `make` tool on the system, equivalently using python:
 
 Running above commands installs Cevast to your system as a runnable python package. You can then import
 and use `cevast` modules in your own applications or run `cevast` command in your terminal to invoke
-command line interface. Run either `cevast --help` or see the [cli documentation](https://crocs-muni.github.io/cert-validation-stats/cli.html)
+command line interface. Run either `cevast --help` or see the [cli documentation](https://crocs-muni.github.io/cevast/cli.html)
 for more information about using Cevast.
 
 Depending on your OS, you might require root permissions to install Cevast to a system directory as by default.
@@ -54,7 +52,7 @@ Developing
 As only a single developer is working on the project at the moment, only master (eh, sorry... main) branch is used.
 
 #### Continuous Integration
-CI is set up with use of [GitHub Actions workflow](https://github.com/crocs-muni/cert-validation-stats/actions?query=workflow%3A%22Python+application%22).
+CI is set up with use of [GitHub Actions workflow](https://github.com/crocs-muni/cevast/actions?query=workflow%3A%22Python+application%22).
 CI workflow runs unit tests and lint the code.
 
 #### Testing
@@ -85,7 +83,7 @@ This project is licensed under MIT License.
 Documentation
 ------------
 
-For more information about the tool and how to use it, please visit the project [documentation pages](https://crocs-muni.github.io/cert-validation-stats/).
+For more information about the tool and how to use it, please visit the project [documentation pages](https://crocs-muni.github.io/cevast/).
 
 Authors
 ------------
