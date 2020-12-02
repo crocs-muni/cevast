@@ -321,7 +321,7 @@ class TestDataset(unittest.TestCase):
 
         # Check filter by port
         get_rapid = ds_rapid.get(DatasetState.UNIFIED)
-        self.assertEqual(get_rapid, ('2020-06-12.gz', '2020-06-12_suffix.gz'))
+        self.assertEqual(sorted(get_rapid), ('2020-06-12.gz', '2020-06-12_suffix.gz'))
         get_censys = ds_censys.get(DatasetState.UNIFIED)
         self.assertEqual(get_censys, ('2020-06-12_22.gz',))
 
