@@ -134,6 +134,8 @@ class CertFileDBReadOnly(CertDBReadOnly):
             raise ValueError('CertFileDB <{}> does not exists -> call CertFileDB.setup() first'.format(config_path))
         # Init DB instance
         log.info('Initializing %s transaction...', self.__class__.__name__)
+        # hashes of certificates stored in DB
+        self._certsInDb: set = set()
         # Set maintaining all known certificate IDs for better EXISTS performance
         self._cache: set = set()
         # Pre-compute index used for block_id
@@ -142,6 +144,20 @@ class CertFileDBReadOnly(CertDBReadOnly):
         if self._params['structure_level'] == 0:
             fixed_block_id = os.path.basename(self.storage)
             self._get_block_id = lambda _: fixed_block_id
+
+        if os.path.isfile("certDbIndex"):
+            print('Loading DB index')
+            log.info('Loading DB index')
+
+            with open("certDbIndex", "rt") as inputFile:
+                for line in inputFile:
+                    self._certsInDb.add(line.strip())
+
+            print('Loaded {0} hashes'.format(len(self._certsInDb)))
+            log.info('Loaded {0} hashes'.format(len(self._certsInDb)))
+        else:
+            print('DB index does not exist yet')
+            log.info('DB index does not exist yet')
 
     def get(self, cert_id: str) -> str:
         # Check if certificate exists
@@ -277,7 +293,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             log.info('<%s> was deleted in current transaction', cert_id)
             return False
         # Check if certificate exists persisted
-        return CertFileDBReadOnly.exists(self, cert_id)
+        return CertFileDBReadOnly.exists(self, cert_id) if cert_id in self._certsInDb else False
 
     def insert(self, cert_id: str, cert: str) -> None:
         if not cert_id or not cert:
@@ -344,6 +360,28 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             # Now handle insert
             for block, certs in self._to_insert.items():
                 cnt_inserted += CertFileDB.persist_certs(self._get_block_path(block), self._get_block_archive(block), certs)
+
+        print('Updating DB index')
+        log.info('Updating DB index')
+
+        for certs in self._to_delete.values():
+            self._certsInDb = self._certsInDb.difference(certs)
+
+        for certs in self._to_insert.values():
+            self._certsInDb = self._certsInDb.union(certs)
+
+        print('DB index now contains {0} hashes'.format(len(self._certsInDb)))
+        log.info('DB index now contains {0} hashes'.format(len(self._certsInDb)))
+
+        print('Writing DB index')
+        log.info('Writing DB index')
+
+        with open("certDbIndex", "wt") as outputFile:
+            for certificateHash in self._certsInDb:
+                outputFile.write("{0}\n".format(certificateHash))
+
+        print('DB index is written')
+        log.info('DB index is written')
 
         self._to_delete.clear()
         self._to_insert.clear()
