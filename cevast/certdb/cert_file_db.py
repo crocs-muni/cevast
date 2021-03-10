@@ -79,7 +79,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
     META_FILENAME = '.CertFileDB-META.toml'
 
     @staticmethod
-    def setup(storage_path: str, structure_level: int = 2, cert_format: str = 'PEM',
+    def setup(storage_path: str, structure_level: int = 3, cert_format: str = 'PEM',
               desc: str = 'CertFileDB', owner: str = '', maintain_info: bool = True) -> None:
         """
         Setup CertFileDB storage directory with the given parameters.
@@ -361,26 +361,21 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             for block, certs in self._to_insert.items():
                 cnt_inserted += CertFileDB.persist_certs(self._get_block_path(block), self._get_block_archive(block), certs)
 
-        print('Updating DB index')
         log.info('Updating DB index')
 
         for certs in self._to_delete.values():
             self._certsInDb = self._certsInDb.difference(certs)
 
-        for certs in self._to_insert.values():
-            self._certsInDb = self._certsInDb.union(certs)
+        self._certsInDb.update(*(self._to_insert.values()))
 
-        print('DB index now contains {0} hashes'.format(len(self._certsInDb)))
         log.info('DB index now contains {0} hashes'.format(len(self._certsInDb)))
 
-        print('Writing DB index')
         log.info('Writing DB index')
 
         with open("certDbIndex", "wt") as outputFile:
             for certificateHash in self._certsInDb:
                 outputFile.write("{0}\n".format(certificateHash))
 
-        print('DB index is written')
         log.info('DB index is written')
 
         self._to_delete.clear()
