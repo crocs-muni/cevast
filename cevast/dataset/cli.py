@@ -39,8 +39,8 @@ def _validate_cli_filter_date(_, __, value):
         raise click.BadParameter('Date filter need to be in format YYYYmmdd (can be partial e.g. only YYYYmm)')
 
 
-def _prepare_analyser_arg(certdb):
-    return {'analyser_cfg': {'certdb': certdb},
+def _prepare_analyser_arg(certdb, reference_date):
+    return {'analyser_cfg': {'certdb': certdb, 'reference_date': reference_date},
             'analyser': ChainValidator}
 
 
@@ -173,8 +173,15 @@ def manager_unify(ctx, certdb):
     type=click.Path(exists=True),
     help='Path to CertDB where the certificates should be read from.'
 )
+@click.option(
+    '--reference_date',
+    '-r',
+    default=datetime.today().date().strftime(CLI_DATE_FORMAT),
+    callback=_validate_cli_date,
+    help='Reference date for analysis in format [YYYY-mm-dd]. Default is today.',
+)
 @click.pass_context
-def manager_analyse(ctx, certdb):
+def manager_analyse(ctx, certdb, reference_date):
     """Analyses dataset(s) matching given filter(s)."""
     try:
         certdb = CertFileDBReadOnly(certdb)
@@ -184,7 +191,7 @@ def manager_analyse(ctx, certdb):
         )
         ctx.exit(1)
 
-    analysed = ctx.obj['manager'].analyse(**_prepare_analyser_arg(certdb))
+    analysed = ctx.obj['manager'].analyse(**_prepare_analyser_arg(certdb, reference_date))
     click.echo('Analysed Datasets: {}'.format(analysed))
 
 
