@@ -25,7 +25,7 @@ def directory_with_prefix(directory: str, prefix: str, filename_only: bool = Fal
     # Check if the directory exists
     if os.path.exists(directory):
         # Check if there is any file matching the prefix
-        for file in os.listdir(directory):
+        for file in sorted(os.listdir(directory)):
             if file.startswith(prefix):
                 if filename_only:
                     yield file
