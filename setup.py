@@ -15,6 +15,8 @@ setup(
     license = "MIT",
     url='https://github.com/crocs-muni/cert-validation-stats',
     packages=find_packages(),
+    package_data={'': ['libfaketime.so.1']},
+    include_package_data=True,
     classifiers=[
          'Programming Language :: Python :: 3',
          'License :: OSI Approved :: MIT License',

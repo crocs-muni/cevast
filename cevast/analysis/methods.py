@@ -72,35 +72,53 @@ def show(include_docstring: bool = False):
         return tuple("{:<8} - {}".format(name, func.__doc__) for name, func in METHODS.items())
     return tuple(METHODS.keys())
 
+
 # -----------   MODULE INITIALIZATION   -------------------------
 
+# try to load the chain inspector
+# log.info("Loading chain inspection module")
+# try:
+#     from .modules.chain_inspector import ChainInspector
+#
+#     METHODS['chainInspector'] = ChainInspector.inspect
+# except ModuleNotFoundError as error:
+#     log.info("The client could not be loaded: {0}".format(error))
 
-# # try to load command-line Openssl
+# try to load command-line Openssl
 log.info("Loading CLI Openssl validation client")
 try:
-    from .validation_clients.openssl import verify as opensslVerify
+    from .modules.validation_clients.openssl import Openssl
 
-    METHODS['openssl'] = opensslVerify
-except ModuleNotFoundError as e:
-    log.info("The client could not be loaded:" + e)
+    METHODS['openssl'] = Openssl.verify
+except ModuleNotFoundError as error:
+    log.info("The client could not be loaded: {0}".format(error))
 
 # try to load PyOpenSSL
 log.info("Loading PyOpenSSL validation client")
 try:
-    from .validation_clients.pyopenssl import verify as pyopensslVerify
+    from .modules.validation_clients.pyopenssl import Pyopenssl
 
-    METHODS['pyopenssl'] = pyopensslVerify
-except ModuleNotFoundError as e:
-    log.info("The client could not be loaded:" + e)
+    METHODS['pyopenssl'] = Pyopenssl.verify
+except ModuleNotFoundError as error:
+    log.info("The client could not be loaded: {0}".format(error))
 
-# # try to load Botan
+# try to load Botan
 log.info("Loading Botan validation client")
 try:
-    from .validation_clients.botan import verify as botanVerify
+    from .modules.validation_clients.botan import Botan
 
-    METHODS['botan'] = botanVerify
-except ModuleNotFoundError as e:
-    log.info("The client could not be loaded:" + e)
+    METHODS['botan'] = Botan.verify
+except ModuleNotFoundError as error:
+    log.info("The client could not be loaded: {0}".format(error))
+
+# try to load command-line GnuTLS
+log.info("Loading CLI GnuTLS validation client")
+try:
+    from .modules.validation_clients.gnutls import GnuTLS
+
+    METHODS['gnutls'] = GnuTLS.verify
+except ModuleNotFoundError as error:
+    log.info("The client could not be loaded: {0}".format(error))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 interpret = python3
 trg = cevast/ tests/test_*
-max_line_len = 127
+max_line_len = 170
 
 install:
 	$(interpret) setup.py install

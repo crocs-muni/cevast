@@ -143,8 +143,8 @@ class RapidDatasetManager(DatasetManager):
         # Parse and store certificates
         for unifier in unifiers:
             try:
-                unifier.store_certs(certdb)
                 cli_log.info('Parsing certificates from Dataset file <%s>', unifier.certs_dataset)
+                unifier.store_certs(certdb)
             except (OSError, ValueError):
                 log.exception("Error during certs dataset parsing -> rollback")
                 certdb.rollback()

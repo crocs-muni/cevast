@@ -203,6 +203,13 @@ def manager_analyse(ctx, certdb, reference_date):
     help='Path to CertDB where the certificates should be stored/read to/from.'
 )
 @click.option(
+    '--reference_date',
+    '-r',
+    default=datetime.today().date().strftime(CLI_DATE_FORMAT),
+    callback=_validate_cli_date,
+    help='Reference date for analysis in format [YYYY-mm-dd]. Default is today.',
+)
+@click.option(
     '--task',
     '-t',
     type=click.Choice([str(t) for t in DatasetManagerTask], case_sensitive=False),
@@ -210,7 +217,7 @@ def manager_analyse(ctx, certdb, reference_date):
     help='Dataset Task(s) to run in Work pipeline.'
 )
 @click.pass_context
-def manager_run(ctx, certdb, task):
+def manager_run(ctx, certdb, reference_date, task):
     """Runs Task pipeline for dataset(s) matching given filter(s)."""
     # Open CertDB
     try:
@@ -231,7 +238,7 @@ def manager_run(ctx, certdb, task):
         elif single == DatasetManagerTask.UNIFY:
             params['certdb'] = certdb
         elif single == DatasetManagerTask.ANALYSE:
-            params = _prepare_analyser_arg(certdb)
+            params = _prepare_analyser_arg(certdb, reference_date)
 
         tasks.append((single, params))
 
