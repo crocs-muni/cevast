@@ -6,12 +6,15 @@
 import os
 from datetime import datetime
 import click
+from click import IntRange
+
 from cevast.certdb import CertFileDB, CertFileDBReadOnly
 from cevast.utils.logging import setup_cevast_logger, setup_cli_logger
 from cevast.analysis import ChainValidator
 from .dataset import DatasetRepository, DatasetSource, DatasetState, Dataset
 from .manager_factory import DatasetManagerFactory, DatasetInvalidError
 from .managers import DatasetManagerTask
+from ..utils.db_enrichment_analyser import EnrichmentAnalyser
 
 __author__ = 'Radim Podola'
 
@@ -111,10 +114,10 @@ def manager_group(ctx, directory, source, date, port, cpu):
     """Gives access to specified Dataset management."""
     ctx.ensure_object(dict)
 
-    if ctx.invoked_subcommand == 'stats':
+    if ctx.invoked_subcommand in {'stats', 'enrichments'}:
         ctx.obj['datasets'] = []
         for p in port:
-            ctx.obj['datasets'].append(Dataset(directory, source, date.strftime('%Y%m%d'), p, 'csv'))
+            ctx.obj['datasets'].append(Dataset(directory, source, date.strftime('%Y%m%d'), p, 'csv' if ctx.invoked_subcommand == 'stats' else 'gz'))
         return
 
     if cpu is None:
@@ -247,6 +250,19 @@ def manager_run(ctx, certdb, reference_date, task):
     click.echo('Unified Datasets: {}'.format(unified))
     click.echo('Analysed Datasets: {}'.format(analysed))
     certdb.commit()
+
+
+@manager_group.command('enrichments')
+@click.option('--depth', type=IntRange(min=0), default=100, help='Enrichment depth (default is 100)')
+@click.pass_context
+def enrichments(ctx, depth):
+    """Generate database enrichment stats."""
+    for dataset in ctx.obj['datasets']:
+        certs_file = dataset.full_path(DatasetState.COLLECTED, 'certs', True)
+        hosts_file = dataset.full_path(DatasetState.COLLECTED, 'hosts', True)
+
+        if certs_file and hosts_file:
+            EnrichmentAnalyser(certs_file, hosts_file, depth).run()
 
 
 @manager_group.command('stats')
