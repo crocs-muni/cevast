@@ -71,16 +71,22 @@ class ChainValidator(CertAnalyser):
 
         # Initialize pool and workers
         if not self.__single:
-            self.__pool = multiprocessing.Pool(
-                processes, initializer=ChainValidator.__init_worker, initargs=(self.__certdb, self.__export_dir, methods, self.__reference_date, self.__lock, True)
-            )
+            self.__pool = multiprocessing.Pool(processes,
+                                               initializer=ChainValidator.__init_worker,
+                                               initargs=(self.__certdb,
+                                                         self.__export_dir,
+                                                         methods,
+                                                         self.__reference_date,
+                                                         self.__lock,
+                                                         True))
         else:
             ChainValidator.__init_worker(self.__certdb, self.__export_dir, methods, self.__reference_date, self.__lock)
 
         log.info("ChainValidator created: output_file=%s, processes=%d", output_file, processes)
 
     @staticmethod
-    def __init_worker(certdb: CertDB, tmp_dir: str, methods: list, reference_date: datetime.date, lock: multiprocessing.Lock, ignore_sigint: bool = False):
+    def __init_worker(certdb: CertDB, tmp_dir: str, methods: list, reference_date: datetime.date,
+                      lock: multiprocessing.Lock, ignore_sigint: bool = False):
         """Create and initialize global variables used in validate method. {Not nice, but working well
         with multiprocessing pool -> sharing instance of CertDB - object is not copied because of copy-on-write fork()}
         """
@@ -142,11 +148,11 @@ class ChainValidator(CertAnalyser):
         finally:
             LOCK.release()
 
-        validationMethodArguments = {"referenceTime": int(REFERENCE_DATE.strftime("%s"))}
+        validation_method_arguments = {"reference_time": int(REFERENCE_DATE.strftime("%s"))}
 
         # Call validation methods
         for method in VALIDATION_METHODS:
-            result.append(method(pems, **(validationMethodArguments)))
+            result.append(method(pems, **validation_method_arguments))
 
         return "{}, {}, {}\n".format(host.rjust(15), ", ".join(result), ", ".join(chain))
 

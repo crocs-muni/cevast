@@ -45,7 +45,7 @@ import multiprocessing as mp
 from typing import Tuple
 from datetime import datetime
 from collections import OrderedDict
-from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
+from zipfile import ZipFile, ZIP_DEFLATED
 import toml
 from cevast.utils import make_PEM_filename, remove_empty_folders
 from cevast.certdb.cert_db import (
@@ -77,6 +77,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
 
     CONF_FILENAME = 'CertFileDB.toml'
     META_FILENAME = '.CertFileDB-META.toml'
+    INDEX_FILENAME = 'CertFileDBIndex'
 
     @staticmethod
     def setup(storage_path: str, structure_level: int = 3, cert_format: str = 'PEM',
@@ -135,7 +136,7 @@ class CertFileDBReadOnly(CertDBReadOnly):
         # Init DB instance
         log.info('Initializing %s transaction...', self.__class__.__name__)
         # hashes of certificates stored in DB
-        self._certsInDb: set = set()
+        self._certs_in_db: set = set()
         # Set maintaining all known certificate IDs for better EXISTS performance
         self._cache: set = set()
         # Pre-compute index used for block_id
@@ -145,19 +146,8 @@ class CertFileDBReadOnly(CertDBReadOnly):
             fixed_block_id = os.path.basename(self.storage)
             self._get_block_id = lambda _: fixed_block_id
 
-        if os.path.isfile("certDbIndex"):
-            print('Loading DB index')
-            log.info('Loading DB index')
-
-            with open("certDbIndex", "rt") as inputFile:
-                for line in inputFile:
-                    self._certsInDb.add(line.strip())
-
-            print('Loaded {0} hashes'.format(len(self._certsInDb)))
-            log.info('Loaded {0} hashes'.format(len(self._certsInDb)))
-        else:
-            print('DB index does not exist yet')
-            log.info('DB index does not exist yet')
+        self._index_path = os.path.join(os.path.abspath(self.storage), self.INDEX_FILENAME)
+        self._load_index()
 
     def get(self, cert_id: str) -> str:
         # Check if certificate exists
@@ -231,6 +221,18 @@ class CertFileDBReadOnly(CertDBReadOnly):
         block_path = self._get_block_path(cert_or_block_id)
         return block_path + self._get_block_id(cert_or_block_id) + '.zip'
 
+    def _load_index(self):
+        if os.path.isfile(self._index_path):
+            log.info('Loading DB index')
+
+            with open(self._index_path, 'rt') as input_file:
+                for line in input_file:
+                    self._certs_in_db.add(line.strip())
+
+            log.info('Loaded {0} hashes'.format(len(self._certs_in_db)))
+        else:
+            log.info('DB index does not exist yet')
+
 
 class CertFileDB(CertDB, CertFileDBReadOnly):
     """
@@ -293,7 +295,7 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             log.info('<%s> was deleted in current transaction', cert_id)
             return False
         # Check if certificate exists persisted
-        return CertFileDBReadOnly.exists(self, cert_id) if cert_id in self._certsInDb else False
+        return CertFileDBReadOnly.exists(self, cert_id) if cert_id in self._certs_in_db else False
 
     def insert(self, cert_id: str, cert: str) -> None:
         if not cert_id or not cert:
@@ -361,22 +363,8 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
             for block, certs in self._to_insert.items():
                 cnt_inserted += CertFileDB.persist_certs(self._get_block_path(block), self._get_block_archive(block), certs)
 
-        log.info('Updating DB index')
-
-        for certs in self._to_delete.values():
-            self._certsInDb = self._certsInDb.difference(certs)
-
-        self._certsInDb.update(*(self._to_insert.values()))
-
-        log.info('DB index now contains {0} hashes'.format(len(self._certsInDb)))
-
-        log.info('Writing DB index')
-
-        with open("certDbIndex", "wt") as outputFile:
-            for certificateHash in self._certsInDb:
-                outputFile.write("{0}\n".format(certificateHash))
-
-        log.info('DB index is written')
+        self._update_index()
+        self._write_index()
 
         self._to_delete.clear()
         self._to_insert.clear()
@@ -525,3 +513,22 @@ class CertFileDB(CertDB, CertFileDBReadOnly):
         log.debug(meta)
         with open(meta_path, 'w') as meta_file:
             toml.dump(meta, meta_file)
+
+    def _update_index(self):
+        log.info('Updating DB index')
+
+        for certs in self._to_delete.values():
+            self._certs_in_db = self._certs_in_db.difference(certs)
+
+        self._certs_in_db.update(*(self._to_insert.values()))
+
+        log.info('DB index now contains {0} hashes'.format(len(self._certs_in_db)))
+
+    def _write_index(self):
+        log.info('Writing DB index')
+
+        with open(self._index_path, 'wt') as output_file:
+            for certificate_hash in self._certs_in_db:
+                output_file.write('{0}\n'.format(certificate_hash))
+
+        log.info('DB index is written')
