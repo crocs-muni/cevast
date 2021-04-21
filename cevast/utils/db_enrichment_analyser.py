@@ -31,11 +31,15 @@ class EnrichmentAnalyser:
     def __parse_certs_file(self):
         cli_log.info("Parsing certs...")
 
+        self.__cert_hashes.clear()
+
         for cert_hash, _ in RapidUnifier.parse_certs(self.__certs_file):
             self.__cert_hashes.add(cert_hash)
 
     def __count_missing_certs_in_chains(self):
         cli_log.info('Counting missing certs in chains...')
+
+        self.__missing_cert_counts.clear()
 
         for _, cert_hash_chain in RapidUnifier.parse_chains(self.__hosts_file):
             for cert_hash in cert_hash_chain:
@@ -51,6 +55,9 @@ class EnrichmentAnalyser:
 
     def __count_broken_chains_with_enrichments(self):
         cli_log.info('Counting broken chains with enrichments...')
+
+        self.__broken_chain_counts_with_enrichments.clear()
+        self.__chain_count = 0
 
         for _, cert_hash_chain in RapidUnifier.parse_chains(self.__hosts_file):
             self.__determine_chain_completeness_with_enrichments(cert_hash_chain)
@@ -83,15 +90,18 @@ class EnrichmentAnalyser:
 
         cli_log.info('Writing results into \"{0}\"'.format(results_file_name))
 
-        with open(results_file_name, 'w') as output:
+        with open(results_file_name, 'w') as results_file:
+            for cert_hash in self.__sorted_missing_certs[:self.__enrichment_depth]:
+                results_file.write('{0}\n'.format(cert_hash))
+
             cli_log.info('\nTotal chains: {0}\n'.format(self.__chain_count))
-            output.write('Total chains: {0}\n\n'.format(self.__chain_count))
+            results_file.write('\nTotal chains: {0}\n\n'.format(self.__chain_count))
 
             for enrichment in sorted(self.__broken_chain_counts_with_enrichments):
                 complete_chain_count = self.__chain_count - self.__broken_chain_counts_with_enrichments[enrichment]
 
                 cli_log.info('Enrichment {0}: {1}% complete ({2})'.format(enrichment, round(complete_chain_count / self.__chain_count, 4), complete_chain_count))
-                output.write('{0},{1}\n'.format(enrichment, complete_chain_count))
+                results_file.write('{0},{1}\n'.format(enrichment, complete_chain_count))
 
     def run(self):
         log.info('EnrichmentAnalyser start')

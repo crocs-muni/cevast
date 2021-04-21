@@ -49,7 +49,7 @@ class ChainValidator(CertAnalyser):
         if not methods:
             raise ValueError("No validation methods are available -> nothing to do")
         # write validation header
-        self.__out.write("{}, {}, {}\n".format('HOST', ", ".join(show()), "CHAIN"))
+        self.__out.write("{},{},{}\n".format('HOST', ",".join(show()), "CHAIN"))
 
         # Init special arguments
         self.__certdb: CertDB = kwargs.get('certdb', None)
@@ -152,9 +152,9 @@ class ChainValidator(CertAnalyser):
 
         # Call validation methods
         for method in VALIDATION_METHODS:
-            result.append(method(pems, **validation_method_arguments))
+            result.append("|".join([str(item).replace(",", ";") for item in method(pems, **validation_method_arguments)]))
 
-        return "{}, {}, {}\n".format(host.rjust(15), ", ".join(result), ", ".join(chain))
+        return "{},{},{}\n".format(host, ",".join(result), ",".join(chain))
 
     def __enter__(self):
         return self

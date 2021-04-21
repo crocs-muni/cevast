@@ -5,6 +5,7 @@ import itertools
 from OpenSSL import crypto
 
 
+# noinspection PyBroadException
 class ChainInspector:
     @staticmethod
     def inspect(input_chain, load_from_disk=True, **kwargs):
@@ -22,16 +23,15 @@ class ChainInspector:
             if len(original_pairs) <= 8:
                 result = "DISCONNECTED"
 
-                for pair_permutation in list(itertools.permutations(original_pairs)):
-                    if ChainInspector.__is_chain_continuous(pair_permutation):
-                        if list(pair_permutation) == original_pairs:
-                            result = "OK"
-                        elif list(pair_permutation) == list(reversed(original_pairs)):
-                            result = "REVERSED"
-                        else:
+                if ChainInspector.__is_chain_continuous(original_pairs):
+                    result = "OK"
+                elif ChainInspector.__is_chain_continuous(list(reversed(original_pairs))):
+                    result = "REVERSED"
+                else:
+                    for pair_permutation in list(itertools.permutations(original_pairs)):
+                        if ChainInspector.__is_chain_continuous(list(pair_permutation)):
                             result = "REORDERED"
-
-                        break
+                            break
             else:
                 result = "TOOLONG"
 
@@ -39,7 +39,7 @@ class ChainInspector:
         except Exception:
             result = "ERROR"
 
-        return result
+        return [result]
 
     @staticmethod
     def __get_subject_issuer_pairs(certificate_chain):
