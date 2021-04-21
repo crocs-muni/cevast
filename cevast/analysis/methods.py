@@ -75,48 +75,66 @@ def show(include_docstring: bool = False):
 
 # -----------   MODULE INITIALIZATION   -------------------------
 
-# try to load the chain inspector
-# log.info("Loading chain inspection module")
-# try:
-#     from .modules.chain_inspector import ChainInspector
-#
-#     METHODS['chainInspector'] = ChainInspector.inspect
-# except ModuleNotFoundError as error:
-#     log.info("The client could not be loaded: {0}".format(error))
+log.info("Loading chain inspection module")
+try:
+    from .modules.chain_inspector import ChainInspector
 
-# try to load command-line Openssl
+    METHODS["chainInspector"] = ChainInspector.inspect
+except ModuleNotFoundError as error:
+    log.info("The client could not be loaded: {0}".format(error))
+
 log.info("Loading CLI Openssl validation client")
 try:
     from .modules.validation_clients.openssl import Openssl
 
-    METHODS['openssl'] = Openssl.verify
+    if Openssl.is_setup_correctly():
+        METHODS["openssl"] = Openssl.verify
+    else:
+        log.info("The client is not set up correctly")
 except ModuleNotFoundError as error:
     log.info("The client could not be loaded: {0}".format(error))
 
-# try to load PyOpenSSL
 log.info("Loading PyOpenSSL validation client")
 try:
     from .modules.validation_clients.pyopenssl import Pyopenssl
 
-    METHODS['pyopenssl'] = Pyopenssl.verify
+    if Pyopenssl.is_setup_correctly():
+        METHODS["pyopenssl"] = Pyopenssl.verify
+    else:
+        log.info("The client is not set up correctly")
 except ModuleNotFoundError as error:
     log.info("The client could not be loaded: {0}".format(error))
 
-# try to load Botan
 log.info("Loading Botan validation client")
 try:
     from .modules.validation_clients.botan import Botan
 
-    METHODS['botan'] = Botan.verify
+    if Botan.is_setup_correctly():
+        METHODS["botan"] = Botan.verify
+    else:
+        log.info("The client is not set up correctly")
 except ModuleNotFoundError as error:
     log.info("The client could not be loaded: {0}".format(error))
 
-# try to load command-line GnuTLS
 log.info("Loading CLI GnuTLS validation client")
 try:
     from .modules.validation_clients.gnutls import GnuTLS
 
-    METHODS['gnutls'] = GnuTLS.verify
+    if GnuTLS.is_setup_correctly():
+        METHODS["gnutls"] = GnuTLS.verify
+    else:
+        log.info("The client is not set up correctly")
+except ModuleNotFoundError as error:
+    log.info("The client could not be loaded: {0}".format(error))
+
+log.info("Loading CLI MbedTLS validation client")
+try:
+    from .modules.validation_clients.mbedtls import MbedTLS
+
+    if MbedTLS.is_setup_correctly():
+        METHODS["mbedtls"] = MbedTLS.verify
+    else:
+        log.info("The client is not set up correctly")
 except ModuleNotFoundError as error:
     log.info("The client could not be loaded: {0}".format(error))
 

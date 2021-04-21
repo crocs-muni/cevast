@@ -1,22 +1,23 @@
 #!/usr/bin/python3
 
 import argparse
-from datetime import datetime
+import datetime
+import os
 from OpenSSL import crypto
 
 
+# noinspection PyBroadException
 class Pyopenssl:
-    TRUST_STORE_FILE = "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
+    TRUST_STORE_FILE = "/etc/pki/tls/cert.pem"
 
     @staticmethod
-    def verify(chain, load_from_disk=True, reference_time=None, crls=None):
+    def verify(chain, reference_time=None, crls=None, **kwargs):
         chain = list(chain)
 
         try:
-            if load_from_disk:
-                for i, certificate_path in enumerate(chain):
-                    with open(certificate_path) as input_file:
-                        chain[i] = input_file.read().encode()
+            for i, certificate_path in enumerate(chain):
+                with open(certificate_path) as input_file:
+                    chain[i] = input_file.read().encode()
 
             store = crypto.X509Store()
             intermediates = []
@@ -30,7 +31,7 @@ class Pyopenssl:
                     intermediates.append(crypto.load_certificate(crypto.FILETYPE_PEM, certificate_content))
 
             if reference_time:
-                store.set_time(datetime.fromtimestamp(reference_time))
+                store.set_time(datetime.datetime.fromtimestamp(reference_time))
 
             if crls:
                 for crl in crls:
@@ -39,28 +40,41 @@ class Pyopenssl:
 
                 store.set_flags(crypto.X509StoreFlags.CRL_CHECK)
 
-            code = 0
+            result = 0
 
             try:
                 crypto.X509StoreContext(store=store, certificate=endpoint,
                                         chain=intermediates if len(intermediates) > 0 else None).verify_certificate()
             except crypto.X509StoreContextError as error:
-                code = int(error.args[0][0])
+                result = int(error.args[0][0])
         except Exception:
-            code = -1
+            result = -1
 
-        return str(code)
+        return [result]
+
+    @staticmethod
+    def is_setup_correctly():
+        is_setup_correctly = True
+
+        if not os.path.isfile(Pyopenssl.TRUST_STORE_FILE):
+            is_setup_correctly = False
+
+        return is_setup_correctly
 
 
 if __name__ == "__main__":
     argument_parser = argparse.ArgumentParser(description="chain format: ENDPOINT [INTERMEDIATE ...] [CA]")
 
-    argument_parser.add_argument("-t", type=int, required=False, dest="reference_time", metavar="N",
-                                 help="reference time (in seconds since the epoch)")
+    argument_parser.add_argument("-r", type=lambda s: int(datetime.datetime.strptime(s, "%Y-%m-%d").timestamp()),
+                                 required=False, default=int(datetime.datetime.today().date().strftime("%s")),
+                                 dest="reference_time", metavar="DATE",
+                                 help="reference date in format YYYY-MM-DD (Default is today)")
     argument_parser.add_argument("--crl", type=str, action="append", required=False, dest="crls", metavar="FILE",
                                  help="certificate revocation list (can be used multiple times)")
     argument_parser.add_argument("CERTIFICATE", type=str, nargs="+")
 
-    args = argument_parser.parse_args()
-
-    print(Pyopenssl.verify(args.CERTIFICATE, reference_time=args.reference_time, crls=args.crls))
+    if Pyopenssl.is_setup_correctly():
+        args = argument_parser.parse_args()
+        print(Pyopenssl.verify(args.CERTIFICATE, reference_time=args.reference_time, crls=args.crls))
+    else:
+        print("Client is not set up correctly")
