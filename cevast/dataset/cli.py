@@ -14,7 +14,7 @@ from cevast.analysis import ChainValidator
 from .dataset import DatasetRepository, DatasetSource, DatasetState, Dataset
 from .manager_factory import DatasetManagerFactory, DatasetInvalidError
 from .managers import DatasetManagerTask
-from ..utils.db_enrichment_analyser import EnrichmentAnalyser
+from ..utils.enrichment_analyzer import EnrichmentAnalyzer
 
 __author__ = 'Radim Podola'
 
@@ -262,7 +262,7 @@ def enrichments(ctx, depth):
         hosts_file = dataset.full_path(DatasetState.COLLECTED, 'hosts', True)
 
         if certs_file and hosts_file:
-            EnrichmentAnalyser(certs_file, hosts_file, depth).run()
+            EnrichmentAnalyzer(certs_file, hosts_file, depth).run()
 
 
 @manager_group.command('stats')

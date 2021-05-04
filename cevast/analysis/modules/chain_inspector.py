@@ -1,5 +1,12 @@
 #!/usr/bin/python3
 
+"""
+This module contains an implementation of a certificate chain inspector.
+
+The inspector can be both imported and used externally (as a standalone module) through the provided
+command-line interface.
+"""
+
 import argparse
 import itertools
 from OpenSSL import crypto
@@ -7,8 +14,40 @@ from OpenSSL import crypto
 
 # noinspection PyBroadException
 class ChainInspector:
+    """
+    A class for certificate chain inspection --- classification of certificate orderings and counting of self-signed CAs.
+
+    Classified certificate orderings:
+
+      OK: Certificates came in the correct order (i.e., according to the standard). A chain starts with
+          the server’s certificate, and every subsequent certificate’s subject is the previous certificate’s issuer.
+
+      REORDERED: Certificates came reordered. There exists a permutation in which their ordering is correct.
+
+      REVERSED: A particular case of reordering, when certificates came in the reversed order of what would be
+                correct.
+
+      DISCONNECTED: There is no permutation in which certificates' ordering is correct.
+
+      TOOLONG: Chain contains too many certificates to check all permutations.
+
+    Output format: [certificate ordering]-[number of self-signed CAs]CA
+
+    Example output: REVERSED-1CA (reversed chain with one self-signed CA)
+    """
+
     @staticmethod
     def inspect(input_chain, load_from_disk=True, **kwargs):
+        """
+        Inspects the given chain.
+
+        `input_chain` is a list of paths to certificates forming a chain.
+        If `load_from_disk` is set to False, certificates are expected to be provided directly (as their contents),
+        instead of the paths.
+        `kwargs` are other, unexpected arguments.
+
+        The result of chain inspection is (for compatibility) returned as a single string in a list.
+        """
         input_chain = list(input_chain)
 
         try:

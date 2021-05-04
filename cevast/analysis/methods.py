@@ -1,32 +1,22 @@
 """
-This module provides various certificate validation methods.
+This module provides access to certificate chain validation clients and other analytical modules.
 
 .. important::
-   Each method accepts a single argument -- list with cetificates file paths.
-   List should start with server certificate, followed by intermediates certificates
-   and end with trusted CA certificate.
+   Each validation client / module is bound through a method that requires a single argument --- a list of paths to
+   certificates forming a chain (starting with server's certificate).
 
-To add an additional validation method, register the method under its name to global
+To add an additional validation client / module, register it under its name to global
 variable METHODS in 'MODULE INITIALIZATION' section.
 
-Module can be imported and used as a library. Import-safe functions should be used
-to get validation method by name or get all the available methods:
-  - show()     - return tuple with all available method names
-  - get_all()  - return tuple with all available methods
-  - get(name)  - return methody with given name
+The module can be imported and used as a library. Import-safe functions should be used
+to get validation clients / modules by name or get all that are available:
 
-Module can also be run as a standalone script with following usage:
-    python3 ./methods           - prints all available method names
-    python3 ./methods c1 c2 cN  - prints validation results from all available methods,
-                                  args c1-cN are provided to validation method as a chain that
-                                  starts with server certificate and ends with CA
+- show()     - return tuple with all available method names
 
-.. todo::
-   Maybe would be better to analyse the certs before validation to identify CAs
-   and intermediates (validation would be better then)
+- get_all()  - return tuple with all available methods
+
+- get(name)  - return method with given name
 """
-# TODO rename to validation_methods
-# TODO add support for reference time
 
 import sys
 import os
@@ -39,11 +29,8 @@ __author__ = 'Radim Podola'
 
 log = logging.getLogger(__name__)
 
-# global dictionary hodling all available validation methods in this module under usage name
+# global dictionary holding all available validation methods in this module under usage name
 METHODS = OrderedDict()
-
-OK = "0"
-UNKNOWN = "XX"
 
 
 def is_tool_available(name):
