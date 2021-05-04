@@ -1,8 +1,5 @@
 """
-This module generates database enrichment stats - numbers of complete chains in a dataset
-with given numbers of most common missing certificates added to DB.
-
-output: <enrichment level>,<number of complete chains for that particular level>
+This module contains an implementation of dataset enrichment analyser.
 """
 
 import logging
@@ -15,7 +12,17 @@ log = logging.getLogger(__name__)
 cli_log = logging.getLogger('CEVAST_CLI')
 
 
-class EnrichmentAnalyser:
+class EnrichmentAnalyzer:
+    """
+    A class for generating dataset enrichment statistics --- numbers of complete chains within a dataset
+    with given numbers of the most commonly missing certificates added.
+
+    Generated statistics are written to both a standard output and a file.
+    A file additionally contains hashes of the most commonly missing certificates up to the specified depth.
+
+    Output format: [enrichment level],[number of complete chains for that particular level]
+    """
+
     def __init__(self, certs_file, hosts_file, enrichment_depth):
         self.__certs_file = certs_file
         self.__hosts_file = hosts_file
@@ -104,6 +111,10 @@ class EnrichmentAnalyser:
                 results_file.write('{0},{1}\n'.format(enrichment, complete_chain_count))
 
     def run(self):
+        """
+        Runs the analysis.
+        """
+
         log.info('EnrichmentAnalyser start')
 
         self.__parse_certs_file()

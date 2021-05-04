@@ -3,15 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.8.1" />
+<meta name="generator" content="pdoc 0.9.2" />
 <title>cevast.analysis.methods API documentation</title>
-<meta name="description" content="This module provides various certificate validation methods …" />
-<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
-<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<meta name="description" content="This module provides access to certificate chain validation clients and other analytical modules …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
 </head>
 <body>
 <main>
@@ -20,72 +22,56 @@
 <h1 class="title">Module <code>cevast.analysis.methods</code></h1>
 </header>
 <section id="section-intro">
-<p>This module provides various certificate validation methods.</p>
+<p>This module provides access to certificate chain validation clients and other analytical modules.</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
-<p>Each method accepts a single argument &ndash; list with cetificates file paths.
-List should start with server certificate, followed by intermediates certificates
-and end with trusted CA certificate.</p>
+<p>Each validation client / module is bound through a method that requires a single argument &mdash; a list of paths to
+certificates forming a chain (starting with server's certificate).</p>
 </div>
-<p>To add an additional validation method, register the method under its name to global
+<p>To add an additional validation client / module, register it under its name to global
 variable METHODS in 'MODULE INITIALIZATION' section.</p>
-<p>Module can be imported and used as a library. Import-safe functions should be used
-to get validation method by name or get all the available methods:
-- show()
-- return tuple with all available method names
-- get_all()
-- return tuple with all available methods
-- get(name)
-- return methody with given name</p>
-<p>Module can also be run as a standalone script with following usage:
-python3 ./methods
-- prints all available method names
-python3 ./methods c1 c2 cN
-- prints validation results from all available methods,
-args c1-cN are provided to validation method as a chain that
-starts with server certificate and ends with CA</p>
-<div class="admonition todo">
-<p class="admonition-title">TODO</p>
-<p>Maybe would be better to analyse the certs before validation to identify CAs
-and intermediates (validation would be better then)</p>
-</div>
+<p>The module can be imported and used as a library. Import-safe functions should be used
+to get validation clients / modules by name or get all that are available:</p>
+<ul>
+<li>
+<p>show()
+- return tuple with all available method names</p>
+</li>
+<li>
+<p>get_all()
+- return tuple with all available methods</p>
+</li>
+<li>
+<p>get(name)
+- return method with given name</p>
+</li>
+</ul>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
-This module provides various certificate validation methods.
+This module provides access to certificate chain validation clients and other analytical modules.
 
 .. important::
-   Each method accepts a single argument -- list with cetificates file paths.
-   List should start with server certificate, followed by intermediates certificates
-   and end with trusted CA certificate.
+   Each validation client / module is bound through a method that requires a single argument --- a list of paths to
+   certificates forming a chain (starting with server&#39;s certificate).
 
-To add an additional validation method, register the method under its name to global
+To add an additional validation client / module, register it under its name to global
 variable METHODS in &#39;MODULE INITIALIZATION&#39; section.
 
-Module can be imported and used as a library. Import-safe functions should be used
-to get validation method by name or get all the available methods:
-  - show()     - return tuple with all available method names
-  - get_all()  - return tuple with all available methods
-  - get(name)  - return methody with given name
+The module can be imported and used as a library. Import-safe functions should be used
+to get validation clients / modules by name or get all that are available:
 
-Module can also be run as a standalone script with following usage:
-    python3 ./methods           - prints all available method names
-    python3 ./methods c1 c2 cN  - prints validation results from all available methods,
-                                  args c1-cN are provided to validation method as a chain that
-                                  starts with server certificate and ends with CA
+- show()     - return tuple with all available method names
 
-.. todo::
-   Maybe would be better to analyse the certs before validation to identify CAs
-   and intermediates (validation would be better then)
+- get_all()  - return tuple with all available methods
+
+- get(name)  - return method with given name
 &#34;&#34;&#34;
-# TODO rename to validation_methods
-# TODO add support for reference time
 
 import sys
 import os
-import re
 import logging
 import subprocess
 from collections import OrderedDict
@@ -95,11 +81,8 @@ __author__ = &#39;Radim Podola&#39;
 
 log = logging.getLogger(__name__)
 
-# global dictionary hodling all available validation methods in this module under usage name
+# global dictionary holding all available validation methods in this module under usage name
 METHODS = OrderedDict()
-
-OK = &#34;0&#34;
-UNKNOWN = &#34;XX&#34;
 
 
 def is_tool_available(name):
@@ -129,110 +112,70 @@ def show(include_docstring: bool = False):
     return tuple(METHODS.keys())
 
 
-def _openssl(chain: list) -&gt; str:
-    &#34;&#34;&#34;Validate SSL Certificate chain via command line openssl. Return result code.&#34;&#34;&#34;
-    try:
-        inter = []
-        server = chain[0]
-        if len(chain) == 2:
-            inter = (&#39;--CAfile&#39;, chain[1])
-        elif len(chain) &gt; 2:
-            inter = [v for elt in chain[1:] for v in (&#39;-untrusted&#39;, elt)]
-        # TODO check if only untrusted really works
-        # openssl verify -show_chain -untrusted int.pem -untrusted int2.pem server.pem
-        # openssl verify -show_chain --CAfile ca.pem server.pem
-        subprocess.check_output([&#34;openssl&#34;, &#34;verify&#34;, &#34;-show_chain&#34;, *inter, server], stderr=subprocess.STDOUT)
-        return OK
-    except subprocess.CalledProcessError as err:
-        # print(e.cmd)
-        match_object = re.search(r&#39;\nerror (\d+)&#39;, err.output.decode(encoding=&#39;utf-8&#39;))
-        if match_object:
-            return match_object.group(1)
-        log.info(&#34;Validation failed&#34;)
-        return UNKNOWN
-
-
-def _pyopenssl(chain: list) -&gt; str:
-    &#34;&#34;&#34;Validate SSL Certificate chain using python OpenSSL library. Return result code.&#34;&#34;&#34;
-    inter = []
-    server = chain[0]
-    if len(chain) &gt; 1:
-        inter = chain[1:]
-    try:
-        # Load the server certificate
-        with open(server) as cert_file:
-            certificate = crypto.load_certificate(crypto.FILETYPE_PEM, cert_file.read())
-        # Create a certificate store and add trusted certs
-        store = crypto.X509Store()
-        for cert in inter:
-            with open(cert) as cert_file:
-                int_certificate = crypto.load_certificate(crypto.FILETYPE_PEM, cert_file.read())
-                store.add_cert(int_certificate)
-        # Create a certificate context using the store and the server certificate
-        store_ctx = crypto.X509StoreContext(store, certificate)
-        # Verify the certificate, returns None if it can validate the certificate
-        store_ctx.verify_certificate()
-
-        return OK
-    except crypto.X509StoreContextError as err:
-        return str(err.args[0][0])
-    except crypto.Error:
-        log.info(&#34;Validation failed&#34;)
-        return UNKNOWN
-
-
-def _botan(chain: list) -&gt; str:
-    &#34;&#34;&#34;Validate SSL Certificate chain using Botan library. Return result code.&#34;&#34;&#34;
-    inter = []
-    cacert = None
-    server = chain[0]
-    if len(chain) == 2:
-        cacert = chain[-1]
-    elif len(chain) &gt; 2:
-        cacert = chain[-1]
-        inter = chain[1:-1]
-    try:
-        # Load the server certificate
-        server = botan.X509Cert(server)
-        # Load untrusted subauthorities or set to None
-        inter = [botan.X509Cert(i) for i in inter] if inter else None
-        # Load CA cert or set to None
-        cacert = [botan.X509Cert(cacert)] if cacert else None
-        # Verify the certificate
-        # Returns 0 if validation was successful, returns a positive error code if the validation was unsuccesful
-        code = server.verify(intermediates=inter, trusted=cacert)
-
-        return str(code)
-    except botan.BotanException:
-        log.info(&#34;Validation failed: %s&#34;, &#34;, &#34;.join(chain))
-        return UNKNOWN
-
-
 # -----------   MODULE INITIALIZATION   -------------------------
-# try to load command-line openssl
-log.info(&#34;Loading cli openssl&#34;)
-if is_tool_available(&#34;openssl&#34;):
-    METHODS[&#39;openssl&#39;] = _openssl
 
-# try to load PyOpenSSL
-log.info(&#34;Loading PyOpenSSL&#34;)
+log.info(&#34;Loading chain inspection module&#34;)
 try:
-    from OpenSSL import crypto  # pylint: disable=E0401
+    from .modules.chain_inspector import ChainInspector
 
-    METHODS[&#39;pyopenssl&#39;] = _pyopenssl
-except ModuleNotFoundError:
-    log.info(&#34;PyOpenSSL failed to import - check if installed&#34;)
+    METHODS[&#34;chainInspector&#34;] = ChainInspector.inspect
+except ModuleNotFoundError as error:
+    log.info(&#34;The client could not be loaded: {0}&#34;.format(error))
 
-# try to load Botan
-log.info(&#34;Loading Botan&#34;)
+log.info(&#34;Loading CLI Openssl validation client&#34;)
 try:
-    import botan2 as botan  # pylint: disable=E0401
+    from .modules.validation_clients.openssl import Openssl
 
-    METHODS[&#39;botan&#39;] = _botan
-except ModuleNotFoundError:
-    log.info(&#34;Botan failed to import - check if installed&#34;)
-except Exception:
-    log.info(&#34;Botan failed to initialized - check if library is installed properly&#34;)
+    if Openssl.is_setup_correctly():
+        METHODS[&#34;openssl&#34;] = Openssl.verify
+    else:
+        log.info(&#34;The client is not set up correctly&#34;)
+except ModuleNotFoundError as error:
+    log.info(&#34;The client could not be loaded: {0}&#34;.format(error))
+
+log.info(&#34;Loading PyOpenSSL validation client&#34;)
+try:
+    from .modules.validation_clients.pyopenssl import Pyopenssl
+
+    if Pyopenssl.is_setup_correctly():
+        METHODS[&#34;pyopenssl&#34;] = Pyopenssl.verify
+    else:
+        log.info(&#34;The client is not set up correctly&#34;)
+except ModuleNotFoundError as error:
+    log.info(&#34;The client could not be loaded: {0}&#34;.format(error))
+
+log.info(&#34;Loading Botan validation client&#34;)
+try:
+    from .modules.validation_clients.botan import Botan
+
+    if Botan.is_setup_correctly():
+        METHODS[&#34;botan&#34;] = Botan.verify
+    else:
+        log.info(&#34;The client is not set up correctly&#34;)
+except ModuleNotFoundError as error:
+    log.info(&#34;The client could not be loaded: {0}&#34;.format(error))
+
+log.info(&#34;Loading CLI GnuTLS validation client&#34;)
+try:
+    from .modules.validation_clients.gnutls import GnuTLS
+
+    if GnuTLS.is_setup_correctly():
+        METHODS[&#34;gnutls&#34;] = GnuTLS.verify
+    else:
+        log.info(&#34;The client is not set up correctly&#34;)
+except ModuleNotFoundError as error:
+    log.info(&#34;The client could not be loaded: {0}&#34;.format(error))
+
+log.info(&#34;Loading CLI MbedTLS validation client&#34;)
+try:
+    from .modules.validation_clients.mbedtls import MbedTLS
+
+    if MbedTLS.is_setup_correctly():
+        METHODS[&#34;mbedtls&#34;] = MbedTLS.verify
+    else:
+        log.info(&#34;The client is not set up correctly&#34;)
+except ModuleNotFoundError as error:
+    log.info(&#34;The client could not be loaded: {0}&#34;.format(error))
 
 
 if __name__ == &#34;__main__&#34;:
@@ -341,9 +284,7 @@ if __name__ == &#34;__main__&#34;:
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
 </footer>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
-<script>hljs.initHighlightingOnLoad()</script>
 </body>
 </html>
