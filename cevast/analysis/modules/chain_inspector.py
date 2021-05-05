@@ -9,7 +9,7 @@ command-line interface.
 
 import argparse
 import itertools
-from OpenSSL import crypto
+from OpenSSL import crypto  # pylint: disable=import-error
 
 
 # noinspection PyBroadException

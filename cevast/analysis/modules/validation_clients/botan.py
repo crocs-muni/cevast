@@ -18,7 +18,7 @@ import datetime
 import contextlib
 import io
 import os
-import botan2 as botan
+import botan2 as botan  # pylint: disable=import-error
 
 
 # noinspection PyBroadException

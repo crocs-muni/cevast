@@ -17,7 +17,7 @@ command-line interface.
 import argparse
 import datetime
 import os
-from OpenSSL import crypto
+from OpenSSL import crypto  # pylint: disable=import-error
 
 
 # noinspection PyBroadException
