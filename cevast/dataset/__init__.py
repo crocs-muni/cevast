@@ -12,7 +12,7 @@ __all__ = [
     'DatasetManager',
     'DatasetManagerTask',
 ]
-__version__ = '1.0'
+__version__ = '1.1'
 __author__ = 'Radim Podola'
 
 from .dataset import (
