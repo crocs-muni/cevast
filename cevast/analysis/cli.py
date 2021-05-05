@@ -40,4 +40,4 @@ def analysis_group(method, certificate, description, reference_date):
         validation_method_arguments = {"reference_time": int(reference_date.strftime("%s"))}
 
         for met in method:
-            click.echo('{:<13}: {}'.format(met, get(met)(list(certificate), **validation_method_arguments)))
+            click.echo('{:<15}: {}'.format(met, get(met)(list(certificate), **validation_method_arguments)))
