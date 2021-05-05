@@ -1,6 +1,6 @@
 """This package contains analytical functions and tools for quantitative analysis of certificate datasets."""
 
-__version__ = '1.0'
+__version__ = '1.1'
 __author__ = 'Radim Podola'
 __all__ = (
     'CertAnalyser',

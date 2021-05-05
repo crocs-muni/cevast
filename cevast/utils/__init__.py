@@ -7,7 +7,7 @@ __all__ = (
     'remove_empty_folders',
     'directory_with_prefix',
 )
-__version__ = '1.0'
+__version__ = '1.1'
 __author__ = 'Radim Podola'
 
 from .cert_utils import validate_PEM, BASE64_to_PEM, make_PEM_filename

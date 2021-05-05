@@ -10,7 +10,7 @@ __all__ = (
     'CompositeCertDB',
     'CompositeCertDBReadOnly',
 )
-__version__ = '1.0'
+__version__ = '1.1'
 __author__ = 'Radim Podola'
 
 from .cert_db import CertNotAvailableError, CertInvalidError, CertDB, CertDBReadOnly
