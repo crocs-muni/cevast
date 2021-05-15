@@ -90,4 +90,5 @@ Authors
 
 The tool is developed at the [Centre for Research on Cryptography and Security (CRoCS)](https://crocs.fi.muni.cz), at the [Masaryk University](http://www.muni.cz/) in Brno, Czech Republic.
 * **Radim Podola** 2020 (developer)
-* **Martin Ukrop** 2020 (project lead)
+* **Róbert Šuška** 2021 (developer)
+* **Martin Ukrop** 2020-2021 (project lead)
