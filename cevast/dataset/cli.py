@@ -263,6 +263,8 @@ def enrichments(ctx, depth):
 
         if certs_file and hosts_file:
             EnrichmentAnalyzer(certs_file, hosts_file, depth).run()
+        else:
+            click.echo("Dataset not found (or incomplete)")
 
 
 @manager_group.command('stats')
